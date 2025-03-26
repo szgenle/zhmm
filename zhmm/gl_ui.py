@@ -9,6 +9,7 @@ import gl_sm_util
 
 import gl_util
 from gl_data import GlData
+from zhmm.utils import file_sys
 
 gl_data = GlData()
 
@@ -137,7 +138,7 @@ class ClUI:
         pwd = gl_sm_util.hash_by_sm3(gl_util.string_to_hex_array(pwd_suffix))
         gl_data.init(open_id, pwd)
 
-        data = gl_util.read_file(file_path)
+        data = file_sys.get_file_content(file_path)
         if data:
             decrypt_result = gl_data.decrypt(data)
 
