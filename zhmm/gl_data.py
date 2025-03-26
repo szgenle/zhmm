@@ -5,7 +5,7 @@
 import json
 import gl_sm_util
 import gl_util
-import gl_date
+from zhmm.utils import date_ex
 
 
 class GlData:
@@ -97,9 +97,9 @@ class GlData:
         if 'role' not in info:
             info['role'] = '个人'
         if 'id' not in info:
-            info['id'] = gl_date.timestamp_int()
+            info['id'] = date_ex.timestamp_int()
         if 'ctime' not in info:
-            info['utime'] = gl_date.timestamp_int()
+            info['utime'] = date_ex.timestamp_int()
         return self.save(file_path)
         pass
 

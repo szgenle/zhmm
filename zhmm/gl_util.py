@@ -65,18 +65,5 @@ def array_to_hex_string(arr):
     return ''.join(hex_strings)
 
 
-def read_file(file_path):
-    try:
-        with open(file_path, 'r') as file:
-            return file.read()
-    except FileNotFoundError:
-        # 处理文件不存在的情况
-        print("文件不存在，请检查文件名或路径是否正确。")
-        return ''
-    except Exception as e:
-        # 处理其他可能的异常
-        print(f"发生了一个错误：{e}")
-
-
 def is_string(obj):
     return isinstance(obj, str)
