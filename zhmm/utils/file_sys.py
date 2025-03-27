@@ -56,7 +56,7 @@ def rm_file(filepath):
 def resource_Path(file_name):
     if getattr(sys, 'frozen', False):
         # noinspection PyProtectedMember
-        base_dir = sys._MEIPASS # type: ignore
+        base_dir = sys._MEIPASS  # type: ignore
         return Path(base_dir, "resources", file_name)
     else:
         path: str = str(files("resources").joinpath(file_name))

@@ -3,12 +3,12 @@
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 import json
-import sm_util
-from utils import array, date, string
+
+from zhmm import sm_util
+from zhmm.utils import array, date, string
 
 
 class GlData:
-
     pwd = ''
     openId = ''
 
@@ -53,7 +53,7 @@ class GlData:
             print("EncryptDataVerifyFail")
             return
 
-        decrypt_data = sm_util.decrypt_by_sm4(encrypt_mmdata, self.encryptHash) # 解密，cbc 模式
+        decrypt_data = sm_util.decrypt_by_sm4(encrypt_mmdata, self.encryptHash)  # 解密，cbc 模式
         return {'res': decrypt_data.decode()}
 
     def encrypt(self, data):

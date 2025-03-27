@@ -8,10 +8,10 @@ import json
 import sm_util
 import pandas as pd  # 添加pandas库导入
 
-from gl_data import GlData
-from utils import array, file_sys, string
+from zhmm.gl_data import GlData
+from zhmm.utils import array, file_sys, string
 
-gl_data = GlData()
+gl_data1 = GlData()
 
 
 def print_list(data):
@@ -25,6 +25,7 @@ def print_list(data):
             return len(str(item)) + cnt
 
     max_widths = [max(str_len(item) for item in col) for col in zip(*data)]
+
     # print(max_widths)
 
     def item_width(item, width):
@@ -116,7 +117,7 @@ def export_xlsx(file_path, data):
 
 def export():
     save_file_path = file_sys.get_full_path('zhmm.xlsx')
-    export_xlsx(save_file_path, gl_data.mm['data'])
+    export_xlsx(save_file_path, gl_data1.mm['data'])
     pass
 
 
@@ -132,7 +133,7 @@ class CmdUI:
         self.user_search(info)
 
     def user_search(self, search_word):
-        finds = gl_data.search(search_word)
+        finds = gl_data1.search(search_word)
         if finds and len(finds) > 0:
             print("您好，查找到[%s]的相关信息：" % search_word)
             print_info(finds)
@@ -150,9 +151,9 @@ class CmdUI:
             infos = info.split()
             infos_len = len(infos)
             if infos_len > 1:
-                for j in range(min(4-i, infos_len)):
-                    cn_infos[cn_names[i+j]] = infos[j]
-                    en_infos[en_names[i+j]] = infos[j]
+                for j in range(min(4 - i, infos_len)):
+                    cn_infos[cn_names[i + j]] = infos[j]
+                    en_infos[en_names[i + j]] = infos[j]
                 break
             cn_infos[cn_names[i]] = info
             en_infos[en_names[i]] = info
@@ -162,7 +163,7 @@ class CmdUI:
             file_path = self.args.input
             if self.args.out:
                 file_path = self.args.out
-            if gl_data.add(en_infos, file_path):
+            if gl_data1.add(en_infos, file_path):
                 print("添加成功!")
 
     def user_option(self):
@@ -185,20 +186,20 @@ class CmdUI:
         return 0
 
     def run(self, file_path, open_id, password):
-    
+
         pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
         pwd = sm_util.hash_by_sm3(array.string_to_hex_array(pwd_suffix))
-        gl_data.init(open_id, pwd)
-    
+        gl_data1.init(open_id, pwd)
+
         data = file_sys.get_file_content(file_path)
         if data:
-            decrypt_result = gl_data.decrypt(data)
-    
+            decrypt_result = gl_data1.decrypt(data)
+
             if not decrypt_result or not decrypt_result['res']:
                 print("密码不对")
                 return False
             user_mm_data = json.loads(decrypt_result['res'])
-            gl_data.set_mm(user_mm_data)
+            gl_data1.set_mm(user_mm_data)
 
         while True:
             if self.args.search:

@@ -29,17 +29,17 @@ def count_unicode_chars(s):
         if char in chinese_punctuation:
             count += 1
         elif '\u4e00' <= char <= '\u9fff' or \
-           '\u3000' <= char <= '\u303f' or \
-           '\u3400' <= char <= '\u4dbf' or \
-           '\u20000' <= char <= '\u2a6df' or \
-           '\u2a700' <= char <= '\u2b73f' or \
-           '\u2b740' <= char <= '\u2b81f' or \
-           '\u2b820' <= char <= '\u2ceaf' or \
-           '\uf900' <= char <= '\ufaff' or \
-           '\u31c0' <= char <= '\u31ef' or \
-           '\u2f00' <= char <= '\u2fdf' or \
-           '\u31a0' <= char <= '\u31bf' or \
-           '\uac00' <= char <= '\ud7af':
+                '\u3000' <= char <= '\u303f' or \
+                '\u3400' <= char <= '\u4dbf' or \
+                '\u20000' <= char <= '\u2a6df' or \
+                '\u2a700' <= char <= '\u2b73f' or \
+                '\u2b740' <= char <= '\u2b81f' or \
+                '\u2b820' <= char <= '\u2ceaf' or \
+                '\uf900' <= char <= '\ufaff' or \
+                '\u31c0' <= char <= '\u31ef' or \
+                '\u2f00' <= char <= '\u2fdf' or \
+                '\u31a0' <= char <= '\u31bf' or \
+                '\uac00' <= char <= '\ud7af':
             count += 1
     return count
 

@@ -4,15 +4,15 @@
 # @LastEditTime: 2024-07-02
 from gmssl import sm3, sm4, func
 
-from utils import array
+from zhmm.utils import array
 
 block_len = 64
 iPad = bytearray([0x36] * block_len)
 oPad = bytearray([0x5c] * block_len)
-iv = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x27\x00\x00\x00\x00\x03' #  bytes类型
+iv = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x27\x00\x00\x00\x00\x03'  # bytes类型
 
 
-def hash_by_sm3(input_bytes, key ='9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1'):
+def hash_by_sm3(input_bytes, key='9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1'):
     # print("input_bytes", input_bytes)
     # input_data = gl_util.string_to_hex_array(input_data)
     key_hash = sm3.sm3_hash(array.string_to_hex_array(key))

@@ -1,4 +1,3 @@
-
 def get_values_from_json(json_data, key_path):
     """
     从JSON数据中获取指定键路径的所有值。

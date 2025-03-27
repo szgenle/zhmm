@@ -7,6 +7,9 @@ import sys
 
 from PyQt6.QtCore import QCoreApplication
 
+from zhmm import ui_main
+from zhmm.utils.log import logger
+
 QCoreApplication.setApplicationName("zhmm")
 QCoreApplication.setOrganizationName("szgenle")  # 替换为您的组织名称
 
@@ -15,12 +18,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)  # 向上回退两级到项目根目录
 sys.path.append(project_root)  # 将项目根目录添加到模块搜索路径
 sys.path.append(current_dir)  # 将项目根目录添加到模块搜索路径
-utils_dir = os.path.join(current_dir, 'utils')
-sys.path.append(utils_dir)
 
-from utils.log import logger
-import cmd_main
-import ui_main
 
 def main():
     # cmd_main.main()
