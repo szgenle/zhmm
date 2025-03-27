@@ -50,5 +50,7 @@ def main():
         except getpass.GetPassWarning:
             print("警告: 在当前环境中无法隐藏密码输入，密码可能会显示在屏幕上")
             password = input("请输入密码: ")
+        except KeyboardInterrupt:
+            exit(0)
         if len(password) > 0:
             gl_ui.run(file_path, user_input_args.openId, password)
