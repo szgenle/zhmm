@@ -119,7 +119,7 @@ class SmData:
         encrypt_data = sm_util.encrypt_by_sm4(data.encode('utf-8'), self.encryptHash)
         
         # 将加密后的字节数据转换为十六进制字符串
-        hex_data = data_conversion.bytes_to_hex_string(encrypt_data)
+        hex_data = data_conversion.to_hex_string(encrypt_data)
         
         # 计算验证哈希
         suffix = sm_util.hash_by_sm3(data_conversion.string_to_bytes(hex_data), self.suffixHash)

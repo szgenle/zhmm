@@ -21,32 +21,6 @@ def to_hex_string(data: Union[List[int], bytes, bytearray]) -> str:
         return ''.join([format(num, '02x') for num in data])
 
 
-# 保留原函数名以保持兼容性
-def array_to_hex_string(arr: List[int]) -> str:
-    """将整数列表转换为十六进制字符串 - 兼容旧API
-
-    Args:
-        arr: 整数列表
-
-    Returns:
-        十六进制字符串
-    """
-    return to_hex_string(arr)
-
-
-# 保留原函数名以保持兼容性
-def bytes_to_hex_string(data: Union[bytes, bytearray]) -> str:
-    """将bytes或bytearray转换为十六进制字符串 - 兼容旧API
-
-    Args:
-        data: bytes或bytearray对象
-
-    Returns:
-        十六进制字符串
-    """
-    return to_hex_string(data)
-
-
 def string_to_bytes(input_string: str) -> List[int]:
     """将字符串转换为字节数组（整数列表）
 
@@ -57,19 +31,6 @@ def string_to_bytes(input_string: str) -> List[int]:
         整数列表，每个整数代表字符的ASCII/Unicode值
     """
     return [ord(char) for char in input_string]
-
-
-# 保留原函数名以保持兼容性
-def string_to_hex_array(input_string: str) -> List[int]:
-    """将字符串转换为字节数组（整数列表）- 兼容旧API
-
-    Args:
-        input_string: 输入字符串
-        
-    Returns:
-        整数列表，每个整数代表字符的ASCII/Unicode值
-    """
-    return string_to_bytes(input_string)
 
 
 def char_array_to_hex_array(char_array: List[str]) -> List[int]:
