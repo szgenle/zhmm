@@ -3,7 +3,6 @@ from PyQt6.QtCore import pyqtSignal
 
 
 class DragDropButton(QPushButton):
-
     dragDropEvent = pyqtSignal(str)
 
     def __init__(self, *args, **kwargs):
