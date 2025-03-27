@@ -13,7 +13,7 @@ def char_array_to_hex_array(char_array):
     return hex_array
 
 
-def hex_to_array(hex_str):
+def hex_to_array(hex_str) -> list[int]:
     # 如果字符串长度不是偶数，添加一个前导'0'
     if len(hex_str) % 2 != 0:
         hex_str = '0' + hex_str
