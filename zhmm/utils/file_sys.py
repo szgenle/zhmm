@@ -70,10 +70,11 @@ def get_writable_dir():
     """ 获取平台合规的可写数据目录 """
     global data_dir
     if data_dir is None:
+        # 使用Qt的自动路径拼接功能，避免手动拼接目录名
         data_dir = QStandardPaths.writableLocation(
             QStandardPaths.StandardLocation.AppDataLocation
         )
-        data_dir = os.path.join(data_dir, 'zhmm')
+        # 删除原有的手动拼接 'zhmm' 操作
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
     return data_dir
