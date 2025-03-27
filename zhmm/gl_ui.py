@@ -8,9 +8,8 @@ import json
 import gl_sm_util
 import pandas as pd  # 添加pandas库导入
 
-import gl_util
 from gl_data import GlData
-from zhmm.utils import file_sys
+from zhmm.utils import array_ex, file_sys, string_ex
 
 gl_data = GlData()
 
@@ -19,7 +18,7 @@ def print_list(data):
     # print(data)
     # 获取列的最大宽度（可选，用于对齐）
     def str_len(item):
-        cnt = gl_util.count_unicode_chars(item)
+        cnt = string_ex.count_unicode_chars(item)
         if cnt == 0:
             return len(str(item))
         else:
@@ -29,7 +28,7 @@ def print_list(data):
     # print(max_widths)
 
     def item_width(item, width):
-        cnt = gl_util.count_unicode_chars(item)
+        cnt = string_ex.count_unicode_chars(item)
         if cnt > 0:
             dc = width - len(item)
             if dc > cnt:
@@ -62,7 +61,7 @@ def print_info(infos):
         for key in en_heads:
             if key not in info:
                 values.append('')
-            elif not gl_util.is_string(info[key]):
+            elif not string_ex.is_string(info[key]):
                 values.append(str(info[key]))
             else:
                 values.append(info[key])
@@ -168,7 +167,12 @@ class ClUI:
 
     def user_option(self):
         time.sleep(0.3)
-        op = input("新增[n/N]查找[f/F]导出[e/E]退出[q/Q]:").strip().lower()
+        try:
+            op = input("新增[n/N]查找[f/F]导出[e/E]退出[q/Q]:").strip().lower()
+        except KeyboardInterrupt:
+            print('再见')
+            exit(0)
+
         if op == 'q':
             print('再见')
             exit(0)
@@ -183,7 +187,7 @@ class ClUI:
     def run(self, file_path, open_id, password):
     
         pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
-        pwd = gl_sm_util.hash_by_sm3(gl_util.string_to_hex_array(pwd_suffix))
+        pwd = gl_sm_util.hash_by_sm3(array_ex.string_to_hex_array(pwd_suffix))
         gl_data.init(open_id, pwd)
     
         data = file_sys.get_file_content(file_path)
