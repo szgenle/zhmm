@@ -3,9 +3,9 @@
 # @Date: 2025-03-27
 # @LastEditTime: 2025-03-27
 import logging
+import file_sys
 from datetime import datetime
 
-from zhmm.utils import file_sys
 
 path_file = file_sys.get_full_path(".log/%s.log" % datetime.now().strftime("%Y%m%d"))
 path_file.parent.mkdir(exist_ok=True)

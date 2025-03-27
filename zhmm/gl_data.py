@@ -4,7 +4,7 @@
 # @LastEditTime: 2024-07-02
 import json
 import sm_util
-from zhmm.utils import array, date, string
+from utils import array, date, string
 
 
 class GlData:

@@ -9,7 +9,7 @@ import sm_util
 import pandas as pd  # 添加pandas库导入
 
 from gl_data import GlData
-from zhmm.utils import array, file_sys, string
+from utils import array, file_sys, string
 
 gl_data = GlData()
 

@@ -4,7 +4,7 @@
 # @LastEditTime: 2024-07-02
 from gmssl import sm3, sm4, func
 
-from zhmm.utils import array
+from utils import array
 
 block_len = 64
 iPad = bytearray([0x36] * block_len)
