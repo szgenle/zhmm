@@ -4,7 +4,7 @@
 # @LastEditTime: 2024-07-02
 import json
 import sm_ex
-from zhmm.utils import array, date_ex, string_ex
+from zhmm.utils import array, date, string_ex
 
 
 class GlData:
@@ -96,9 +96,9 @@ class GlData:
         if 'role' not in info:
             info['role'] = '个人'
         if 'id' not in info:
-            info['id'] = date_ex.timestamp_int()
+            info['id'] = date.timestamp_int()
         if 'ctime' not in info:
-            info['utime'] = date_ex.timestamp_int()
+            info['utime'] = date.timestamp_int()
         return self.save(file_path)
         pass
 
