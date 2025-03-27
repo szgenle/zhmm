@@ -28,10 +28,8 @@ def hash_by_sm3(input_bytes: List[int], key: str = '9gx^1-z:ixYWe(@JAJKFu1*k@913
     key_hash = sm3.sm3_hash(data_conversion.chars_to_bytes(key))
     key_array = data_conversion.hex_to_array(key_hash)
 
-    if len(key_array) > block_len:
-        key_array = data_conversion.chars_to_bytes(sm3.sm3_hash(key_array))
-
-    # 确保密钥长度为block_len
+    # 删除冗余的长度判断（SM3哈希结果固定为32字节，即数组长度32）
+    # 直接填充至block_len（64字节）
     while len(key_array) < block_len:
         key_array.append(0)
 
