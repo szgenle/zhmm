@@ -5,7 +5,7 @@
 import json
 
 from zhmm import sm_util
-from zhmm.utils import array, date_util, string
+from zhmm.utils import array_util, date_util, string
 
 
 class GlData:
@@ -27,7 +27,7 @@ class GlData:
         self.openId = open_id
         self.pwd = pwd
 
-        self.pwdHash = sm_util.hash_by_sm3(array.string_to_hex_array(self.pwd), self.openId)
+        self.pwdHash = sm_util.hash_by_sm3(array_util.string_to_hex_array(self.pwd), self.openId)
         self.encryptHash = self.pwdHash[0:32]
         self.suffixHash = self.pwdHash[32:64]
 
@@ -43,7 +43,7 @@ class GlData:
         suffix = mm_data[end_index:mm_data_len]
         mm_data = mm_data[0:end_index]
 
-        hash_en_data = sm_util.hash_by_sm3(array.string_to_hex_array(mm_data), self.suffixHash)
+        hash_en_data = sm_util.hash_by_sm3(array_util.string_to_hex_array(mm_data), self.suffixHash)
         if hash_en_data == suffix:
             return mm_data
 
@@ -62,7 +62,7 @@ class GlData:
         # print('encrypt_data', encrypt_data)
 
         list_data = string.array_to_hex_string(encrypt_data)
-        suffix = sm_util.hash_by_sm3(array.string_to_hex_array(list_data), self.suffixHash)
+        suffix = sm_util.hash_by_sm3(array_util.string_to_hex_array(list_data), self.suffixHash)
         # print('suffix', suffix)
         return list_data + suffix
         # print(suffix)
