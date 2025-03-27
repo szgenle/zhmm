@@ -19,11 +19,12 @@ utils_dir = os.path.join(current_dir, 'utils')
 sys.path.append(utils_dir)
 
 from utils.log import logger
-import cmd_main as cmd_main
-
+import cmd_main
+import ui_main
 
 def main():
-    cmd_main.main()
+    # cmd_main.main()
+    ui_main.main()
     pass
 
 
