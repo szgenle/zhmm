@@ -74,9 +74,54 @@ def print_info(infos):
     pass
 
 
-class ClUI:
+def export_xlsx(file_path, data):
+    """导出xlsx文件"""
+    # 准备数据
+    cn_heads = ['ID', '类别', '账号', '密码', '手机', '邮箱', '网站', '备注', '更新时间']
+    en_heads = ['id', 'role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc', 'utime']
 
-    args = {}
+    # 创建一个空的DataFrame
+    df = pd.DataFrame(data=None, columns=pd.Index(cn_heads))
+    try:
+
+        # 填充数据并清理不兼容的字符
+        for item in data:
+            row_data = {}
+            for i, key in enumerate(en_heads):
+                if key in item:
+                    # 转换为字符串并清理可能导致Excel问题的字符
+                    value = str(item[key])
+                    # 替换或移除可能导致Excel问题的字符
+                    value = value.replace('\r', '[r]').replace('\n', '[n]')
+                    row_data[cn_heads[i]] = value
+                else:
+                    row_data[cn_heads[i]] = ''
+            df = pd.concat([df, pd.DataFrame([row_data])], ignore_index=True)
+
+        # 使用xlsxwriter引擎替代openpyxl
+        df.to_excel(file_path, index=False, engine='xlsxwriter')
+        print(f"数据已成功导出到: {file_path}")
+        return True
+    except Exception as e:
+        print(f"导出Excel文件失败: {str(e)}")
+        # 尝试使用CSV格式作为备选
+        try:
+            csv_path = file_path.replace('.xlsx', '.csv')
+            df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+            print(f"已改为CSV格式导出到: {csv_path}")
+            return True
+        except Exception as csv_e:
+            print(f"CSV导出也失败: {str(csv_e)}")
+        return False
+
+
+def export():
+    save_file_path = file_sys.get_full_path('zhmm.xlsx')
+    export_xlsx(save_file_path, gl_data.mm['data'])
+    pass
+
+
+class ClUI:
 
     def __init__(self, args):
         self.args = args
@@ -123,7 +168,7 @@ class ClUI:
 
     def user_option(self):
         time.sleep(0.3)
-        op = input("新增[n/N]查找[f/F]退出[q/Q]:").strip().lower()
+        op = input("新增[n/N]查找[f/F]导出[e/E]退出[q/Q]:").strip().lower()
         if op == 'q':
             print('再见')
             exit(0)
@@ -131,6 +176,8 @@ class ClUI:
             self.args.new = True
         elif op == 'f':
             self.args.find = True
+        elif op == 'e':
+            self.args.export = True
         return 0
 
     def run(self, file_path, open_id, password):
@@ -148,9 +195,7 @@ class ClUI:
                 return False
             user_mm_data = json.loads(decrypt_result['res'])
             gl_data.set_mm(user_mm_data)
-    
-            # save_file_path = file_sys.get_full_path('zhmm.xlsx')
-            # self.export_xlsx(save_file_path, user_mm_data['data'])
+
         while True:
             if self.args.search:
                 self.args.search = None
@@ -161,45 +206,8 @@ class ClUI:
             elif self.args.new:
                 self.args.new = False
                 self.user_new()
+            elif self.args.export:
+                self.args.export = False
+                export()
             if self.user_option() < 0:
                 break
-
-    def export_xlsx(self, file_path, data):
-        """导出xlsx文件"""
-        try:
-            # 准备数据
-            cn_heads = ['ID', '类别', '账号', '密码', '手机', '邮箱', '网站', '备注', '更新时间']
-            en_heads = ['id', 'role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc', 'utime']
-            
-            # 创建一个空的DataFrame
-            df = pd.DataFrame(columns=cn_heads)
-            
-            # 填充数据并清理不兼容的字符
-            for item in data:
-                row_data = {}
-                for i, key in enumerate(en_heads):
-                    if key in item:
-                        # 转换为字符串并清理可能导致Excel问题的字符
-                        value = str(item[key])
-                        # 替换或移除可能导致Excel问题的字符
-                        value = value.replace('\r', '[r]').replace('\n', '[n]')
-                        row_data[cn_heads[i]] = value
-                    else:
-                        row_data[cn_heads[i]] = ''
-                df = pd.concat([df, pd.DataFrame([row_data])], ignore_index=True)
-            
-            # 使用xlsxwriter引擎替代openpyxl
-            df.to_excel(file_path, index=False, engine='xlsxwriter')
-            print(f"数据已成功导出到: {file_path}")
-            return True
-        except Exception as e:
-            print(f"导出Excel文件失败: {str(e)}")
-            # 尝试使用CSV格式作为备选
-            try:
-                csv_path = file_path.replace('.xlsx', '.csv')
-                df.to_csv(csv_path, index=False, encoding='utf-8-sig')
-                print(f"已改为CSV格式导出到: {csv_path}")
-                return True
-            except Exception as csv_e:
-                print(f"CSV导出也失败: {str(csv_e)}")
-            return False

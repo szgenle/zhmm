@@ -15,6 +15,7 @@ sys.path.append(current_dir)  # 将项目根目录添加到模块搜索路径
 
 from gl_ui import ClUI
 
+
 def main():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--input', '-i', type=str, help='要加载的加密文件路径')
@@ -25,6 +26,7 @@ def main():
     parser.add_argument('--find', '-f', action='store_true', help='查找')
     parser.add_argument('--new', '-n', action='store_true', help='增加')
     parser.add_argument('--modify', '-m', action='store_true', help='修改')
+    parser.add_argument('--export', '-e', action='store_true', help='导出')
 
     user_input_args = parser.parse_args()
     gl_ui = ClUI(user_input_args)
