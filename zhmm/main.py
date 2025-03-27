@@ -43,7 +43,11 @@ def main():
         gl_ui.run(file_path, user_input_args.openId, user_input_args.pwd)
     else:
         # 提示用户输入密码
-        password = getpass.getpass('请输入密码: ')
+        try:
+            password = getpass.getpass("请输入密码: ")
+        except getpass.GetPassWarning:
+            print("警告: 在当前环境中无法隐藏密码输入，密码可能会显示在屏幕上")
+            password = input("请输入密码: ")
         if len(password) > 0:
             gl_ui.run(file_path, user_input_args.openId, password)
 
