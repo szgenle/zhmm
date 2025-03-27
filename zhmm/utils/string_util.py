@@ -2,6 +2,7 @@
 # coding=utf-8
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
+from typing import List, Union
 
 
 def truncate(s, max_length=32):
@@ -44,9 +45,29 @@ def count_unicode_chars(s):
     return count
 
 
-def array_to_hex_string(arr):
+def array_to_hex_string(arr: List[int]) -> str:
+    """将整数列表转换为十六进制字符串
+    
+    Args:
+        arr: 整数列表
+        
+    Returns:
+        十六进制字符串
+    """
     hex_strings = [format(num, '02x') for num in arr]  # 02x 表示至少两位，不足则前面补0
     return ''.join(hex_strings)
+
+
+def bytes_to_hex_string(data: Union[bytes, bytearray]) -> str:
+    """将bytes或bytearray转换为十六进制字符串
+    
+    Args:
+        data: bytes或bytearray对象
+        
+    Returns:
+        十六进制字符串
+    """
+    return ''.join([format(b, '02x') for b in data])
 
 
 def is_string(obj):

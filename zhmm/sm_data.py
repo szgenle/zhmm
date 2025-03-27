@@ -41,49 +41,91 @@ class SmData:
         return
 
     def init(self, open_id: str, pwd: str):
+        """
+        初始化数据管理器
+        
+        Args:
+            open_id: 用户标识
+            pwd: 密码
+        """
         self.openId = open_id
         self.pwd = pwd
 
-        self.pwdHash = sm_util.hash_by_sm3(array_util.string_to_hex_array(self.pwd), self.openId)
-        self.encryptHash = self.pwdHash[0:32]
-        self.suffixHash = self.pwdHash[32:64]
+        # 计算密码哈希
+        self.pwdHash = sm_util.hash_by_sm3(array_util.string_to_bytes(self.pwd), self.openId)
+        self.encryptHash = self.pwdHash[0:32]  # 前32位用于加密
+        self.suffixHash = self.pwdHash[32:64]  # 后32位用于验证
 
-    def get_encrypt_mmdata(self, mm_data):
+    def get_encrypt_mmdata(self, mm_data: str) -> str | None:
+        """
+        获取并验证加密的数据
+        
+        Args:
+            mm_data: 加密的数据字符串
+            
+        Returns:
+            验证通过后的数据字符串，验证失败则返回None
+        """
         if not mm_data:
-            return
+            return None
 
         mm_data_len = len(mm_data)
         if mm_data_len <= 64:
-            return
+            return None
 
+        # 分离数据和验证哈希
         end_index = mm_data_len - 64
-        suffix = mm_data[end_index:mm_data_len]
-        mm_data = mm_data[0:end_index]
+        suffix = mm_data[end_index:mm_data_len]  # 后64位是验证哈希
+        data_part = mm_data[0:end_index]  # 前面部分是实际数据
 
-        hash_en_data = sm_util.hash_by_sm3(array_util.string_to_hex_array(mm_data), self.suffixHash)
+        # 验证数据完整性
+        hash_en_data = sm_util.hash_by_sm3(array_util.string_to_bytes(data_part), self.suffixHash)
         if hash_en_data == suffix:
-            return mm_data
+            return data_part
+        
+        return None
 
-    def decrypt(self, encrypt_data):
+    def decrypt(self, encrypt_data: str) -> dict | None:
+        """
+        解密数据
+        
+        Args:
+            encrypt_data: 加密的数据字符串
+            
+        Returns:
+            解密后的数据字典，解密失败则返回None
+        """
+        # 验证并获取加密数据
         encrypt_mmdata = self.get_encrypt_mmdata(encrypt_data)
         if not encrypt_mmdata:
             print("EncryptDataVerifyFail")
-            return
+            return None
 
+        # 解密数据
         decrypt_data = sm_util.decrypt_by_sm4(encrypt_mmdata, self.encryptHash)  # 解密，cbc 模式
         return {'res': decrypt_data.decode()}
 
-    def encrypt(self, data):
-        # print('data', data)
+    def encrypt(self, data: str) -> str:
+        """
+        加密数据
+        
+        Args:
+            data: 要加密的数据字符串
+            
+        Returns:
+            加密后的数据字符串
+        """
+        # 加密数据
         encrypt_data = sm_util.encrypt_by_sm4(data.encode('utf-8'), self.encryptHash)
-        # print('encrypt_data', encrypt_data)
-
-        list_data = string_util.array_to_hex_string(encrypt_data)
-        suffix = sm_util.hash_by_sm3(array_util.string_to_hex_array(list_data), self.suffixHash)
-        # print('suffix', suffix)
-        return list_data + suffix
-        # print(suffix)
-        # return encrypt_data.decode() + suffix
+        
+        # 将加密后的字节数据转换为十六进制字符串
+        hex_data = string_util.bytes_to_hex_string(encrypt_data)
+        
+        # 计算验证哈希
+        suffix = sm_util.hash_by_sm3(array_util.string_to_bytes(hex_data), self.suffixHash)
+        
+        # 返回加密数据和验证哈希的组合
+        return hex_data + suffix
 
     def set_mm(self, user_mm_data: ZhmmDataDict):
         self.mm = user_mm_data
