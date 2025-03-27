@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QGridLayout)
 
-from zhmm import sm_util, gl_data
+from zhmm import sm_util, sm_data
 from zhmm.qt_components.dialog import Dialog
 from zhmm.utils import file_util, array_util
 from zhmm.utils.log import logger
@@ -94,7 +94,7 @@ class LoginDialog(Dialog):
             pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
             pwd = sm_util.hash_by_sm3(array_util.string_to_hex_array(pwd_suffix))
 
-            gl_data1 = gl_data.GlData()
+            gl_data1 = sm_data.SmData()
             gl_data1.init(openid, pwd)
 
             # 尝试读取并解密文件

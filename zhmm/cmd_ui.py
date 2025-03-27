@@ -8,10 +8,10 @@ import json
 import sm_util
 import pandas as pd  # 添加pandas库导入
 
-from zhmm.gl_data import GlData
+from zhmm.sm_data import SmData
 from zhmm.utils import array_util, file_util, string_util
 
-gl_data1 = GlData()
+gl_data1 = SmData()
 
 
 def print_list(data):

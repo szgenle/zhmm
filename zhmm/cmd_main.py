@@ -46,3 +46,7 @@ def main():
             exit(0)
         if len(password) > 0:
             gl_ui.run(file_path, user_input_args.openId, password)
+
+
+if __name__ == '__main__':
+    main()

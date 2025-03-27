@@ -8,7 +8,7 @@ from zhmm import sm_util
 from zhmm.utils import array_util, date_util, string_util
 
 
-class GlData:
+class SmData:
     pwd = ''
     openId = ''
 
