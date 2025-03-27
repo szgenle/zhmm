@@ -7,6 +7,8 @@ import sys
 
 from PyQt6.QtCore import QCoreApplication
 
+import zhmm.cmd_main as cmd_main
+
 # 获取当前脚本的绝对路径，并推导出项目根目录（假设项目根目录是包含 `project` 的目录）
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)  # 向上回退两级到项目根目录
@@ -17,6 +19,7 @@ QCoreApplication.setApplicationName("zhmm")
 QCoreApplication.setOrganizationName("szgenle")  # 替换为您的组织名称
 
 def main():
+    cmd_main.main()
     pass
 
 
