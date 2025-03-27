@@ -6,6 +6,7 @@
 import time
 import json
 import gl_sm_util
+import pandas as pd  # 添加pandas库导入
 
 import gl_util
 from gl_data import GlData
@@ -149,6 +150,8 @@ class ClUI:
             user_mm_data = json.loads(decrypt_result['res'])
             gl_data.set_mm(user_mm_data)
 
+            save_file_path = file_sys.get_full_path('zhmm.xlsx')
+            self.export_xlsx(save_file_path, user_mm_data)
         while True:
             if self.args.search:
                 self.args.search = None
@@ -162,3 +165,32 @@ class ClUI:
             if self.user_option() < 0:
                 break
 
+
+    # 在当前目录把user_mm_data导出到zhmm.xlsx文件
+    def export_xlsx(self, file_path, data):
+        try:
+            # 准备数据
+            cn_heads = ['类别', '账号', '密码', '手机', '邮箱', '网站', '备注']
+            en_heads = ['role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc']
+            
+            # 创建一个空的DataFrame
+            df = pd.DataFrame(columns=cn_heads)
+            
+            # 填充数据
+            for item in data:
+                row_data = {}
+                for i, key in enumerate(en_heads):
+                    if key in item:
+                        row_data[cn_heads[i]] = item[key]
+                    else:
+                        row_data[cn_heads[i]] = ''
+                print(row_data)
+                df = pd.concat([df, pd.DataFrame([row_data])], ignore_index=True)
+            
+            # 导出到Excel
+            df.to_excel(file_path, index=False, engine='openpyxl')
+            print(f"数据已成功导出到: {file_path}")
+            return True
+        except Exception as e:
+            print(f"导出Excel文件失败: {str(e)}")
+            return False
