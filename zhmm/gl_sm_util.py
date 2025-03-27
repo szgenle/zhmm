@@ -12,13 +12,15 @@ iv = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x27\x00\x00\x00\x00\x03' #  byte
 
 
 def hash_by_sm3(input_bytes, key ='9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1'):
+    print("hash_by_sm3")
     # print("input_bytes", input_bytes)
     # input_data = gl_util.string_to_hex_array(input_data)
     key_hash = sm3.sm3_hash(gl_util.string_to_hex_array(key))
     key_array = gl_util.hex_to_array(key_hash)
 
-    if len(key_array) > block_len:
-        key_array = sm3.sm3_hash(key_array)
+    # if len(key_array) > block_len:
+    #     print("len(key_array) > block_len")
+    #     key_array = sm3.sm3_hash(key_array)
 
     while len(key_array) < block_len:
         key_array.append(0)
