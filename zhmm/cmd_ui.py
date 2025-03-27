@@ -120,7 +120,7 @@ def export():
     pass
 
 
-class ClUI:
+class CmdUI:
 
     def __init__(self, args):
         self.args = args

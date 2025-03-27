@@ -13,7 +13,7 @@ project_root = os.path.dirname(current_dir)  # 向上回退两级到项目根目
 sys.path.append(project_root)  # 将项目根目录添加到模块搜索路径
 sys.path.append(current_dir)  # 将项目根目录添加到模块搜索路径
 
-from gl_ui import ClUI
+from cmd_ui import CmdUI
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
     parser.add_argument('--export', '-e', action='store_true', help='导出')
 
     user_input_args = parser.parse_args()
-    gl_ui = ClUI(user_input_args)
+    gl_ui = CmdUI(user_input_args)
 
     if not user_input_args.openId:
         print('openId 不能为空')
