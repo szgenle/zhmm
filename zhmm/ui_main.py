@@ -5,12 +5,11 @@
 import sys
 from datetime import datetime, timedelta
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QFrame)
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import (QApplication, QMainWindow)
 
-from zhmm.qt_components.dialog import Dialog
 from zhmm.ui.login_dialog import LoginDialog
+from zhmm.ui.welcome_widget import WelcomeWidget
 from zhmm.utils.log import logger
 
 
@@ -38,34 +37,10 @@ class MainWindow(QMainWindow):
 
     def setup_welcome_ui(self):
         """设置欢迎界面"""
-        central_widget = QWidget()
-        main_layout = QVBoxLayout(central_widget)
-
-        # 欢迎标题
-        welcome_label = QLabel("欢迎使用密码管理器")
-        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        welcome_label.setFont(QFont("Arial", 24, QFont.Weight.Bold))
-        main_layout.addWidget(welcome_label)
-
-        # 分隔线
-        line = QFrame()
-        line.setFrameShape(QFrame.Shape.HLine)
-        line.setFrameShadow(QFrame.Shadow.Sunken)
-        main_layout.addWidget(line)
-
-        # 说明文本
-        info_label = QLabel("这是一个安全的密码管理工具，可以帮助您管理各种账号密码。")
-        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        info_label.setWordWrap(True)
-        main_layout.addWidget(info_label)
-
-        # 功能区域（暂时为空，后续可以添加功能按钮）
-        feature_layout = QHBoxLayout()
-        main_layout.addLayout(feature_layout)
-
-        # 设置中心部件
-        self.setCentralWidget(central_widget)
-
+        welcome_widget = WelcomeWidget(self)
+        welcome_widget.login_button.clicked.connect(self.show_login_dialog)
+        self.setCentralWidget(welcome_widget)
+        
     def show_login_dialog(self):
         """显示登录对话框"""
         logger.info('show_login_dialog')
