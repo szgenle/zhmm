@@ -9,7 +9,7 @@ import sm_util
 import pandas as pd  # 添加pandas库导入
 
 from zhmm.sm_data import SmData, ZhmmDict
-from zhmm.utils import array_util, file_util, string_util
+from zhmm.utils import file_util, string_util, data_conversion
 
 gl_data1 = SmData()
 
@@ -200,7 +200,7 @@ class CmdUI:
     def run(self, file_path, open_id, password):
 
         pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
-        pwd = sm_util.hash_by_sm3(array_util.string_to_hex_array(pwd_suffix))
+        pwd = sm_util.hash_by_sm3(data_conversion.string_to_hex_array(pwd_suffix))
         gl_data1.init(open_id, pwd)
 
         data = file_util.get_file_content(file_path)

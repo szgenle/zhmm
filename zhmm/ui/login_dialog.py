@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushB
 
 from zhmm import sm_util, sm_data
 from zhmm.qt_components.dialog import Dialog
-from zhmm.utils import file_util, array_util
+from zhmm.utils import file_util, data_conversion
 from zhmm.utils.log import logger
 
 
@@ -92,7 +92,7 @@ class LoginDialog(Dialog):
         try:
             # 处理密码，与cmd_ui.py中相同的逻辑
             pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
-            pwd = sm_util.hash_by_sm3(array_util.string_to_hex_array(pwd_suffix))
+            pwd = sm_util.hash_by_sm3(data_conversion.string_to_hex_array(pwd_suffix))
 
             gl_data1 = sm_data.SmData()
             gl_data1.init(openid, pwd)
