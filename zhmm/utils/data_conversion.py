@@ -15,10 +15,7 @@ def to_hex_string(data: Union[List[int], bytes, bytearray]) -> str:
     Returns:
         十六进制字符串
     """
-    if isinstance(data, (bytes, bytearray)):
-        return ''.join([format(b, '02x') for b in data])
-    else:  # List[int]
-        return ''.join([format(num, '02x') for num in data])
+    return ''.join([format(b, '02x') for b in data])
 
 
 def string_to_bytes(input_string: str) -> List[int]:
