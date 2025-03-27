@@ -62,7 +62,7 @@ def print_info(infos):
         for key in en_heads:
             if key not in info:
                 values.append('')
-            elif not string.is_string(info[key]):
+            elif not string_util.is_string(info[key]):
                 values.append(str(info[key]))
             else:
                 values.append(info[key])
