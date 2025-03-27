@@ -249,12 +249,12 @@ class PasswordManagerWidget(QWidget):
 
     def export_passwords(self):
         """导出密码列表"""
-        from utils import file_sys
+        from utils import file_util
         import pandas as pd
 
         try:
             # 导出为Excel文件
-            save_file_path = file_sys.get_full_path('zhmm.xlsx')
+            save_file_path = file_util.get_full_path('zhmm.xlsx')
 
             # 准备数据
             cn_heads = ['ID', '类别', '账号', '密码', '手机', '邮箱', '网站', '备注', '更新时间']

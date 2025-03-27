@@ -9,7 +9,7 @@ import sm_util
 import pandas as pd  # 添加pandas库导入
 
 from zhmm.gl_data import GlData
-from zhmm.utils import array, file_sys, string
+from zhmm.utils import array, file_util, string
 
 gl_data1 = GlData()
 
@@ -116,7 +116,7 @@ def export_xlsx(file_path, data):
 
 
 def export():
-    save_file_path = file_sys.get_full_path('zhmm.xlsx')
+    save_file_path = file_util.get_full_path('zhmm.xlsx')
     export_xlsx(save_file_path, gl_data1.mm['data'])
     pass
 
@@ -191,7 +191,7 @@ class CmdUI:
         pwd = sm_util.hash_by_sm3(array.string_to_hex_array(pwd_suffix))
         gl_data1.init(open_id, pwd)
 
-        data = file_sys.get_file_content(file_path)
+        data = file_util.get_file_content(file_path)
         if data:
             decrypt_result = gl_data1.decrypt(data)
 

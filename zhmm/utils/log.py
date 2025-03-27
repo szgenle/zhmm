@@ -5,9 +5,9 @@
 import logging
 from datetime import datetime
 
-from zhmm.utils import file_sys
+from zhmm.utils import file_util
 
-path_file = file_sys.get_full_path(".log/%s.log" % datetime.now().strftime("%Y%m%d"))
+path_file = file_util.get_full_path(".log/%s.log" % datetime.now().strftime("%Y%m%d"))
 path_file.parent.mkdir(exist_ok=True)
 
 # 配置日志
@@ -16,8 +16,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  # 设置总日志级别为最低
 
 # 创建不同级别的文件路径
-info_path = file_sys.get_full_path(f".log/{datetime.now().strftime('%Y%m%d')}_info.log")
-error_path = file_sys.get_full_path(f".log/{datetime.now().strftime('%Y%m%d')}_error.log")
+info_path = file_util.get_full_path(f".log/{datetime.now().strftime('%Y%m%d')}_info.log")
+error_path = file_util.get_full_path(f".log/{datetime.now().strftime('%Y%m%d')}_error.log")
 for path in [info_path, error_path]:
     path.parent.mkdir(exist_ok=True)
 

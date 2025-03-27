@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushB
 
 from zhmm import sm_util, gl_data
 from zhmm.qt_components.dialog import Dialog
-from zhmm.utils import file_sys, array
+from zhmm.utils import file_util, array
 from zhmm.utils.log import logger
 
 
@@ -99,7 +99,7 @@ class LoginDialog(Dialog):
 
             # 尝试读取并解密文件
             file_path = 'zhmm.gl'  # 默认文件路径
-            data = file_sys.get_file_content(file_path)
+            data = file_util.get_file_content(file_path)
 
             if data:
                 decrypt_result = gl_data1.decrypt(data)
