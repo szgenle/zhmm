@@ -29,7 +29,6 @@ def hash_by_sm3(input_bytes: List[int], key: str = '9gx^1-z:ixYWe(@JAJKFu1*k@913
     key_array = data_conversion.hex_to_array(key_hash)
 
     if len(key_array) > block_len:
-        print("len(key_array) > block_len")
         key_array = data_conversion.chars_to_bytes(sm3.sm3_hash(key_array))
 
     # 确保密钥长度为block_len

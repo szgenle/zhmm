@@ -3,7 +3,7 @@
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 
-from typing import List, Union, Any
+from typing import List, Union
 
 
 def to_hex_string(data: Union[List[int], bytes, bytearray]) -> str:

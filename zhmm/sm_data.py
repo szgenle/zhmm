@@ -98,7 +98,6 @@ class SmData:
         # 验证并获取加密数据
         encrypt_mmdata = self.get_encrypt_mmdata(encrypt_data)
         if not encrypt_mmdata:
-            print("EncryptDataVerifyFail")
             return None
 
         # 解密数据
