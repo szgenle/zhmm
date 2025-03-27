@@ -3,11 +3,27 @@
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 
-from typing import List, Union
+from typing import List, Union, Any
 
 
+def to_hex_string(data: Union[List[int], bytes, bytearray]) -> str:
+    """将整数列表、bytes或bytearray转换为十六进制字符串
+
+    Args:
+        data: 整数列表、bytes或bytearray对象
+
+    Returns:
+        十六进制字符串
+    """
+    if isinstance(data, (bytes, bytearray)):
+        return ''.join([format(b, '02x') for b in data])
+    else:  # List[int]
+        return ''.join([format(num, '02x') for num in data])
+
+
+# 保留原函数名以保持兼容性
 def array_to_hex_string(arr: List[int]) -> str:
-    """将整数列表转换为十六进制字符串
+    """将整数列表转换为十六进制字符串 - 兼容旧API
 
     Args:
         arr: 整数列表
@@ -15,12 +31,12 @@ def array_to_hex_string(arr: List[int]) -> str:
     Returns:
         十六进制字符串
     """
-    hex_strings = [format(num, '02x') for num in arr]  # 02x 表示至少两位，不足则前面补0
-    return ''.join(hex_strings)
+    return to_hex_string(arr)
 
 
+# 保留原函数名以保持兼容性
 def bytes_to_hex_string(data: Union[bytes, bytearray]) -> str:
-    """将bytes或bytearray转换为十六进制字符串
+    """将bytes或bytearray转换为十六进制字符串 - 兼容旧API
 
     Args:
         data: bytes或bytearray对象
@@ -28,7 +44,7 @@ def bytes_to_hex_string(data: Union[bytes, bytearray]) -> str:
     Returns:
         十六进制字符串
     """
-    return ''.join([format(b, '02x') for b in data])
+    return to_hex_string(data)
 
 
 def string_to_bytes(input_string: str) -> List[int]:
@@ -45,7 +61,14 @@ def string_to_bytes(input_string: str) -> List[int]:
 
 # 保留原函数名以保持兼容性
 def string_to_hex_array(input_string: str) -> List[int]:
-    """将字符串转换为字节数组（整数列表）- 兼容旧API"""
+    """将字符串转换为字节数组（整数列表）- 兼容旧API
+
+    Args:
+        input_string: 输入字符串
+        
+    Returns:
+        整数列表，每个整数代表字符的ASCII/Unicode值
+    """
     return string_to_bytes(input_string)
 
 
@@ -78,7 +101,7 @@ def hex_to_array(hex_str: str) -> List[int]:
     bytes_array = bytearray.fromhex(hex_str)
 
     # 将字节数组转换为整数列表
-    return [int(byte) for byte in bytes_array]
+    return list(bytes_array)
 
 
 def bytes_to_int_list(data: Union[bytes, bytearray]) -> List[int]:
@@ -90,4 +113,4 @@ def bytes_to_int_list(data: Union[bytes, bytearray]) -> List[int]:
     Returns:
         整数列表
     """
-    return [b for b in data]
+    return list(data)
