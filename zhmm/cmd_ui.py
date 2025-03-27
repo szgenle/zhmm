@@ -8,7 +8,7 @@ import json
 import sm_util
 import pandas as pd  # 添加pandas库导入
 
-from zhmm.sm_data import SmData
+from zhmm.sm_data import SmData, ZhmmDict
 from zhmm.utils import array_util, file_util, string_util
 
 gl_data1 = SmData()
@@ -144,7 +144,7 @@ class CmdUI:
         print("您好，请输入您要添加的账号密码(输入用空格间隔的一组会自动分成['账号', '密码', '网站', '备注'])")
         cn_names = ['账号', '密码', '网站', '备注']
         en_names = ['userID', 'pwd', 'url', 'desc']
-        en_infos = {}
+        en_infos = {}  # 移除类型注解，因为TypedDict不能用空字典初始化
         cn_infos = {}
         for i in range(4):
             info = input("请输入%s:" % (cn_names[i])).strip()

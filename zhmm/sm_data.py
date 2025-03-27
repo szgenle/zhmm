@@ -3,9 +3,26 @@
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 import json
+from typing import TypedDict, Optional
 
 from zhmm import sm_util
 from zhmm.utils import array_util, date_util, string_util
+
+
+class ZhmmDict(TypedDict):
+    id: Optional[int | None]
+    role: Optional[str]
+    userID: str
+    pwd: str
+    phone: Optional[str]
+    email: Optional[str]
+    url: str
+    desc: str
+    utime: Optional[int]
+
+
+class ZhmmDataDict(TypedDict):
+    data: list[ZhmmDict]
 
 
 class SmData:
@@ -16,14 +33,14 @@ class SmData:
     encryptHash = ''
     suffixHash = ''
 
-    mm = {
+    mm: ZhmmDataDict = {
         'data': []
     }
 
     def __init__(self):
         return
 
-    def init(self, open_id, pwd):
+    def init(self, open_id: str, pwd: str):
         self.openId = open_id
         self.pwd = pwd
 
@@ -68,14 +85,14 @@ class SmData:
         # print(suffix)
         # return encrypt_data.decode() + suffix
 
-    def set_mm(self, user_mm_data):
+    def set_mm(self, user_mm_data: ZhmmDataDict):
         self.mm = user_mm_data
 
-    def search(self, words: str):
+    def search(self, words: str) -> list[ZhmmDict] | None:
         if not self.mm or not self.mm['data']:
             return None
 
-        find_data = []
+        find_data: list[ZhmmDict] = []
         arr_words = words.split()
         for word in arr_words:
             for data in self.mm['data']:
@@ -85,24 +102,23 @@ class SmData:
                     find_data.append(data)
                 elif 'userID' in data and word in data['userID']:
                     find_data.append(data)
-                elif 'phone' in data and word in data['phone']:
+                elif 'phone' in data and data['phone'] and word in data['phone']:
                     find_data.append(data)
-                elif 'email' in data and word in data['email']:
+                elif 'email' in data and data['email'] and word in data['email']:
                     find_data.append(data)
         return find_data
 
-    def add(self, info, file_path):
+    def add(self, info: ZhmmDict, file_path: str) -> bool:
         self.mm['data'].append(info)
         if 'role' not in info:
             info['role'] = '个人'
         if 'id' not in info:
             info['id'] = date_util.timestamp_int()
-        if 'ctime' not in info:
+        if 'utime' not in info:
             info['utime'] = date_util.timestamp_int()
         return self.save(file_path)
-        pass
 
-    def save(self, file_path):
+    def save(self, file_path: str) -> bool:
         data = self.encrypt(json.dumps(self.mm))
         data_size = len(data)
         with open(file_path, 'w') as file:
