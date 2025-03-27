@@ -48,15 +48,3 @@ def hex_to_array(hex_str: str) -> List[int]:
 
     # 将字节数组转换为整数列表
     return list(bytes_array)
-
-
-def bytes_to_int_list(data: Union[bytes, bytearray]) -> List[int]:
-    """将bytes或bytearray转换为整数列表
-
-    Args:
-        data: bytes或bytearray对象
-
-    Returns:
-        整数列表
-    """
-    return list(data)
