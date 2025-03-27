@@ -3,7 +3,7 @@
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 import json
-import sm_ex
+import sm_util
 from zhmm.utils import array, date, string
 
 
@@ -27,7 +27,7 @@ class GlData:
         self.openId = open_id
         self.pwd = pwd
 
-        self.pwdHash = sm_ex.hash_by_sm3(array.string_to_hex_array(self.pwd), self.openId)
+        self.pwdHash = sm_util.hash_by_sm3(array.string_to_hex_array(self.pwd), self.openId)
         self.encryptHash = self.pwdHash[0:32]
         self.suffixHash = self.pwdHash[32:64]
 
@@ -43,7 +43,7 @@ class GlData:
         suffix = mm_data[end_index:mm_data_len]
         mm_data = mm_data[0:end_index]
 
-        hash_en_data = sm_ex.hash_by_sm3(array.string_to_hex_array(mm_data), self.suffixHash)
+        hash_en_data = sm_util.hash_by_sm3(array.string_to_hex_array(mm_data), self.suffixHash)
         if hash_en_data == suffix:
             return mm_data
 
@@ -53,16 +53,16 @@ class GlData:
             print("EncryptDataVerifyFail")
             return
 
-        decrypt_data = sm_ex.decrypt_by_sm4(encrypt_mmdata, self.encryptHash) # 解密，cbc 模式
+        decrypt_data = sm_util.decrypt_by_sm4(encrypt_mmdata, self.encryptHash) # 解密，cbc 模式
         return {'res': decrypt_data.decode()}
 
     def encrypt(self, data):
         # print('data', data)
-        encrypt_data = sm_ex.encrypt_by_sm4(data.encode('utf-8'), self.encryptHash)
+        encrypt_data = sm_util.encrypt_by_sm4(data.encode('utf-8'), self.encryptHash)
         # print('encrypt_data', encrypt_data)
 
         list_data = string.array_to_hex_string(encrypt_data)
-        suffix = sm_ex.hash_by_sm3(array.string_to_hex_array(list_data), self.suffixHash)
+        suffix = sm_util.hash_by_sm3(array.string_to_hex_array(list_data), self.suffixHash)
         # print('suffix', suffix)
         return list_data + suffix
         # print(suffix)

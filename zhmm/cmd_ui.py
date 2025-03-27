@@ -5,7 +5,7 @@
 # @LastEditTime: 2024-07-02
 import time
 import json
-import sm_ex
+import sm_util
 import pandas as pd  # 添加pandas库导入
 
 from gl_data import GlData
@@ -187,7 +187,7 @@ class CmdUI:
     def run(self, file_path, open_id, password):
     
         pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
-        pwd = sm_ex.hash_by_sm3(array.string_to_hex_array(pwd_suffix))
+        pwd = sm_util.hash_by_sm3(array.string_to_hex_array(pwd_suffix))
         gl_data.init(open_id, pwd)
     
         data = file_sys.get_file_content(file_path)
