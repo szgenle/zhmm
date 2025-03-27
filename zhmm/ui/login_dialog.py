@@ -92,7 +92,7 @@ class LoginDialog(Dialog):
         try:
             # 处理密码，与cmd_ui.py中相同的逻辑
             pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
-            pwd = sm_util.hash_by_sm3(data_conversion.string_to_bytes(pwd_suffix))
+            pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix))
 
             gl_data1 = sm_data.SmData()
             gl_data1.init(openid, pwd)

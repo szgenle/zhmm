@@ -25,12 +25,12 @@ def hash_by_sm3(input_bytes: List[int], key: str = '9gx^1-z:ixYWe(@JAJKFu1*k@913
         哈希字符串
     """
     # 将密钥转换为哈希值
-    key_hash = sm3.sm3_hash(data_conversion.string_to_bytes(key))
+    key_hash = sm3.sm3_hash(data_conversion.chars_to_bytes(key))
     key_array = data_conversion.hex_to_array(key_hash)
 
     if len(key_array) > block_len:
         print("len(key_array) > block_len")
-        key_array = data_conversion.string_to_bytes(sm3.sm3_hash(key_array))
+        key_array = data_conversion.chars_to_bytes(sm3.sm3_hash(key_array))
 
     # 确保密钥长度为block_len
     while len(key_array) < block_len:

@@ -18,28 +18,16 @@ def to_hex_string(data: Union[List[int], bytes, bytearray]) -> str:
     return ''.join([format(b, '02x') for b in data])
 
 
-def string_to_bytes(input_string: str) -> List[int]:
-    """将字符串转换为字节数组（整数列表）
+def chars_to_bytes(chars: Union[str, List[str]]) -> List[int]:
+    """将字符串或字符列表转换为字节数组（整数列表）
 
     Args:
-        input_string: 输入字符串
+        chars: 输入字符串或字符列表
 
     Returns:
         整数列表，每个整数代表字符的ASCII/Unicode值
     """
-    return [ord(char) for char in input_string]
-
-
-def char_array_to_hex_array(char_array: List[str]) -> List[int]:
-    """将字符列表转换为字节数组
-
-    Args:
-        char_array: 字符列表
-
-    Returns:
-        整数列表，每个整数代表字符的ASCII/Unicode值
-    """
-    return [ord(char) for char in char_array]
+    return [ord(char) for char in chars]
 
 
 def hex_to_array(hex_str: str) -> List[int]:

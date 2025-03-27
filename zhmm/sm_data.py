@@ -52,7 +52,7 @@ class SmData:
         self.pwd = pwd
 
         # 计算密码哈希
-        self.pwdHash = sm_util.hash_by_sm3(data_conversion.string_to_bytes(self.pwd), self.openId)
+        self.pwdHash = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(self.pwd), self.openId)
         self.encryptHash = self.pwdHash[0:32]  # 前32位用于加密
         self.suffixHash = self.pwdHash[32:64]  # 后32位用于验证
 
@@ -79,7 +79,7 @@ class SmData:
         data_part = mm_data[0:end_index]  # 前面部分是实际数据
 
         # 验证数据完整性
-        hash_en_data = sm_util.hash_by_sm3(data_conversion.string_to_bytes(data_part), self.suffixHash)
+        hash_en_data = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(data_part), self.suffixHash)
         if hash_en_data == suffix:
             return data_part
         
@@ -122,7 +122,7 @@ class SmData:
         hex_data = data_conversion.to_hex_string(encrypt_data)
         
         # 计算验证哈希
-        suffix = sm_util.hash_by_sm3(data_conversion.string_to_bytes(hex_data), self.suffixHash)
+        suffix = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(hex_data), self.suffixHash)
         
         # 返回加密数据和验证哈希的组合
         return hex_data + suffix
