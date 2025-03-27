@@ -144,7 +144,7 @@ class CmdUI:
         print("您好，请输入您要添加的账号密码(输入用空格间隔的一组会自动分成['账号', '密码', '网站', '备注'])")
         cn_names = ['账号', '密码', '网站', '备注']
         en_names = ['userID', 'pwd', 'url', 'desc']
-        en_infos = {}  # 移除类型注解，因为TypedDict不能用空字典初始化
+        en_infos: dict = {}  # 使用普通dict初始化
         cn_infos = {}
         for i in range(4):
             info = input("请输入%s:" % (cn_names[i])).strip()
@@ -163,7 +163,19 @@ class CmdUI:
             file_path = self.args.input
             if self.args.out:
                 file_path = self.args.out
-            if gl_data1.add(en_infos, file_path):
+            # 将普通dict转换为ZhmmDict类型
+            zhmmdict_info: ZhmmDict = {
+                'id': None,
+                'role': '个人',
+                'userID': en_infos.get('userID', ''),
+                'pwd': en_infos.get('pwd', ''),
+                'phone': None,
+                'email': None,
+                'url': en_infos.get('url', ''),
+                'desc': en_infos.get('desc', ''),
+                'utime': None
+            }
+            if gl_data1.add(zhmmdict_info, file_path):
                 print("添加成功!")
 
     def user_option(self):
