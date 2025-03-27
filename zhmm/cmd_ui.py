@@ -9,7 +9,7 @@ import sm_ex
 import pandas as pd  # 添加pandas库导入
 
 from gl_data import GlData
-from zhmm.utils import array, file_sys, string_ex
+from zhmm.utils import array, file_sys, string
 
 gl_data = GlData()
 
@@ -18,7 +18,7 @@ def print_list(data):
     # print(data)
     # 获取列的最大宽度（可选，用于对齐）
     def str_len(item):
-        cnt = string_ex.count_unicode_chars(item)
+        cnt = string.count_unicode_chars(item)
         if cnt == 0:
             return len(str(item))
         else:
@@ -28,7 +28,7 @@ def print_list(data):
     # print(max_widths)
 
     def item_width(item, width):
-        cnt = string_ex.count_unicode_chars(item)
+        cnt = string.count_unicode_chars(item)
         if cnt > 0:
             dc = width - len(item)
             if dc > cnt:
@@ -61,7 +61,7 @@ def print_info(infos):
         for key in en_heads:
             if key not in info:
                 values.append('')
-            elif not string_ex.is_string(info[key]):
+            elif not string.is_string(info[key]):
                 values.append(str(info[key]))
             else:
                 values.append(info[key])

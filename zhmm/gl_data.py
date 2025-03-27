@@ -4,7 +4,7 @@
 # @LastEditTime: 2024-07-02
 import json
 import sm_ex
-from zhmm.utils import array, date, string_ex
+from zhmm.utils import array, date, string
 
 
 class GlData:
@@ -61,7 +61,7 @@ class GlData:
         encrypt_data = sm_ex.encrypt_by_sm4(data.encode('utf-8'), self.encryptHash)
         # print('encrypt_data', encrypt_data)
 
-        list_data = string_ex.array_to_hex_string(encrypt_data)
+        list_data = string.array_to_hex_string(encrypt_data)
         suffix = sm_ex.hash_by_sm3(array.string_to_hex_array(list_data), self.suffixHash)
         # print('suffix', suffix)
         return list_data + suffix
