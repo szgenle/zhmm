@@ -73,7 +73,7 @@ def get_writable_dir():
         data_dir = QStandardPaths.writableLocation(
             QStandardPaths.StandardLocation.AppDataLocation
         )
-        data_dir = os.path.join(data_dir, 'QiJie')
+        data_dir = os.path.join(data_dir, 'zhmm')
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
     return data_dir
