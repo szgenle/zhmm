@@ -5,7 +5,7 @@
 import json
 
 from zhmm import sm_util
-from zhmm.utils import array, date, string
+from zhmm.utils import array, date_util, string
 
 
 class GlData:
@@ -96,9 +96,9 @@ class GlData:
         if 'role' not in info:
             info['role'] = '个人'
         if 'id' not in info:
-            info['id'] = date.timestamp_int()
+            info['id'] = date_util.timestamp_int()
         if 'ctime' not in info:
-            info['utime'] = date.timestamp_int()
+            info['utime'] = date_util.timestamp_int()
         return self.save(file_path)
         pass
 
