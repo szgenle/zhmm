@@ -30,13 +30,11 @@ class CmdUI:
         infos: list[ZhmmDict] | None = self.sm_data.search(search_word)
         if infos and len(infos) > 0:
             print("您好，查找到[%s]的相关信息：" % search_word)
-            required_fields = ['role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc']
-            cn_headers = [SmData.field_mapping[field] for field in required_fields]
             # 将 ZhmmDict 转换为标准字典类型
             TablePrinter.print_info(
                 [dict(info) for info in infos],  # 添加类型转换
-                required_fields, 
-                cn_headers
+                SmData.keys,
+                SmData.heads
             )
         else:
             print("您好，没有查找到[%s]的相关信息：" % search_word)
@@ -46,7 +44,7 @@ class CmdUI:
         print("您好，请输入您要添加的账号密码(输入用空格间隔的一组会自动分成['账号', '密码', '网站', '备注'])")
         en_names = ['userID', 'pwd', 'url', 'desc']
         cn_names = [SmData.field_mapping[field] for field in en_names]
-        
+
         en_infos, cn_infos = self.collect_account_info(en_names, cn_names)
         self.confirm_and_save(en_infos, cn_infos)
 
