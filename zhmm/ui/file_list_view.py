@@ -2,7 +2,7 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -46,6 +46,7 @@ class FileListWidget(QWidget):
         button_layout.addWidget(self.select_button)
         button_layout.addStretch()
         main_layout.addLayout(button_layout)
+        self.load_saved_files()
 
     def select_files(self):
         """选择文件并更新表格"""
@@ -53,9 +54,9 @@ class FileListWidget(QWidget):
         if file_path:
             self.show_login_dialog(file_path)
         
-    def show_login_dialog(self, file_path):
+    def show_login_dialog(self, file_path: str, openid: str | None = None):
         """显示登录对话框"""
-        login_dialog = LoginDialog(file_path)
+        login_dialog = LoginDialog(file_path, openid)
         login_dialog.login_success.connect(lambda info: self.on_login_success(info))
         login_dialog.exec()
 
