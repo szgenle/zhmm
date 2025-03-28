@@ -209,10 +209,15 @@ class PasswordManagerWidget(QWidget):
         add_button = QPushButton("添加")
         add_button.clicked.connect(self.add_password)
 
+        # 新增删除按钮
+        self.delete_button = QPushButton("删除")
+        self.delete_button.clicked.connect(self.delete_selected_password)
+        
         export_button = QPushButton("导出")
         export_button.clicked.connect(self.export_passwords)
 
         button_layout.addWidget(add_button)
+        button_layout.addWidget(self.delete_button)  # 添加删除按钮
         button_layout.addWidget(export_button)
 
         main_layout.addLayout(button_layout)
@@ -260,3 +265,37 @@ class PasswordManagerWidget(QWidget):
     def refresh_data(self):
         """刷新数据"""
         self.table_model.setZhData(self.gl_data.mm['data'])
+
+    def delete_selected_password(self):
+        """删除选中的密码项"""
+        selected = self.table_view.selectionModel().selectedRows()  # type: ignore
+        if not selected:
+            QMessageBox.warning(self, "警告", "请先选择要删除的项目")
+            return
+
+        # 获取代理模型索引并转换为源模型索引
+        proxy_index = selected[0]
+        source_index = self.proxy_model.mapToSource(proxy_index)
+        row = source_index.row()
+
+        try:
+            # 确认删除
+            reply = QMessageBox.question(
+                self, "确认删除", 
+                "确定要删除该密码记录吗？此操作不可恢复！",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                # 从数据源中删除
+                deleted_item = self.gl_data.mm['data'].pop(row)
+                # 更新表格
+                self.table_model.setZhData(self.gl_data.mm['data'])
+                # 保存更改
+                if self.gl_data.save('zhmm.gl'):
+                    QMessageBox.information(self, "成功", "删除成功")
+                else:
+                    self.gl_data.mm['data'].insert(row, deleted_item)  # 回滚
+                    QMessageBox.critical(self, "错误", "删除失败，数据保存错误")
+        except Exception as e:
+            logger.error(f"删除密码出错: {str(e)}")
+            QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
