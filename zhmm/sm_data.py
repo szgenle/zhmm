@@ -8,7 +8,6 @@ from typing import TypedDict, Optional
 from zhmm import sm_util
 from zhmm.utils import data_conversion, date_util
 
-
 class ZhmmDict(TypedDict):
     id: Optional[int | None]
     role: Optional[str]
@@ -26,6 +25,19 @@ class ZhmmDataDict(TypedDict):
 
 
 class SmData:
+
+    field_mapping = {
+        'id': 'ID',
+        'role': '类别',
+        'userID': '账号',
+        'pwd': '密码',
+        'phone': '手机',
+        'email': '邮箱',
+        'url': '网站',
+        'desc': '备注',
+        'utime': '更新时间'
+    }
+    
     pwd = ''
     openId = ''
 
@@ -165,3 +177,5 @@ class SmData:
         with open(file_path, 'w') as file:
             write_size = file.write(data)
             return data_size == write_size
+
+    

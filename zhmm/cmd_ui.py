@@ -53,23 +53,23 @@ def print_list(data):
 
 
 def print_info(infos):
+    
+    # 使用field_mapping重构字段映射
+    required_fields = ['role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc']
+    cn_headers = [SmData.field_mapping[field] for field in required_fields]
+
     arrs = []
-    cn_heads = ['类别', '账号', '密码', '手机', '邮箱', '网站', '备注']
-    en_heads = ['role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc']
-    arrs.append(cn_heads)
+    arrs.append(cn_headers)
+    
     for info in infos:
         values = []
-        for key in en_heads:
-            if key not in info:
-                values.append('')
-            elif not string_util.is_string(info[key]):
-                values.append(str(info[key]))
-            else:
-                values.append(info[key])
+        for field in required_fields:
+            # 统一使用字段映射获取值
+            value = info.get(field, '')
+            if not isinstance(value, str):
+                value = str(value)
+            values.append(value)
         arrs.append(values)
-        # arrs.append([item for item in original_list if item and item != ""])
-        # print([item for item in original_list if item and item != ""])
-    # print(arrs)
     print_list(arrs)
     pass
 
