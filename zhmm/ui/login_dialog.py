@@ -2,6 +2,7 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
+import json
 from typing import TypedDict, Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
@@ -121,6 +122,9 @@ class LoginDialog(Dialog):
                 if not decrypt_result or not decrypt_result['res']:
                     QMessageBox.critical(self, "错误", "密码不正确")
                     return
+
+                user_mm_data = json.loads(decrypt_result['res'])
+                smdata.set_mm(user_mm_data)
 
                 # 登录成功
                 logger.info(f"用户 {openid} 登录成功")
