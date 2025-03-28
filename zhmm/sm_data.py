@@ -8,6 +8,7 @@ from typing import TypedDict, Optional
 from zhmm import sm_util
 from zhmm.utils import data_conversion, date_util
 
+
 class ZhmmDict(TypedDict):
     id: Optional[int | None]
     role: Optional[str]
@@ -143,20 +144,8 @@ class SmData:
 
     def set_mm(self, user_mm_data: ZhmmDataDict):
         self.mm = user_mm_data
-        self.fix_id_is_None()
 
-    def fix_id_is_None(self):
-        """
-        修复数据中的id字段为None的情况
-        """
-        if not self.fix():
-            # 使用threading.Timer替代PyQt的QTimer
-            import threading
-            timer = threading.Timer(1.0, self.fix_id_is_None)
-            timer.daemon = True  # 设置为守护线程防止程序无法退出
-            timer.start()
-
-    def fix(self) -> bool:
+    def fix_id_is_None(self) -> bool:
         """
         处理历史遗留的字段值问题
         查找所有数据，把id不是数字的设置为时间戳（秒），
@@ -198,15 +187,25 @@ class SmData:
                     find_data.append(data)
         return find_data
 
+    def delete(self, id: int) -> bool:
+        if not self.mm or not self.mm['data']:
+            return False
+        for data in self.mm['data']:
+            if 'id' in data and data['id'] == id:
+                self.mm['data'].remove(data)
+                return True
+        return False
+
     def add(self, info: ZhmmDict, file_path: str) -> bool:
         self.mm['data'].append(info)
-        if 'role' not in info:
+        if 'role' not in info or not info['role']:
             info['role'] = '个人'
-        if 'id' not in info:
+        if 'id' not in info or not info['id']:
             info['id'] = date_util.timestamp_int()
-        if 'utime' not in info:
+        if 'utime' not in info or not info['utime']:
             info['utime'] = date_util.timestamp_int()
         return self.save(file_path)
+
 
     def save(self, file_path: str) -> bool:
         data = self.encrypt(json.dumps(self.mm))

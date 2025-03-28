@@ -9,7 +9,7 @@ import json
 import sm_util
 from zhmm.data_exporter import DataExporter
 
-from zhmm.sm_data import SmData, ZhmmDataDict, ZhmmDict
+from zhmm.sm_data import SmData, ZhmmDict
 from zhmm.utils import file_util, data_conversion, date_util
 from zhmm.utils.table_printer import TablePrinter
 
@@ -17,6 +17,7 @@ from zhmm.utils.table_printer import TablePrinter
 class CmdUI:
 
     sm_data = SmData()
+    fixed_id_is_None = False
 
     def __init__(self, args):
         self.args = args
@@ -94,10 +95,16 @@ class CmdUI:
             if self.sm_data.add(dict_info, file_path):
                 print("添加成功!")
 
+    def save(self):
+        """保存数据到文件"""
+        file_path = self.args.out if self.args.out else self.args.input
+        self.sm_data.save(file_path)
+        print("保存成功!")
+
     def user_option(self):
         time.sleep(0.3)
         try:
-            op = input("新增[n/N]查找[f/F]导出[e/E]退出[q/Q]:").strip().lower()
+            op = input("新增[n/N]查找[f/F]导出[e/E]删除[d/D]退出[q/Q]:").strip().lower()
         except KeyboardInterrupt:
             print('再见')
             exit(0)
@@ -111,6 +118,8 @@ class CmdUI:
             self.args.find = True
         elif op == 'e':
             self.args.export = True
+        elif op == 'd':
+            self.args.delete = True
         return 0
 
     def run(self, file_path, open_id, password):
@@ -128,6 +137,7 @@ class CmdUI:
                 return False
             user_mm_data = json.loads(decrypt_result['res'])
             self.sm_data.set_mm(user_mm_data)
+            self.fix_id_is_None()
 
         while True:
             if self.args.search:
@@ -145,5 +155,30 @@ class CmdUI:
                 if file_path and os.path.exists(file_path):
                     file_path = os.path.join(file_path, 'zhmm.xlsx')
                     DataExporter.export_xlsx(file_path, self.sm_data.mm['data'])
+            elif self.args.delete:
+                self.args.delete = False
+                try:
+                    ids = input("请输入要删除的ID(多个ID用空格隔开):").strip()
+                    zh_id = int(ids)
+                    self.sm_data.delete(zh_id)
+                    self.save()
+                except ValueError:
+                    print("错误：请输入有效的数字ID")
+
             if self.user_option() < 0:
                 break
+
+    def fix_id_is_None(self):
+        """
+        修复数据中的id字段为None的情况
+        """
+        if not self.sm_data.fix_id_is_None():
+            self.fixed_id_is_None = True
+            # 使用threading.Timer替代PyQt的QTimer
+            import threading
+            timer = threading.Timer(1.0, self.fix_id_is_None)
+            timer.daemon = True  # 设置为守护线程防止程序无法退出
+            timer.start()
+        else:
+            if self.fixed_id_is_None:
+                self.save()

@@ -18,7 +18,8 @@ def main():
     parser.add_argument('--find', '-f', action='store_true', help='查找')
     parser.add_argument('--new', '-n', action='store_true', help='增加')
     parser.add_argument('--modify', '-m', action='store_true', help='修改')
-    parser.add_argument('--export', '-e', action='store_true', help='导出')
+    parser.add_argument('--export', '-e', type=str, help='导出的文件路径')
+    parser.add_argument('--delete', '-d', type=str, help='要删除记录的ID')
 
     user_input_args = parser.parse_args()
     gl_ui = CmdUI(user_input_args)
