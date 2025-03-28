@@ -66,22 +66,22 @@ class MainWindow(QMainWindow):
             del self.data_manager_widget
             self.data_manager_widget = None
 
-    def show_data_ui(self, sm_data):
+    def show_data_ui(self, info: ZhmmFileInfo):
         self.hide_data_ui()
         # 创建数据管理界面
-        self.data_manager_widget = PasswordManagerWidget(sm_data)
+        self.data_manager_widget = PasswordManagerWidget(info)
         self.setCentralWidget(self.data_manager_widget)
         # 隐藏欢迎界面
         self.hide_welcome_ui()
 
     def on_login_success(self, info: ZhmmFileInfo):
         """登录成功后的处理"""
-        if not info['sm_data']:
+        if not info or not info['sm_data']:
             return
         # 更新最后活动时间
         self.last_active_time = datetime.now()
         logger.info("登录成功，更新活动时间")
-        self.show_data_ui(info['sm_data'])
+        self.show_data_ui(info)
 
     def check_inactivity(self):
         """检查非活动时间"""

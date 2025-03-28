@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QFrame, QFormLayout, QFileDialog)
 
 from zhmm.data_exporter import DataExporter
+from zhmm.sm_data import SmData
+from zhmm.ui.login_dialog import ZhmmFileInfo
 from zhmm.utils import date_util
 from zhmm.utils.log import logger
 
@@ -154,9 +156,13 @@ class AddPasswordDialog(QDialog):
 class PasswordManagerWidget(QWidget):
     """密码管理界面"""
 
-    def __init__(self, gl_data, parent=None):
+    def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
-        self.gl_data = gl_data
+        self.info = info
+        if 'sm_data' not in info or not info['sm_data']:
+            self.gl_data = SmData()
+        else:
+            self.gl_data = info['sm_data']
         self.setup_ui()
 
     def setup_ui(self):
@@ -246,8 +252,8 @@ class PasswordManagerWidget(QWidget):
         # 添加到数据模型
         try:
             # 使用gl_data添加数据
-            file_path = 'zhmm.gl'  # 默认文件路径
-            if self.gl_data.add(password_data, file_path):
+            self.gl_data.add(password_data)
+            if self.gl_data.save(self.info['file_path']):
                 # 更新表格模型
                 self.table_model.setZhData(self.gl_data.mm['data'])
                 QMessageBox.information(dialog, "成功", "账号密码添加成功")
@@ -291,7 +297,7 @@ class PasswordManagerWidget(QWidget):
                 # 更新表格
                 self.table_model.setZhData(self.gl_data.mm['data'])
                 # 保存更改
-                if self.gl_data.save('zhmm.gl'):
+                if self.gl_data.save(self.info['file_path']):
                     QMessageBox.information(self, "成功", "删除成功")
                 else:
                     self.gl_data.mm['data'].insert(row, deleted_item)  # 回滚

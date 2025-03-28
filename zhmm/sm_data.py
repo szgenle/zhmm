@@ -196,7 +196,7 @@ class SmData:
                 return True
         return False
 
-    def add(self, info: ZhmmDict, file_path: str) -> bool:
+    def add(self, info: ZhmmDict):
         self.mm['data'].append(info)
         if 'role' not in info or not info['role']:
             info['role'] = '个人'
@@ -204,8 +204,6 @@ class SmData:
             info['id'] = date_util.timestamp_int()
         if 'utime' not in info or not info['utime']:
             info['utime'] = date_util.timestamp_int()
-        return self.save(file_path)
-
 
     def save(self, file_path: str) -> bool:
         data = self.encrypt(json.dumps(self.mm))

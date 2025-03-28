@@ -90,16 +90,15 @@ class CmdUI:
         """确认并保存账号信息"""
         print("新增账号信息：", cn_infos)
         if input("确认增加[y/n]？: ").strip().upper() == 'Y':
-            file_path = self.args.out if self.args.out else self.args.input
             dict_info: ZhmmDict = self.build_zhmm_dict(en_infos)
-            if self.sm_data.add(dict_info, file_path):
-                print("添加成功!")
+            self.sm_data.add(dict_info)
+            self.save()
 
     def save(self):
         """保存数据到文件"""
         file_path = self.args.out if self.args.out else self.args.input
-        self.sm_data.save(file_path)
-        print("保存成功!")
+        if self.sm_data.save(file_path):
+            print("添加成功!")
 
     def user_option(self):
         time.sleep(0.3)
