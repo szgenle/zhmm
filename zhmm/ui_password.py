@@ -9,7 +9,7 @@ from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QTableView, QHeaderView,
                              QMessageBox, QDialog, QGridLayout, QComboBox,
-                             QFrame, QFormLayout, QFileDialog)
+                             QFrame, QFormLayout, QFileDialog, QCheckBox)
 
 from zhmm.data_exporter import DataExporter
 from zhmm.sm_data import SmData
@@ -198,8 +198,13 @@ class PasswordManagerWidget(QWidget):
         self.search_input.textChanged.connect(self.filter_passwords)
         QTimer.singleShot(0, self.search_input.setFocus)  # 延迟聚焦到密码输入框
 
+        # 在搜索区域添加复选框
+        self.show_all_checkbox = QCheckBox("显示全部数据")
+        self.show_all_checkbox.toggled.connect(self.toggle_show_all)
+        
         search_layout.addWidget(search_label)
-        search_layout.addWidget(self.search_input, 1)  # 1表示伸展因子
+        search_layout.addWidget(self.search_input, 1)
+        search_layout.addWidget(self.show_all_checkbox)  # 新增复选框
 
         main_layout.addLayout(search_layout)
 
@@ -231,8 +236,16 @@ class PasswordManagerWidget(QWidget):
     def filter_passwords(self):
         """过滤密码列表"""
         search_text = self.search_input.text()
-        # 修改过滤逻辑：空搜索时不显示任何数据
-        self.proxy_model.setFilterWildcard(f"*{search_text}*" if search_text else "")
+        if self.show_all_checkbox.isChecked() and not search_text:
+            self.proxy_model.setFilterRegularExpression("")  # 显示所有数据
+        else:
+            self.proxy_model.setFilterWildcard(f"*{search_text}*" if search_text else "")
+
+    def toggle_show_all(self, checked):
+        """复选框状态切换处理"""
+        self.proxy_model.show_all_data = checked
+        # 触发过滤刷新
+        self.filter_passwords()
 
     def add_password(self):
         """添加密码"""
@@ -306,13 +319,19 @@ class PasswordManagerWidget(QWidget):
             logger.error(f"删除密码出错: {str(e)}")
             QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
 
-# 在文件顶部添加导入
-from PyQt6.QtCore import QRegularExpression
 
-# 在PasswordTableModel类定义后添加自定义代理模型
 class CustomProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.show_all_data = False  # 新增控制属性
+
     def filterAcceptsRow(self, source_row, source_parent):
-        """空搜索时拒绝所有行，有搜索时使用通配符匹配"""
+        """根据复选框状态调整过滤逻辑"""
+        if self.show_all_data:
+            return super().filterAcceptsRow(source_row, source_parent)
         if not self.filterRegularExpression().pattern():
             return False
         return super().filterAcceptsRow(source_row, source_parent)
+
+
+
