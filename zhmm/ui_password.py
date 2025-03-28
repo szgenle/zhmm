@@ -179,12 +179,8 @@ class PasswordManagerWidget(QWidget):
         self.search_input.textChanged.connect(self.filter_passwords)
         QTimer.singleShot(0, self.search_input.setFocus)  # 延迟聚焦到密码输入框
 
-        search_button = QPushButton("搜索")
-        search_button.clicked.connect(self.filter_passwords)
-
         search_layout.addWidget(search_label)
         search_layout.addWidget(self.search_input, 1)  # 1表示伸展因子
-        search_layout.addWidget(search_button)
 
         main_layout.addLayout(search_layout)
 
