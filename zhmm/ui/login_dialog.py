@@ -23,8 +23,6 @@ class LoginDialog(Dialog):
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint)
         self.setModal(True)
 
-        self.file_path = file_path
-
         # 创建布局
         layout = QVBoxLayout()
 
@@ -67,7 +65,7 @@ class LoginDialog(Dialog):
 
         # 登录按钮
         self.login_button = QPushButton("登录")
-        self.login_button.clicked.connect(self.verify_login)
+        self.login_button.clicked.connect(lambda: self.verify_login(file_path))
         button_layout.addWidget(self.login_button)
 
         # 取消按钮
@@ -79,7 +77,7 @@ class LoginDialog(Dialog):
 
         self.setLayout(layout)
 
-    def verify_login(self):
+    def verify_login(self, file_path: str):
         """验证登录信息"""
         openid = self.openid_input.text().strip()
         password = self.password_input.text().strip()
@@ -102,7 +100,6 @@ class LoginDialog(Dialog):
             gl_data1.init(openid, pwd)
 
             # 尝试读取并解密文件
-            file_path = 'zhmm.gl'  # 默认文件路径
             data = file_util.get_file_content(file_path)
 
             if data:
@@ -114,7 +111,7 @@ class LoginDialog(Dialog):
 
                 # 登录成功
                 logger.info(f"用户 {openid} 登录成功")
-                self.login_success.emit({self.file_path, openid})
+                self.login_success.emit({file_path, openid})
                 self.accept()
             else:
                 QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
