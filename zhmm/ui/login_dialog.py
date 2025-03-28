@@ -2,9 +2,9 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
-from PyQt6.QtCore import Qt, pyqtSignal, QSettings
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QGridLayout, QCheckBox)
+from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QGridLayout)
 
 from zhmm import sm_util, sm_data
 from zhmm.qt_components.dialog import Dialog
@@ -14,9 +14,9 @@ from zhmm.utils.log import logger
 
 class LoginDialog(Dialog):
     """登录对话框"""
-    login_success = pyqtSignal()  # 登录成功信号
+    login_success = pyqtSignal(dict)  # 登录成功信号
 
-    def __init__(self, file_path: str, parent=None):
+    def __init__(self, file_path: str, openid: str = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
@@ -24,9 +24,6 @@ class LoginDialog(Dialog):
         self.setModal(True)
 
         self.file_path = file_path
-
-        # 读取存储的OpenID
-        self.settings = QSettings("MyCompany", "MyApp")
 
         # 创建布局
         layout = QVBoxLayout()
@@ -49,9 +46,8 @@ class LoginDialog(Dialog):
         self.openid_input.setPlaceholderText("请输入微信小程序中显示的OpenId")
         form_layout.addWidget(openid_label, 0, 0)
         form_layout.addWidget(self.openid_input, 0, 1)
-        saved_openid = self.settings.value(self.file_path, "", type=str)
-        if saved_openid != "":
-            self.openid_input.setText(saved_openid)
+        if openid:
+            self.openid_input.setText(openid)
 
         # 密码输入
         password_label = QLabel("密码:")
@@ -116,10 +112,9 @@ class LoginDialog(Dialog):
                     QMessageBox.critical(self, "错误", "密码不正确")
                     return
 
-                self.settings.setValue(self.file_path, openid)
                 # 登录成功
                 logger.info(f"用户 {openid} 登录成功")
-                self.login_success.emit()
+                self.login_success.emit({self.file_path, openid})
                 self.accept()
             else:
                 QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
