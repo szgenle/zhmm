@@ -168,6 +168,7 @@ class PasswordManagerWidget(QWidget):
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("输入关键字搜索账号、网站、备注等")
         self.search_input.textChanged.connect(self.filter_passwords)
+        self.search_input.setFocus()
 
         search_button = QPushButton("搜索")
         search_button.clicked.connect(self.filter_passwords)
