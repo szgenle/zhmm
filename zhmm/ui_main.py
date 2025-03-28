@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (QApplication, QMainWindow)
 
+from zhmm.ui.data_manager_widget import DataManagerWidget
 from zhmm.ui.login_dialog import LoginDialog
 from zhmm.ui.welcome_widget import WelcomeWidget
 from zhmm.utils.log import logger
@@ -30,7 +31,7 @@ class MainWindow(QMainWindow):
         self.inactivity_timer.start(60000)  # 60000毫秒 = 1分钟
 
         # 创建欢迎界面
-        self.setup_welcome_ui()
+        self.welcome_widget = self.setup_welcome_ui()
 
         # 首次启动时显示登录窗口
         QTimer.singleShot(500, self.show_login_dialog)
@@ -40,12 +41,14 @@ class MainWindow(QMainWindow):
         welcome_widget = WelcomeWidget(self)
         welcome_widget.login_button.clicked.connect(self.show_login_dialog)
         self.setCentralWidget(welcome_widget)
+        return welcome_widget
         
     def show_login_dialog(self):
-        """显示登录对话框"""
+        """显示登录对话框，同时显示欢迎界面"""
+        self.welcome_widget.show()
         logger.info('show_login_dialog')
         login_dialog = LoginDialog(self)
-        # login_dialog.login_success.connect(self.on_login_success)
+        login_dialog.login_success.connect(self.on_login_success)
         login_dialog.exec()
 
     def on_login_success(self):
@@ -53,6 +56,11 @@ class MainWindow(QMainWindow):
         # 更新最后活动时间
         self.last_active_time = datetime.now()
         logger.info("登录成功，更新活动时间")
+        # 创建数据管理界面
+        self.data_manager = DataManagerWidget()
+        self.setCentralWidget(self.data_manager)
+        # 隐藏欢迎界面
+        self.welcome_widget.hide()
 
     def check_inactivity(self):
         """检查非活动时间"""
