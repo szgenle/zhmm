@@ -16,7 +16,7 @@ class LoginDialog(Dialog):
     """登录对话框"""
     login_success = pyqtSignal(dict)  # 登录成功信号
 
-    def __init__(self, file_path: str, openid: str = None, parent=None):
+    def __init__(self, file_path: str, openid: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
