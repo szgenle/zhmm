@@ -4,7 +4,7 @@
 # @LastEditTime: 2024-07-03
 from typing import TypedDict, Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QGridLayout)
 
@@ -53,18 +53,22 @@ class LoginDialog(Dialog):
         self.openid_input.setPlaceholderText("请输入微信小程序中显示的OpenId")
         form_layout.addWidget(openid_label, 0, 0)
         form_layout.addWidget(self.openid_input, 0, 1)
-        if openid:
-            self.openid_input.setText(openid)
 
         # 密码输入
         password_label = QLabel("密码:")
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setPlaceholderText("请输入密码")
+
         form_layout.addWidget(password_label, 1, 0)
         form_layout.addWidget(self.password_input, 1, 1)
 
         layout.addLayout(form_layout)
+        
+        if openid:
+            self.openid_input.setText(openid)
+            QTimer.singleShot(0, self.password_input.setFocus)  # 延迟聚焦到密码输入框
+            
 
         # 添加一些间距
         layout.addSpacing(20)
