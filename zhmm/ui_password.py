@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QMessageBox, QDialog, QGridLayout, QComboBox,
                              QFrame, QFormLayout)
 
+from zhmm.data_exporter import DataExporter
 from zhmm.utils.log import logger
 
 
@@ -249,39 +250,7 @@ class PasswordManagerWidget(QWidget):
 
     def export_passwords(self):
         """导出密码列表"""
-        from utils import file_util
-        import pandas as pd
-
-        try:
-            # 导出为Excel文件
-            save_file_path = file_util.get_full_path('zhmm.xlsx')
-
-            # 准备数据
-            cn_heads = ['ID', '类别', '账号', '密码', '手机', '邮箱', '网站', '备注', '更新时间']
-            en_heads = ['id', 'role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc', 'utime']
-
-            # 创建DataFrame
-            df = pd.DataFrame(data=None, columns=pd.Index(cn_heads))
-
-            # 填充数据
-            for item in self.gl_data.mm['data']:
-                row_data = {}
-                for i, key in enumerate(en_heads):
-                    if key in item:
-                        value = str(item[key])
-                        value = value.replace('\r', '[r]').replace('\n', '[n]')
-                        row_data[cn_heads[i]] = value
-                    else:
-                        row_data[cn_heads[i]] = ''
-                df = pd.concat([df, pd.DataFrame([row_data])], ignore_index=True)
-
-            # 导出
-            df.to_excel(save_file_path, index=False, engine='xlsxwriter')
-            QMessageBox.information(self, "成功", f"数据已成功导出到: {save_file_path}")
-
-        except Exception as e:
-            logger.error(f"导出Excel文件失败: {str(e)}")
-            QMessageBox.critical(self, "错误", f"导出失败: {str(e)}")
+        DataExporter.export_to_file(self.table_model)
 
     def refresh_data(self):
         """刷新数据"""
