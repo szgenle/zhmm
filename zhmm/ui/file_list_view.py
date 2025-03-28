@@ -4,7 +4,7 @@
 # @LastEditTime: 2024-07-03
 from typing import TypedDict, Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QTableWidget, QHeaderView, QFileDialog, \
     QTableWidgetItem, QMenu
@@ -47,6 +47,30 @@ class FileListWidget(QWidget):
         button_layout.addStretch()
         main_layout.addLayout(button_layout)
         self.load_saved_files()
+
+        QTimer.singleShot(0, self.auto_select_last_file)  # 延迟聚焦到密码输入框
+
+    def auto_select_last_file(self):
+        if self.file_table.rowCount() == 0:
+            return
+        
+        # 自动选择第一行
+        self.file_table.setCurrentCell(0, 0)
+        self.file_table.setFocus()
+        
+        # 延迟触发点击事件（确保界面渲染完成）
+        QTimer.singleShot(100, self.trigger_auto_login)
+
+    def trigger_auto_login(self):
+        """触发自动登录"""
+        if self.file_table.rowCount() > 0:
+            item = self.file_table.item(0, 1)  # 获取文件路径对应的item
+            self.handle_item_click(item)
+        
+        # 确保滚动到选中行可见（如果表格内容较多）
+        item = self.file_table.item(0, 0)
+        if item:
+            self.file_table.scrollToItem(item)
 
     def select_files(self):
         """选择文件并更新表格"""
