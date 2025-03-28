@@ -13,29 +13,6 @@ from zhmm.utils import file_util, data_conversion
 from zhmm.utils.table_printer import TablePrinter
 
 
-def print_info(infos):
-    
-    # 使用field_mapping重构字段映射
-    required_fields = ['role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc']
-    cn_headers = [SmData.field_mapping[field] for field in required_fields]
-
-    arrs = []
-    arrs.append(cn_headers)
-    
-    for info in infos:
-        values = []
-        for field in required_fields:
-            # 统一使用字段映射获取值
-            value = info.get(field, '')
-            if not isinstance(value, str):
-                value = str(value)
-            values.append(value)
-        arrs.append(values)
-
-    TablePrinter.print_list(arrs)
-    pass
-
-
 class CmdUI:
 
     sm_data = SmData()
@@ -50,10 +27,17 @@ class CmdUI:
         self.user_search(info)
 
     def user_search(self, search_word):
-        finds = self.sm_data.search(search_word)
-        if finds and len(finds) > 0:
+        infos: list[ZhmmDict] | None = self.sm_data.search(search_word)
+        if infos and len(infos) > 0:
             print("您好，查找到[%s]的相关信息：" % search_word)
-            print_info(finds)
+            required_fields = ['role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc']
+            cn_headers = [SmData.field_mapping[field] for field in required_fields]
+            # 将 ZhmmDict 转换为标准字典类型
+            TablePrinter.print_info(
+                [dict(info) for info in infos],  # 添加类型转换
+                required_fields, 
+                cn_headers
+            )
         else:
             print("您好，没有查找到[%s]的相关信息：" % search_word)
 
