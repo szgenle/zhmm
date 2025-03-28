@@ -102,16 +102,12 @@ class CmdUI:
 
     def user_option(self):
         time.sleep(0.3)
-        try:
-            op = input("新增[n/N]查找[f/F]导出[e/E]删除[d/D]退出[q/Q]:").strip().lower()
-        except KeyboardInterrupt:
-            print('再见')
-            exit(0)
 
-        if op == 'q':
-            print('再见')
-            exit(0)
-        elif op == 'n':
+        op = input("新增[n/N]查找[f/F]导出[e/E]删除[d/D]退出[q/Q]:").strip().lower()
+
+        if op is None or op == 'q':
+            return -1
+        if op == 'n':
             self.args.new = True
         elif op == 'f':
             self.args.find = True
@@ -147,12 +143,19 @@ class CmdUI:
         self.sm_data.set_mm(user_mm_data)
         self.fix_id_is_None()
 
-        self.user_input_ui()
+        try:
+            self.user_input_ui()
+        except KeyboardInterrupt:
+            print('\n再见\n')
+            exit(0)
     
     def user_input_ui(self):
         """响应用户的输入操作"""
         while True:
-            if self.args.search:
+            if self.args.simple:
+                self.user_find()
+                continue
+            elif self.args.search:
                 self.args.search = None
                 self.user_search(self.args.search)
             elif self.args.find:
@@ -169,6 +172,7 @@ class CmdUI:
                 self.user_delete()
 
             if self.user_option() < 0:
+                print('\n再见\n')
                 break
 
     def user_export(self):
