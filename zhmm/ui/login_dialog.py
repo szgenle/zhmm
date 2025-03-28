@@ -121,6 +121,7 @@ class LoginDialog(Dialog):
 
                 if not decrypt_result or not decrypt_result['res']:
                     QMessageBox.critical(self, "错误", "密码不正确")
+                    self.password_input.clear()  # 新增：清空密码输入框
                     return
 
                 user_mm_data = json.loads(decrypt_result['res'])
@@ -138,7 +139,9 @@ class LoginDialog(Dialog):
                 self.accept()
             else:
                 QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
+                self.password_input.clear()  # 新增：文件读取失败时也清空
 
         except Exception as e:
             logger.error(f"登录验证出错: {str(e)}")
             QMessageBox.critical(self, "错误", f"登录验证出错: {str(e)}")
+            self.password_input.clear()  # 新增：异常情况下清空
