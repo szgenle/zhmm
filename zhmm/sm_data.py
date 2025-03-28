@@ -165,7 +165,6 @@ class SmData:
             if not finished:
                 break
         return finished
-        
 
     def search(self, words: str) -> list[ZhmmDict] | None:
         if not self.mm or not self.mm['data']:
