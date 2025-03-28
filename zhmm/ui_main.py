@@ -49,11 +49,13 @@ class MainWindow(QMainWindow):
 
     def on_login_success(self, info: ZhmmFileInfo):
         """登录成功后的处理"""
+        if not info['sm_data']:
+            return
         # 更新最后活动时间
         self.last_active_time = datetime.now()
         logger.info("登录成功，更新活动时间")
         # 创建数据管理界面
-        self.data_manager = DataManagerWidget(info)
+        self.data_manager = DataManagerWidget(info['sm_data'])
         self.setCentralWidget(self.data_manager)
         # 隐藏欢迎界面
         self.welcome_widget.hide()
