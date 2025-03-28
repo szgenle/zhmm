@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         inactive_duration = current_time - self.last_active_time
 
         # 如果非活动时间超过3分钟且窗口当前是活动的，则显示登录窗口
-        if inactive_duration > timedelta(minutes=3) and self.isActiveWindow():
+        if inactive_duration > timedelta(minutes=1) and self.isActiveWindow() and not isinstance(self.centralWidget(), WelcomeWidget):
             logger.info(f"检测到非活动时间: {inactive_duration}，显示登录窗口")
             self.show_welcome_ui()
 
