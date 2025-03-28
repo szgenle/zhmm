@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
     def setup_welcome_ui(self):
         """设置欢迎界面"""
         welcome_widget = WelcomeWidget(self)
-        welcome_widget.file_list.login_success.connect(self.on_login_success)
+        welcome_widget.file_list.login_success.connect(lambda info: self.on_login_success(info))
         self.setCentralWidget(welcome_widget)
         return welcome_widget
 

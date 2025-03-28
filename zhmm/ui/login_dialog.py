@@ -2,7 +2,7 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -18,12 +18,12 @@ from zhmm.utils.log import logger
 class ZhmmFileInfo(TypedDict):
     file_path: str
     openid: str
-    sm_data: SmData | None
+    sm_data: Optional[SmData | None]
 
 
 class LoginDialog(Dialog):
     """登录对话框"""
-    login_success = pyqtSignal(ZhmmFileInfo)  # 登录成功信号
+    login_success = pyqtSignal(dict)  # 保持信号声明不变
 
     def __init__(self, file_path: str, openid: str | None = None, parent=None):
         super().__init__(parent)
@@ -120,12 +120,13 @@ class LoginDialog(Dialog):
 
                 # 登录成功
                 logger.info(f"用户 {openid} 登录成功")
-                info: ZhmmFileInfo = {
-                    'file_path': file_path,
-                    'openid': openid,
-                    'sm_data': smdata
-                }
-                self.login_success.emit(info)
+                # 登录成功时需要显式指定字典类型
+                info = ZhmmFileInfo(
+                    file_path=file_path,
+                    openid=openid,
+                    sm_data=smdata
+                )
+                self.login_success.emit(info)  # 直接传递强类型对象
                 self.accept()
             else:
                 QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
