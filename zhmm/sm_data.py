@@ -143,6 +143,40 @@ class SmData:
 
     def set_mm(self, user_mm_data: ZhmmDataDict):
         self.mm = user_mm_data
+        self.fix_id_is_None()
+
+    def fix_id_is_None(self):
+        """
+        修复数据中的id字段为None的情况
+        """
+        if not self.fix():
+            # 使用threading.Timer替代PyQt的QTimer
+            import threading
+            timer = threading.Timer(1.0, self.fix_id_is_None)
+            timer.daemon = True  # 设置为守护线程防止程序无法退出
+            timer.start()
+
+    def fix(self) -> bool:
+        """
+        处理历史遗留的字段值问题
+        查找所有数据，把id不是数字的设置为时间戳（秒），
+        如果utime不是数字的也设置为时间戳（秒）。
+        每秒改动一项，防止重复。
+        """
+        if not self.mm or not self.mm['data']:
+            return True
+        finished = True
+        for data in self.mm['data']:
+            if 'id' not in data or not isinstance(data['id'], int):
+                data['id'] = date_util.timestamp_int()
+                finished = False
+            if 'utime' not in data or not isinstance(data['utime'], int):
+                data['utime'] = date_util.timestamp_int()
+                finished = False
+            if not finished:
+                break
+        return finished
+        
 
     def search(self, words: str) -> list[ZhmmDict] | None:
         if not self.mm or not self.mm['data']:
