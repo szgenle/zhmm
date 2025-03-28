@@ -22,7 +22,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("密码管理器")
-        self.resize(800, 600)
+        self.resize(1200, 600)
 
         # 记录最后活动时间
         self.last_active_time = datetime.now()

@@ -186,6 +186,7 @@ class PasswordManagerWidget(QWidget):
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setSourceModel(self.table_model)
         self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.proxy_model.setFilterKeyColumn(-1)  # -1 表示搜索所有列
 
         self.table_view.setModel(self.proxy_model)
 
@@ -216,7 +217,7 @@ class PasswordManagerWidget(QWidget):
         """过滤密码列表"""
         search_text = self.search_input.text()
         # 设置过滤器，这里简单地对所有列进行过滤
-        self.proxy_model.setFilterFixedString(search_text)
+        self.proxy_model.setFilterWildcard(f"*{search_text}*")
 
     def add_password(self):
         """添加密码"""
