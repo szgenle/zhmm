@@ -48,12 +48,17 @@ class LoginDialog(Dialog):
         # 创建表单布局
         form_layout = QGridLayout()
 
+        row = 0
         # OpenID输入
         openid_label = QLabel("OpenID:")
         self.openid_input = QLineEdit()
         self.openid_input.setPlaceholderText("请输入微信小程序中显示的OpenId")
-        form_layout.addWidget(openid_label, 0, 0)
-        form_layout.addWidget(self.openid_input, 0, 1)
+        if openid:
+            self.openid_input.setText(openid)
+        else:
+            form_layout.addWidget(openid_label, row, 0)
+            form_layout.addWidget(self.openid_input, row, 1)
+            row += 1
 
         # 密码输入
         password_label = QLabel("密码:")
@@ -61,15 +66,10 @@ class LoginDialog(Dialog):
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setPlaceholderText("请输入密码")
 
-        form_layout.addWidget(password_label, 1, 0)
-        form_layout.addWidget(self.password_input, 1, 1)
+        form_layout.addWidget(password_label, row, 0)
+        form_layout.addWidget(self.password_input, row, 1)
 
         layout.addLayout(form_layout)
-        
-        if openid:
-            self.openid_input.setText(openid)
-            QTimer.singleShot(0, self.password_input.setFocus)  # 延迟聚焦到密码输入框
-            
 
         # 添加一些间距
         layout.addSpacing(20)
