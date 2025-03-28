@@ -213,8 +213,8 @@ class PasswordManagerWidget(QWidget):
         self.table_model = PasswordTableModel(self.gl_data.mm['data'])
         
         # 设置选择模式（新增这两行）
-        self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
-        self.table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+        # self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        # self.table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
 
         # 创建代理模型用于过滤（替换为自定义代理模型）
         self.proxy_model = CustomProxyModel()
