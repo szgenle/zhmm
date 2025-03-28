@@ -62,7 +62,7 @@ class PasswordTableModel(QAbstractTableModel):
 class AddPasswordDialog(QDialog):
     """添加密码对话框"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, edit_data=None):
         super().__init__(parent)
         self.setWindowTitle("添加账号密码")
         self.setFixedSize(500, 400)
@@ -137,6 +137,22 @@ class AddPasswordDialog(QDialog):
         layout.addLayout(button_layout)
 
         self.setLayout(layout)
+        
+        # 如果是编辑模式，填充数据
+        if edit_data:
+            self._populate_data(edit_data)
+
+    def _populate_data(self, data):
+        """填充编辑数据"""
+        index = self.role_combo.findText(data['role'])
+        if index >= 0:
+            self.role_combo.setCurrentIndex(index)
+        self.userid_input.setText(data['userID'])
+        self.password_input.setText(data['pwd'])
+        self.phone_input.setText(data.get('phone', ''))
+        self.email_input.setText(data.get('email', ''))
+        self.url_input.setText(data.get('url', ''))
+        self.desc_input.setText(data.get('desc', ''))
 
     def get_password_data(self):
         """获取表单数据"""
@@ -176,6 +192,10 @@ class PasswordManagerWidget(QWidget):
         add_button = QPushButton("添加")
         add_button.clicked.connect(self.add_password)
 
+        # 新增编辑按钮
+        self.edit_button = QPushButton("编辑")
+        self.edit_button.clicked.connect(self.edit_selected_password)
+
         # 新增删除按钮
         self.delete_button = QPushButton("删除")
         self.delete_button.clicked.connect(self.delete_selected_password)
@@ -184,6 +204,7 @@ class PasswordManagerWidget(QWidget):
         export_button.clicked.connect(self.export_passwords)
 
         button_layout.addWidget(add_button)
+        button_layout.addWidget(self.edit_button)
         button_layout.addWidget(self.delete_button)  # 添加删除按钮
         button_layout.addWidget(export_button)
 
@@ -213,8 +234,8 @@ class PasswordManagerWidget(QWidget):
         self.table_model = PasswordTableModel(self.gl_data.mm['data'])
         
         # 设置选择模式（新增这两行）
-        # self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
-        # self.table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+        self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+        self.table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
 
         # 创建代理模型用于过滤（替换为自定义代理模型）
         self.proxy_model = CustomProxyModel()
@@ -318,6 +339,75 @@ class PasswordManagerWidget(QWidget):
         except Exception as e:
             logger.error(f"删除密码出错: {str(e)}")
             QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
+    
+    def edit_selected_password(self):
+        """编辑选中的密码项"""
+        selected = self.table_view.selectionModel().selectedRows()      # type: ignore
+        if not selected:
+            QMessageBox.warning(self, "警告", "请先选择要编辑的项目")
+            return
+
+        # 获取源模型数据
+        proxy_index = selected[0]
+        source_index = self.proxy_model.mapToSource(proxy_index)
+        row = source_index.row()
+        edit_data = self.gl_data.mm['data'][row]
+
+        # 创建编辑对话框并传入数据
+        dialog = AddPasswordDialog(self, edit_data=edit_data)
+        dialog.confirm_button.clicked.connect(lambda: self._process_edit_result(dialog, row))
+        dialog.setWindowTitle("编辑密码信息")
+        dialog.confirm_button.setText("确认修改")
+        dialog.exec()
+
+    def _process_edit_result(self, dialog, original_row):
+        """处理编辑结果"""
+        new_data = dialog.get_password_data()
+        
+        # 保留原始ID和创建时间
+        new_data['id'] = self.gl_data.mm['data'][original_row]['id']
+        new_data['ctime'] = self.gl_data.mm['data'][original_row].get('ctime', date_util.timestamp_int())
+
+        # 验证必填字段
+        if not new_data['userID'] or not new_data['pwd']:
+            QMessageBox.warning(dialog, "警告", "账号和密码不能为空")
+            return
+
+        try:
+            # 更新数据
+            self.gl_data.mm['data'][original_row] = new_data
+            if self.gl_data.save(self.info['file_path']):
+                self.table_model.setZhData(self.gl_data.mm['data'])
+                QMessageBox.information(dialog, "成功", "修改成功")
+            else:
+                QMessageBox.critical(dialog, "错误", "修改失败，无法保存数据")
+        except Exception as e:
+            logger.error(f"编辑密码出错: {str(e)}")
+            QMessageBox.critical(dialog, "错误", f"修改失败: {str(e)}")
+
+    def confirm_modify_password(self, dialog):
+        """确认添加密码"""
+        password_data = dialog.get_password_data()
+
+        # 验证必填字段
+        if not password_data['userID'] or not password_data['pwd']:
+            QMessageBox.warning(dialog, "警告", "账号和密码不能为空")
+            return
+
+        # 添加到数据模型
+        try:
+            # 使用gl_data添加数据
+            self.gl_data.add(password_data)
+            if self.gl_data.save(self.info['file_path']):
+                # 更新表格模型
+                self.table_model.setZhData(self.gl_data.mm['data'])
+                QMessageBox.information(dialog, "成功", "账号密码添加成功")
+                dialog.accept()
+            else:
+                QMessageBox.critical(dialog, "错误", "添加失败，无法保存数据")
+        except Exception as e:
+            logger.error(f"添加密码出错: {str(e)}")
+            QMessageBox.critical(dialog, "错误", f"添加出错: {str(e)}")
 
 
 class CustomProxyModel(QSortFilterProxyModel):
