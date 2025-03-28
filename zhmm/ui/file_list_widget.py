@@ -47,9 +47,14 @@ class FileListWidget(QWidget):
         self.select_button = QPushButton('打开文件')
         self.select_button.clicked.connect(self.select_files)
         
+        # 新增新建按钮
+        self.new_button = QPushButton('新建密码本')
+        self.new_button.clicked.connect(self.create_new_file)
+
         # 按钮布局
         button_layout = QHBoxLayout()
         button_layout.addStretch()
+        button_layout.addWidget(self.new_button)  # 添加新按钮
         button_layout.addWidget(self.select_button)
         button_layout.addStretch()
         main_layout.addLayout(button_layout)
@@ -178,3 +183,20 @@ class FileListWidget(QWidget):
             if file_path:
                 self.show_login_dialog(file_path)
         event.acceptProposedAction()
+
+    def create_new_file(self):
+        """新建密码本文件"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, 
+            '新建密码本',
+            '',  # 初始路径设为空
+            '密码本文件 (*.gl)'
+        )
+        if file_path:
+            # 确保文件后缀正确
+            if not file_path.endswith('.gl'):
+                file_path += '.gl'
+            
+            # 创建空文件并添加到列表
+            open(file_path, 'w').close()
+            self.show_login_dialog(file_path)
