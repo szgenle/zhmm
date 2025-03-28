@@ -24,8 +24,8 @@ class DataManagerWidget(QWidget):
 
         # 数据表格
         self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["网站", "用户名", "密码"])
+        self.table.setColumnCount(len(SmData.keys))
+        self.table.setHorizontalHeaderLabels(SmData.heads)
         header = self.table.horizontalHeader()
         if header:
             header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -40,7 +40,7 @@ class DataManagerWidget(QWidget):
         self.table.setRowCount(len(entries))
         
         for row, entry in enumerate(entries):
-            self.table.setItem(row, 0, QTableWidgetItem(entry['url']))
-            self.table.setItem(row, 1, QTableWidgetItem(entry['userID']))
-            self.table.setItem(row, 2, QTableWidgetItem(entry['pwd']))
+            for col, key in enumerate(SmData.keys):  # 遍历所有字段
+                value = str(entry.get(key, ''))  # 安全获取字段值
+                self.table.setItem(row, col, QTableWidgetItem(value))
             self.table.setRowHeight(row, 30)  # 设置行高更紧凑

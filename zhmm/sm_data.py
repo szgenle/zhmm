@@ -37,7 +37,10 @@ class SmData:
         'desc': '备注',
         'utime': '更新时间'
     }
-    
+
+    keys = ['id', 'role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc', 'utime']
+    heads = ['ID', '类别', '账号', '密码', '手机', '邮箱', '网站', '备注', '更新时间']
+
     pwd = ''
     openId = ''
 
