@@ -10,47 +10,9 @@ import pandas as pd  # 添加pandas库导入
 
 from zhmm.sm_data import SmData, ZhmmDict
 from zhmm.utils import file_util, string_util, data_conversion
+from zhmm.utils.table_printer import TablePrinter
 
 gl_data1 = SmData()
-
-
-def print_list(data):
-    # print(data)
-    # 获取列的最大宽度（可选，用于对齐）
-    def str_len(item):
-        cnt = string_util.count_unicode_chars(item)
-        if cnt == 0:
-            return len(str(item))
-        else:
-            return len(str(item)) + cnt
-
-    max_widths = [max(str_len(item) for item in col) for col in zip(*data)]
-
-    # print(max_widths)
-
-    def item_width(item, width):
-        cnt = string_util.count_unicode_chars(item)
-        if cnt > 0:
-            dc = width - len(item)
-            if dc > cnt:
-                dc = cnt
-            if dc > 0:
-                width = width - dc
-        return width
-
-    # 打印表头
-    for item, width in zip(data[0], max_widths):
-        width = item_width(item, width)
-        print(f"{item:^{width}}", end='|')
-    print()  # 换行
-
-    # 打印表格内容
-    for row in data[1:]:
-        for item, width in zip(row, max_widths):
-            width = item_width(item, width)
-            print(f"{item:<{width}}", end='|')
-        print()  # 每行结束后换行
-
 
 def print_info(infos):
     
@@ -70,7 +32,8 @@ def print_info(infos):
                 value = str(value)
             values.append(value)
         arrs.append(values)
-    print_list(arrs)
+
+    TablePrinter.print_list(arrs)
     pass
 
 
