@@ -23,6 +23,7 @@ class FileListWidget(QWidget):
 
     def setup_ui(self):
         """设置界面"""
+        self.setAcceptDrops(True)  # 新增：启用拖拽接受
         main_layout = QVBoxLayout(self)
         
         # 文件列表表格
@@ -163,3 +164,17 @@ class FileListWidget(QWidget):
         file_path = self.file_table.item(row, 1).text()         # type: ignore
         openid = self.file_table.item(row, 2).text()            # type: ignore
         self.show_login_dialog(file_path, openid)               # type: ignore
+
+    # 新增以下两个方法实现拖拽功能
+    def dragEnterEvent(self, event):                            # type: ignore
+        """拖拽进入事件处理"""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):                                 # type: ignore
+        """拖放事件处理"""
+        for url in event.mimeData().urls():
+            file_path = url.toLocalFile()
+            if file_path:
+                self.show_login_dialog(file_path)
+        event.acceptProposedAction()
