@@ -44,8 +44,8 @@ class DataExporter:
         file_path, _ = QFileDialog.getSaveFileName(
             None,
             "保存密码文件",
-            "zhmm.gl",  # 默认文件名
-            "GL Files (*.gl);;All Files (*)"  # 文件过滤器
+            "zhmm.xlsx",  # 默认文件名
+            "GL Files (*.xlsx);;All Files (*)"  # 文件过滤器
         )
-        if file_path:  # 用户没有取消对话框
+        if file_path:
             return DataExporter.export_xlsx(file_path, data)

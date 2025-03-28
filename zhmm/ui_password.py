@@ -250,15 +250,7 @@ class PasswordManagerWidget(QWidget):
 
     def export_passwords(self):
         """导出密码列表"""
-        # 弹出文件保存对话框
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "保存密码文件",
-            "zhmm.xlsx",  # 默认文件名
-            "GL Files (*.xlsx);;All Files (*)"  # 文件过滤器
-        )
-        if file_path:
-            DataExporter.export_xlsx(file_path, self.gl_data.mm['data'])
+        DataExporter.export_to_file(self.gl_data.mm['data'])
 
     def refresh_data(self):
         """刷新数据"""
