@@ -6,13 +6,14 @@
 import time
 import json
 import sm_util
-import pandas as pd  # 添加pandas库导入
+from zhmm.data_exporter import DataExporter
 
 from zhmm.sm_data import SmData, ZhmmDict
-from zhmm.utils import file_util, string_util, data_conversion
+from zhmm.utils import file_util, data_conversion
 from zhmm.utils.table_printer import TablePrinter
 
 gl_data1 = SmData()
+
 
 def print_info(infos):
     
@@ -34,53 +35,6 @@ def print_info(infos):
         arrs.append(values)
 
     TablePrinter.print_list(arrs)
-    pass
-
-
-def export_xlsx(file_path, data):
-    """导出xlsx文件"""
-    # 准备数据
-    cn_heads = ['ID', '类别', '账号', '密码', '手机', '邮箱', '网站', '备注', '更新时间']
-    en_heads = ['id', 'role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc', 'utime']
-
-    # 创建一个空的DataFrame
-    df = pd.DataFrame(data=None, columns=pd.Index(cn_heads))
-    try:
-
-        # 填充数据并清理不兼容的字符
-        for item in data:
-            row_data = {}
-            for i, key in enumerate(en_heads):
-                if key in item:
-                    # 转换为字符串并清理可能导致Excel问题的字符
-                    value = str(item[key])
-                    # 替换或移除可能导致Excel问题的字符
-                    value = value.replace('\r', '[r]').replace('\n', '[n]')
-                    row_data[cn_heads[i]] = value
-                else:
-                    row_data[cn_heads[i]] = ''
-            df = pd.concat([df, pd.DataFrame([row_data])], ignore_index=True)
-
-        # 使用xlsxwriter引擎替代openpyxl
-        df.to_excel(file_path, index=False, engine='xlsxwriter')
-        print(f"数据已成功导出到: {file_path}")
-        return True
-    except Exception as e:
-        print(f"导出Excel文件失败: {str(e)}")
-        # 尝试使用CSV格式作为备选
-        try:
-            csv_path = file_path.replace('.xlsx', '.csv')
-            df.to_csv(csv_path, index=False, encoding='utf-8-sig')
-            print(f"已改为CSV格式导出到: {csv_path}")
-            return True
-        except Exception as csv_e:
-            print(f"CSV导出也失败: {str(csv_e)}")
-        return False
-
-
-def export():
-    save_file_path = file_util.get_full_path('zhmm.xlsx')
-    export_xlsx(save_file_path, gl_data1.mm['data'])
     pass
 
 
@@ -127,7 +81,7 @@ class CmdUI:
             if self.args.out:
                 file_path = self.args.out
             # 将普通dict转换为ZhmmDict类型
-            zhmmdict_info: ZhmmDict = {
+            dict_info: ZhmmDict = {
                 'id': None,
                 'role': '个人',
                 'userID': en_infos.get('userID', ''),
@@ -138,7 +92,7 @@ class CmdUI:
                 'desc': en_infos.get('desc', ''),
                 'utime': None
             }
-            if gl_data1.add(zhmmdict_info, file_path):
+            if gl_data1.add(dict_info, file_path):
                 print("添加成功!")
 
     def user_option(self):
@@ -188,6 +142,6 @@ class CmdUI:
                 self.user_new()
             elif self.args.export:
                 self.args.export = False
-                export()
+                DataExporter.export_to_file(gl_data1.mm['data'])
             if self.user_option() < 0:
                 break
