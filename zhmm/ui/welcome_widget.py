@@ -4,11 +4,9 @@
 # @LastEditTime: 2024-07-03
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QPushButton, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame
 
-from zhmm.ui.login_dialog import LoginDialog
-from zhmm.utils.log import logger
-from zhmm.ui.file_list_view import FileListWidget
+from zhmm.ui.file_list_widget import FileListWidget
 
 
 class WelcomeWidget(QWidget):
