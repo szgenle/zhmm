@@ -142,6 +142,8 @@ class CmdUI:
                 self.user_new()
             elif self.args.export:
                 self.args.export = False
-                DataExporter.export_to_file(self.sm_data.mm['data'])
+                file_path = file_util.get_full_path('szgenle/zhmm/zhmm.xlsx')
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                DataExporter.export_xlsx(file_path, self.sm_data.mm['data'])
             if self.user_option() < 0:
                 break

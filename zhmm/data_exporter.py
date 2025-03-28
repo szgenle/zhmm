@@ -1,4 +1,5 @@
 import pandas as pd  # 添加pandas库导入
+from PyQt6.QtWidgets import QFileDialog
 
 from zhmm.utils import file_util
 
@@ -39,5 +40,12 @@ class DataExporter:
     @staticmethod
     def export_to_file(data):
         """执行导出操作"""
-        save_file_path = file_util.get_full_path('zhmm.xlsx')
-        return DataExporter.export_xlsx(save_file_path, data)
+        # 弹出文件保存对话框
+        file_path, _ = QFileDialog.getSaveFileName(
+            None,
+            "保存密码文件",
+            "zhmm.gl",  # 默认文件名
+            "GL Files (*.gl);;All Files (*)"  # 文件过滤器
+        )
+        if file_path:  # 用户没有取消对话框
+            return DataExporter.export_xlsx(file_path, data)
