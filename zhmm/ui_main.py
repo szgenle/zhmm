@@ -8,9 +8,9 @@ from datetime import datetime, timedelta
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (QApplication, QMainWindow)
 
-from zhmm.ui.data_manager_widget import DataManagerWidget
 from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
 from zhmm.ui.welcome_widget import WelcomeWidget
+from zhmm.ui_password import PasswordManagerWidget
 from zhmm.utils.log import logger
 
 
@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         self.last_active_time = datetime.now()
         logger.info("登录成功，更新活动时间")
         # 创建数据管理界面
-        self.data_manager = DataManagerWidget(info['sm_data'])
+        self.data_manager = PasswordManagerWidget(info['sm_data'])
         self.setCentralWidget(self.data_manager)
         # 隐藏欢迎界面
         self.hide_welcome_ui()
