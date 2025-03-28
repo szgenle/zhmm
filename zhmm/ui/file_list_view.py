@@ -14,7 +14,7 @@ from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
 
 class FileListWidget(QWidget):
     """文件列表组件"""
-    login_success = pyqtSignal()  # 登录成功信号
+    login_success = pyqtSignal(ZhmmFileInfo)  # 登录成功信号
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -57,8 +57,12 @@ class FileListWidget(QWidget):
 
     def on_login_success(self, info: ZhmmFileInfo):
         """登录成功后的处理"""
+        self.save_file_path_and_openid(info)
+        self.login_success.emit(info)
+
+    def save_file_path_and_openid(self, file_info: ZhmmFileInfo):
+        """保存文件信息"""
         
-        self.login_success.emit()
 
     def add_file_path(self, file_path):
         if not file_path:

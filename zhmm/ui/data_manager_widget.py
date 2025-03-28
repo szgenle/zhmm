@@ -2,10 +2,13 @@
 # coding=utf-8
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QTableWidget, QHeaderView
 
+from zhmm.ui.login_dialog import ZhmmFileInfo
+
+
 class DataManagerWidget(QWidget):
     """数据管理界面"""
 
-    def __init__(self, parent=None):
+    def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
         self.setup_ui()
 
