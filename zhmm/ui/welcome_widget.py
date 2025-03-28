@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QPushButton, Q
 
 from zhmm.ui.login_dialog import LoginDialog
 from zhmm.utils.log import logger
+from zhmm.ui.file_list_view import FileListWidget
 
 
 class WelcomeWidget(QWidget):
@@ -39,6 +40,10 @@ class WelcomeWidget(QWidget):
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info_label.setWordWrap(True)
         main_layout.addWidget(info_label)
+
+        # 文件列表组件
+        self.file_list = FileListWidget()
+        main_layout.addWidget(self.file_list)
 
         # 添加一些间距
         main_layout.addSpacing(20)

@@ -27,7 +27,7 @@ class FileListWidget(QWidget):
         main_layout.addWidget(self.file_table)
 
         # 添加文件选择按钮
-        self.select_button = QPushButton('选择文件')
+        self.select_button = QPushButton('打开文件')
         self.select_button.clicked.connect(self.select_files)
         
         # 按钮布局
