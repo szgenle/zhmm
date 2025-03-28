@@ -68,6 +68,8 @@ class FileListWidget(QWidget):
 
     def trigger_auto_login(self):
         """触发自动登录"""
+        if not self.isActiveWindow():
+            return
         if self.file_table.rowCount() > 0:
             item = self.file_table.item(0, 1)  # 获取文件路径对应的item
             self.handle_item_click(item)
