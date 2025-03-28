@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QFrame, QFormLayout, QFileDialog)
 
 from zhmm.data_exporter import DataExporter
+from zhmm.utils import date_util
 from zhmm.utils.log import logger
 
 
@@ -138,13 +139,15 @@ class AddPasswordDialog(QDialog):
     def get_password_data(self):
         """获取表单数据"""
         return {
+            'id': date_util.timestamp_int(),
             'role': self.role_combo.currentText(),
             'userID': self.userid_input.text().strip(),
             'pwd': self.password_input.text().strip(),
             'phone': self.phone_input.text().strip(),
             'email': self.email_input.text().strip(),
             'url': self.url_input.text().strip(),
-            'desc': self.desc_input.text().strip()
+            'desc': self.desc_input.text().strip(),
+            'utime': date_util.timestamp_int()
         }
 
 

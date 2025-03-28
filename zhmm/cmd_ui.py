@@ -9,7 +9,7 @@ import sm_util
 from zhmm.data_exporter import DataExporter
 
 from zhmm.sm_data import SmData, ZhmmDataDict, ZhmmDict
-from zhmm.utils import file_util, data_conversion
+from zhmm.utils import file_util, data_conversion, date_util
 from zhmm.utils.table_printer import TablePrinter
 
 
@@ -75,7 +75,7 @@ class CmdUI:
     def build_zhmm_dict(self, en_infos) -> ZhmmDict:
         """构建要存储的字典对象"""
         return {
-            'id': None,
+            'id': date_util.timestamp_int(),
             'role': '个人',
             'userID': en_infos.get('userID', ''),
             'pwd': en_infos.get('pwd', ''),
@@ -83,7 +83,7 @@ class CmdUI:
             'email': None,
             'url': en_infos.get('url', ''),
             'desc': en_infos.get('desc', ''),
-            'utime': None
+            'utime': date_util.timestamp_int()
         }
 
     def confirm_and_save(self, en_infos, cn_infos):
