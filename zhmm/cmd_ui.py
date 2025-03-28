@@ -159,11 +159,20 @@ class CmdUI:
                 self.args.delete = False
                 try:
                     ids = input("请输入要删除的ID(多个ID用空格隔开):").strip()
-                    zh_id = int(ids)
-                    self.sm_data.delete(zh_id)
-                    self.save()
+                    # 分割多个ID并转换为整数
+                    id_list = [int(id_str) for id_str in ids.split()]
+                    # 逐个删除
+                    deled = False
+                    for zh_id in id_list:
+                        if isinstance(zh_id, int) and zh_id > 0:
+                            self.sm_data.delete(zh_id)
+                            deled = True
+                        else:
+                            print(f"忽略无效ID: {zh_id}")
+                    if deled:
+                        self.save()  # 所有删除完成后保存一次
                 except ValueError:
-                    print("错误：请输入有效的数字ID")
+                    print("错误：请输入有效的数字ID（多个ID用空格分隔）")
 
             if self.user_option() < 0:
                 break
