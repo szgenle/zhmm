@@ -43,19 +43,3 @@ class WelcomeWidget(QWidget):
         # 文件列表组件
         self.file_list = FileListWidget()
         main_layout.addWidget(self.file_list)
-
-        # # 添加一些间距
-        # main_layout.addSpacing(20)
-
-        # # 登录按钮
-        # self.login_button = QPushButton("登录")
-        # self.login_button.setFixedWidth(120)
-        # self.login_button.setFixedHeight(40)
-        # self.login_button.clicked.connect(self.show_login_dialog)
-
-        # # 功能区域（包含登录按钮）
-        # feature_layout = QHBoxLayout()
-        # feature_layout.addStretch()
-        # feature_layout.addWidget(self.login_button)
-        # feature_layout.addStretch()
-        # main_layout.addLayout(feature_layout)
