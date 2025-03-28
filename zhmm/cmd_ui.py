@@ -3,6 +3,7 @@
 # @Author: Lioesquieu
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
+import os.path
 import time
 import json
 import sm_util
@@ -140,8 +141,9 @@ class CmdUI:
                 self.user_new()
             elif self.args.export:
                 self.args.export = False
-                file_path = file_util.get_full_path('szgenle/zhmm/zhmm.xlsx')
-                file_path.parent.mkdir(parents=True, exist_ok=True)
-                DataExporter.export_xlsx(file_path, self.sm_data.mm['data'])
+                file_path = input("请输入导出的路径:").strip()
+                if file_path and os.path.exists(file_path):
+                    file_path = os.path.join(file_path, 'zhmm.xlsx')
+                    DataExporter.export_xlsx(file_path, self.sm_data.mm['data'])
             if self.user_option() < 0:
                 break
