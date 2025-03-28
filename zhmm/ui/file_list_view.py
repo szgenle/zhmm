@@ -29,6 +29,7 @@ class FileListWidget(QWidget):
         self.file_table = QTableWidget()
         self.file_table.setColumnCount(3)  # 增加OpenID列
         self.file_table.setHorizontalHeaderLabels(['文件名', '文件路径', 'OpenID'])
+        self.file_table.setColumnHidden(2, True)  # 设置文件名列宽度
         self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # type: ignore
         self.file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.file_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # 启用右键菜单
