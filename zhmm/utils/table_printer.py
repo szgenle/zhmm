@@ -1,5 +1,6 @@
 from zhmm.utils import string_util
 
+
 class TablePrinter:
     @staticmethod
     def print_list(data):
