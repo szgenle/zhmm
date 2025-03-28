@@ -170,6 +170,25 @@ class PasswordManagerWidget(QWidget):
         # 创建主布局
         main_layout = QVBoxLayout(self)
 
+        # 创建按钮区域
+        button_layout = QHBoxLayout()
+
+        add_button = QPushButton("添加")
+        add_button.clicked.connect(self.add_password)
+
+        # 新增删除按钮
+        self.delete_button = QPushButton("删除")
+        self.delete_button.clicked.connect(self.delete_selected_password)
+        
+        export_button = QPushButton("导出")
+        export_button.clicked.connect(self.export_passwords)
+
+        button_layout.addWidget(add_button)
+        button_layout.addWidget(self.delete_button)  # 添加删除按钮
+        button_layout.addWidget(export_button)
+
+        main_layout.addLayout(button_layout)
+
         # 创建搜索区域
         search_layout = QHBoxLayout()
 
@@ -208,25 +227,6 @@ class PasswordManagerWidget(QWidget):
         self.table_view.setSortingEnabled(True)
 
         main_layout.addWidget(self.table_view)
-
-        # 创建按钮区域
-        button_layout = QHBoxLayout()
-
-        add_button = QPushButton("添加")
-        add_button.clicked.connect(self.add_password)
-
-        # 新增删除按钮
-        self.delete_button = QPushButton("删除")
-        self.delete_button.clicked.connect(self.delete_selected_password)
-        
-        export_button = QPushButton("导出")
-        export_button.clicked.connect(self.export_passwords)
-
-        button_layout.addWidget(add_button)
-        button_layout.addWidget(self.delete_button)  # 添加删除按钮
-        button_layout.addWidget(export_button)
-
-        main_layout.addLayout(button_layout)
 
     def filter_passwords(self):
         """过滤密码列表"""
