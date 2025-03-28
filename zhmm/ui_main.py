@@ -33,23 +33,19 @@ class MainWindow(QMainWindow):
         # 创建欢迎界面
         self.welcome_widget = self.setup_welcome_ui()
 
-        # 首次启动时显示登录窗口
-        QTimer.singleShot(500, self.show_login_dialog)
+        # 首次启动时显示欢迎窗口
+        QTimer.singleShot(500, self.show_welcome_ui)
 
     def setup_welcome_ui(self):
         """设置欢迎界面"""
         welcome_widget = WelcomeWidget(self)
-        welcome_widget.login_button.clicked.connect(self.show_login_dialog)
+        welcome_widget.login_success.connect(self.on_login_success)
         self.setCentralWidget(welcome_widget)
         return welcome_widget
-        
-    def show_login_dialog(self):
-        """显示登录对话框，同时显示欢迎界面"""
-        self.welcome_widget.show()
-        logger.info('show_login_dialog')
-        login_dialog = LoginDialog(self)
-        login_dialog.login_success.connect(self.on_login_success)
-        login_dialog.exec()
+
+    def show_welcome_ui(self):
+        """显示欢迎界面"""
+        self.setCentralWidget(self.welcome_widget)
 
     def on_login_success(self):
         """登录成功后的处理"""
@@ -70,7 +66,7 @@ class MainWindow(QMainWindow):
         # 如果非活动时间超过3分钟且窗口当前是活动的，则显示登录窗口
         if inactive_duration > timedelta(minutes=3) and self.isActiveWindow():
             logger.info(f"检测到非活动时间: {inactive_duration}，显示登录窗口")
-            self.show_login_dialog()
+            self.show_welcome_ui()
 
     def changeEvent(self, event):  # type: ignore
         """窗口状态改变事件"""
@@ -83,7 +79,7 @@ class MainWindow(QMainWindow):
             # 如果非活动时间超过3分钟，显示登录窗口
             if inactive_duration > timedelta(minutes=3):
                 logger.info(f"窗口重新激活，非活动时间: {inactive_duration}，显示登录窗口")
-                self.show_login_dialog()
+                self.show_welcome_ui()
 
             # 更新最后活动时间
             self.last_active_time = current_time

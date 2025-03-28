@@ -2,13 +2,17 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QPushButton, QHBoxLayout
+
+from zhmm.ui.login_dialog import LoginDialog
+from zhmm.utils.log import logger
 
 
 class WelcomeWidget(QWidget):
     """欢迎界面组件"""
+    login_success = pyqtSignal()  # 登录成功信号
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -43,6 +47,7 @@ class WelcomeWidget(QWidget):
         self.login_button = QPushButton("登录")
         self.login_button.setFixedWidth(120)
         self.login_button.setFixedHeight(40)
+        self.login_button.clicked.connect(self.show_login_dialog)
 
         # 功能区域（包含登录按钮）
         feature_layout = QHBoxLayout()
@@ -50,3 +55,13 @@ class WelcomeWidget(QWidget):
         feature_layout.addWidget(self.login_button)
         feature_layout.addStretch()
         main_layout.addLayout(feature_layout)
+        
+    def show_login_dialog(self):
+        """显示登录对话框"""
+        logger.info('show_login_dialog')
+        login_dialog = LoginDialog(self)
+        login_dialog.login_success.connect(self.on_login_success)
+        login_dialog.exec()
+
+    def on_login_success(self):
+        self.login_success.emit()
