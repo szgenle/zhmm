@@ -18,6 +18,7 @@ class MainWindow(QMainWindow):
     """主窗口"""
 
     welcome_widget: WelcomeWidget | None = None
+    data_manager_widget: PasswordManagerWidget | None = None
 
     def __init__(self):
         super().__init__()
@@ -49,12 +50,29 @@ class MainWindow(QMainWindow):
         self.welcome_widget = self.setup_welcome_ui()
         self.setCentralWidget(self.welcome_widget)
 
+        self.hide_data_ui()
+
     def hide_welcome_ui(self):
         """隐藏欢迎界面"""
         if self.welcome_widget:
             self.welcome_widget.deleteLater()
             del self.welcome_widget
             self.welcome_widget = None
+
+    def hide_data_ui(self):
+        """隐藏数据管理界面"""
+        if self.data_manager_widget:
+            self.data_manager_widget.deleteLater()
+            del self.data_manager_widget
+            self.data_manager_widget = None
+
+    def show_data_ui(self, sm_data):
+        self.hide_data_ui()
+        # 创建数据管理界面
+        self.data_manager_widget = PasswordManagerWidget(sm_data)
+        self.setCentralWidget(self.data_manager_widget)
+        # 隐藏欢迎界面
+        self.hide_welcome_ui()
 
     def on_login_success(self, info: ZhmmFileInfo):
         """登录成功后的处理"""
@@ -63,11 +81,7 @@ class MainWindow(QMainWindow):
         # 更新最后活动时间
         self.last_active_time = datetime.now()
         logger.info("登录成功，更新活动时间")
-        # 创建数据管理界面
-        self.data_manager = PasswordManagerWidget(info['sm_data'])
-        self.setCentralWidget(self.data_manager)
-        # 隐藏欢迎界面
-        self.hide_welcome_ui()
+        self.show_data_ui(info['sm_data'])
 
     def check_inactivity(self):
         """检查非活动时间"""
@@ -75,7 +89,7 @@ class MainWindow(QMainWindow):
         inactive_duration = current_time - self.last_active_time
 
         # 如果非活动时间超过3分钟且窗口当前是活动的，则显示登录窗口
-        if inactive_duration > timedelta(minutes=1) and self.isActiveWindow() and not isinstance(self.centralWidget(), WelcomeWidget):
+        if inactive_duration > timedelta(minutes=1) and not isinstance(self.centralWidget(), WelcomeWidget):
             logger.info(f"检测到非活动时间: {inactive_duration}，显示登录窗口")
             self.show_welcome_ui()
 

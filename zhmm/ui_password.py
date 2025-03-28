@@ -4,7 +4,7 @@
 # @LastEditTime: 2024-07-03
 
 import json
-from PyQt6.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QAbstractTableModel
+from PyQt6.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QAbstractTableModel, QTimer
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QTableView, QHeaderView,
@@ -168,7 +168,7 @@ class PasswordManagerWidget(QWidget):
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("输入关键字搜索账号、网站、备注等")
         self.search_input.textChanged.connect(self.filter_passwords)
-        self.search_input.setFocus()
+        QTimer.singleShot(0, self.search_input.setFocus)  # 延迟聚焦到密码输入框
 
         search_button = QPushButton("搜索")
         search_button.clicked.connect(self.filter_passwords)
