@@ -38,7 +38,7 @@ class FileListWidget(QWidget):
         # 设置选择模式（新增这两行）
         self.file_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.file_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        
+
         main_layout.addWidget(self.file_table)
 
         # 添加文件选择按钮

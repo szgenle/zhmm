@@ -196,8 +196,8 @@ class PasswordManagerWidget(QWidget):
         self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
 
-        # 创建代理模型用于过滤
-        self.proxy_model = QSortFilterProxyModel()
+        # 创建代理模型用于过滤（替换为自定义代理模型）
+        self.proxy_model = CustomProxyModel()
         self.proxy_model.setSourceModel(self.table_model)
         self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.proxy_model.setFilterKeyColumn(-1)  # -1 表示搜索所有列
@@ -235,8 +235,8 @@ class PasswordManagerWidget(QWidget):
     def filter_passwords(self):
         """过滤密码列表"""
         search_text = self.search_input.text()
-        # 设置过滤器，这里简单地对所有列进行过滤
-        self.proxy_model.setFilterWildcard(f"*{search_text}*")
+        # 修改过滤逻辑：空搜索时不显示任何数据
+        self.proxy_model.setFilterWildcard(f"*{search_text}*" if search_text else "")
 
     def add_password(self):
         """添加密码"""
@@ -309,3 +309,14 @@ class PasswordManagerWidget(QWidget):
         except Exception as e:
             logger.error(f"删除密码出错: {str(e)}")
             QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
+
+# 在文件顶部添加导入
+from PyQt6.QtCore import QRegularExpression
+
+# 在PasswordTableModel类定义后添加自定义代理模型
+class CustomProxyModel(QSortFilterProxyModel):
+    def filterAcceptsRow(self, source_row, source_parent):
+        """空搜索时拒绝所有行，有搜索时使用通配符匹配"""
+        if not self.filterRegularExpression().pattern():
+            return False
+        return super().filterAcceptsRow(source_row, source_parent)
