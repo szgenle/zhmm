@@ -94,14 +94,23 @@ class FileListWidget(QWidget):
         
     def show_login_dialog(self, file_path: str, openid: str | None = None):
         """显示登录对话框"""
-        login_dialog = LoginDialog(file_path, openid)
-        login_dialog.login_success.connect(lambda info: self.on_login_success(info))
+        content = file_util.get_file_content(file_path)
+        if not content:
+            print("密码文件打开失败")
+            return
+        login_dialog = LoginDialog(content, openid)
+        login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
         login_dialog.exec()
 
-    def on_login_success(self, info: ZhmmFileInfo):
+    def on_login_success(self, file_path: str, info: dict):
         """登录成功后的处理"""
-        self.save_file_path_and_openid(info)
-        self.login_success.emit(info)
+        file_info: ZhmmFileInfo = {
+            "file_path": file_path,
+            "openid": info['openid'],
+            "sm_data": info['sm_data']
+        }
+        self.save_file_path_and_openid(file_info)
+        self.login_success.emit(file_info)
 
     def save_file_path_and_openid(self, file_info: ZhmmFileInfo):
         """保存文件信息"""

@@ -26,7 +26,7 @@ class LoginDialog(Dialog):
     """登录对话框"""
     login_success = pyqtSignal(dict)  # 保持信号声明不变
 
-    def __init__(self, file_path: str, openid: str | None = None, parent=None):
+    def __init__(self, content: str, openid: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
@@ -55,6 +55,7 @@ class LoginDialog(Dialog):
         self.openid_input.setPlaceholderText("请输入微信小程序中显示的OpenId")
         if openid:
             self.openid_input.setText(openid)
+            self.openid_input.hide()
         else:
             form_layout.addWidget(openid_label, row, 0)
             form_layout.addWidget(self.openid_input, row, 1)
@@ -79,7 +80,7 @@ class LoginDialog(Dialog):
 
         # 登录按钮
         self.login_button = QPushButton("登录")
-        self.login_button.clicked.connect(lambda: self.verify_login(file_path))
+        self.login_button.clicked.connect(lambda: self.verify_login(content))
         button_layout.addWidget(self.login_button)
 
         # 取消按钮
@@ -91,7 +92,7 @@ class LoginDialog(Dialog):
 
         self.setLayout(layout)
 
-    def verify_login(self, file_path: str):
+    def verify_login(self, content: str):
         """验证登录信息"""
         openid = self.openid_input.text().strip()
         password = self.password_input.text().strip()
@@ -113,33 +114,29 @@ class LoginDialog(Dialog):
             smdata = sm_data.SmData()
             smdata.init(openid, pwd)
 
-            # 尝试读取并解密文件
-            data = file_util.get_file_content(file_path)
+            decrypt_result = smdata.decrypt(content)
 
-            if data:
-                decrypt_result = smdata.decrypt(data)
-
-                if not decrypt_result or not decrypt_result['res']:
+            if not decrypt_result or not decrypt_result['res']:
+                if self.openid_input.isHidden():
                     QMessageBox.critical(self, "错误", "密码不正确")
-                    self.password_input.clear()  # 新增：清空密码输入框
-                    return
+                else:
+                    QMessageBox.critical(self, "错误", "OpenID或者密码不正确")
+                self.password_input.clear()  # 新增：清空密码输入框
+                return
 
-                user_mm_data = json.loads(decrypt_result['res'])
-                smdata.set_mm(user_mm_data)
+            user_mm_data = json.loads(decrypt_result['res'])
+            smdata.set_mm(user_mm_data)
 
-                # 登录成功
-                logger.info(f"用户 {openid} 登录成功")
-                # 登录成功时需要显式指定字典类型
-                info = ZhmmFileInfo(
-                    file_path=file_path,
-                    openid=openid,
-                    sm_data=smdata
-                )
-                self.login_success.emit(info)  # 直接传递强类型对象
-                self.accept()
-            else:
-                QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
-                self.password_input.clear()  # 新增：文件读取失败时也清空
+            # 登录成功
+            logger.info(f"用户 {openid} 登录成功")
+            # 登录成功时需要显式指定字典类型
+            info = {
+                'openid': openid,
+                'sm_data': smdata
+            }
+            
+            self.login_success.emit(info)  # 直接传递强类型对象
+            self.accept()
 
         except Exception as e:
             logger.error(f"登录验证出错: {str(e)}")
