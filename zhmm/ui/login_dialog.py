@@ -16,16 +16,17 @@ class LoginDialog(Dialog):
     """登录对话框"""
     login_success = pyqtSignal()  # 登录成功信号
 
-    def __init__(self, parent=None):
+    def __init__(self, file_path: str, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint)
         self.setModal(True)
 
+        self.file_path = file_path
+
         # 读取存储的OpenID
         self.settings = QSettings("MyCompany", "MyApp")
-        self.remember_openid = self.settings.value("remember_openid", False, type=bool)
 
         # 创建布局
         layout = QVBoxLayout()
@@ -48,7 +49,7 @@ class LoginDialog(Dialog):
         self.openid_input.setPlaceholderText("请输入微信小程序中显示的OpenId")
         form_layout.addWidget(openid_label, 0, 0)
         form_layout.addWidget(self.openid_input, 0, 1)
-        saved_openid = self.settings.value("last_openid", "", type=str)
+        saved_openid = self.settings.value(self.file_path, "", type=str)
         if saved_openid != "":
             self.openid_input.setText(saved_openid)
 
@@ -59,11 +60,6 @@ class LoginDialog(Dialog):
         self.password_input.setPlaceholderText("请输入密码")
         form_layout.addWidget(password_label, 1, 0)
         form_layout.addWidget(self.password_input, 1, 1)
-
-        # 记住OpenID复选框
-        self.remember_checkbox = QCheckBox("记住OpenID")
-        self.remember_checkbox.setChecked(self.remember_openid)
-        form_layout.addWidget(self.remember_checkbox, 2, 1)
 
         layout.addLayout(form_layout)
 
@@ -120,6 +116,7 @@ class LoginDialog(Dialog):
                     QMessageBox.critical(self, "错误", "密码不正确")
                     return
 
+                self.settings.setValue(self.file_path, openid)
                 # 登录成功
                 logger.info(f"用户 {openid} 登录成功")
                 self.login_success.emit()
@@ -130,11 +127,3 @@ class LoginDialog(Dialog):
         except Exception as e:
             logger.error(f"登录验证出错: {str(e)}")
             QMessageBox.critical(self, "错误", f"登录验证出错: {str(e)}")
-
-            # 保存配置
-            if self.remember_checkbox.isChecked():
-                self.settings.setValue("last_openid", openid)
-                self.settings.setValue("remember_openid", True)
-            else:
-                self.settings.remove("last_openid")
-                self.settings.setValue("remember_openid", False)

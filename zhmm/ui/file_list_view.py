@@ -2,14 +2,18 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QTableWidget, QHeaderView, QFileDialog, \
     QTableWidgetItem
 
+from zhmm.ui.login_dialog import LoginDialog
+
 
 class FileListWidget(QWidget):
     """文件列表组件"""
+    login_success = pyqtSignal()  # 登录成功信号
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setup_ui()
@@ -41,7 +45,21 @@ class FileListWidget(QWidget):
         """选择文件并更新表格"""
         file_path, _ = QFileDialog.getOpenFileName(self, '选择文件')
         if file_path:
-            row = self.file_table.rowCount()
-            self.file_table.insertRow(row)
-            self.file_table.setItem(row, 0, QTableWidgetItem(file_path.split('/')[-1]))
-            self.file_table.setItem(row, 1, QTableWidgetItem(file_path))
+            self.show_login_dialog(file_path)
+        
+    def show_login_dialog(self, file_path):
+        """显示登录对话框"""
+        login_dialog = LoginDialog(file_path)
+        login_dialog.login_success.connect(self.on_login_success)
+        login_dialog.exec()
+
+    def on_login_success(self):
+        self.login_success.emit()
+
+    def add_file_path(self, file_path):
+        if not file_path:
+            return
+        row = self.file_table.rowCount()
+        self.file_table.insertRow(row)
+        self.file_table.setItem(row, 0, QTableWidgetItem(file_path.split('/')[-1]))
+        self.file_table.setItem(row, 1, QTableWidgetItem(file_path))
