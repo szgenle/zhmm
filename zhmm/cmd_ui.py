@@ -121,23 +121,36 @@ class CmdUI:
             self.args.delete = True
         return 0
 
-    def run(self, file_path, open_id, password):
-
+    def get_decrypt_data(self, file_path, open_id, password):
         pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
         pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix))
         self.sm_data.init(open_id, pwd)
 
         data = file_util.get_file_content(file_path)
-        if data:
-            decrypt_result = self.sm_data.decrypt(data)
+        if not data:
+            print("密码文件打开失败")
+            return
 
-            if not decrypt_result or not decrypt_result['res']:
-                print("密码不对")
-                return False
-            user_mm_data = json.loads(decrypt_result['res'])
-            self.sm_data.set_mm(user_mm_data)
-            self.fix_id_is_None()
+        decrypt_result = self.sm_data.decrypt(data)
 
+        if not decrypt_result or not decrypt_result['res']:
+            print("密码不对")
+            return
+        return decrypt_result
+
+    def run(self, file_path, open_id, password):
+        decrypt_result = self.get_decrypt_data(file_path, open_id, password)
+        if not decrypt_result:
+            return
+
+        user_mm_data = json.loads(decrypt_result['res'])
+        self.sm_data.set_mm(user_mm_data)
+        self.fix_id_is_None()
+
+        self.user_input_ui()
+    
+    def user_input_ui(self):
+        """响应用户的输入操作"""
         while True:
             if self.args.search:
                 self.args.search = None
@@ -150,31 +163,37 @@ class CmdUI:
                 self.user_new()
             elif self.args.export:
                 self.args.export = False
-                file_path = input("请输入导出的路径:").strip()
-                if file_path and os.path.exists(file_path):
-                    file_path = os.path.join(file_path, 'zhmm.xlsx')
-                    DataExporter.export_xlsx(file_path, self.sm_data.mm['data'])
+                self.user_export()
             elif self.args.delete:
                 self.args.delete = False
-                try:
-                    ids = input("请输入要删除的ID(多个ID用空格隔开):").strip()
-                    # 分割多个ID并转换为整数
-                    id_list = [int(id_str) for id_str in ids.split()]
-                    # 逐个删除
-                    deled = False
-                    for zh_id in id_list:
-                        if isinstance(zh_id, int) and zh_id > 0:
-                            self.sm_data.delete(zh_id)
-                            deled = True
-                        else:
-                            print(f"忽略无效ID: {zh_id}")
-                    if deled:
-                        self.save()  # 所有删除完成后保存一次
-                except ValueError:
-                    print("错误：请输入有效的数字ID（多个ID用空格分隔）")
+                self.user_delete()
 
             if self.user_option() < 0:
                 break
+
+    def user_export(self):
+        file_path = input("请输入导出的路径:").strip()
+        if file_path and os.path.exists(file_path):
+            file_path = os.path.join(file_path, 'zhmm.xlsx')
+            DataExporter.export_xlsx(file_path, self.sm_data.mm['data'])
+    
+    def user_delete(self):
+        try:
+            ids = input("请输入要删除的ID(多个ID用空格隔开):").strip()
+            # 分割多个ID并转换为整数
+            id_list = [int(id_str) for id_str in ids.split()]
+            # 逐个删除
+            deled = False
+            for zh_id in id_list:
+                if isinstance(zh_id, int) and zh_id > 0:
+                    self.sm_data.delete(zh_id)
+                    deled = True
+                else:
+                    print(f"忽略无效ID: {zh_id}")
+            if deled:
+                self.save()  # 所有删除完成后保存一次
+        except ValueError:
+            print("错误：请输入有效的数字ID（多个ID用空格分隔）")
 
     def fix_id_is_None(self):
         """
