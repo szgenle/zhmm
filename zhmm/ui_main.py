@@ -17,6 +17,8 @@ from zhmm.utils.log import logger
 class MainWindow(QMainWindow):
     """主窗口"""
 
+    welcome_widget: WelcomeWidget | None = None
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("密码管理器")
@@ -30,9 +32,6 @@ class MainWindow(QMainWindow):
         self.inactivity_timer.timeout.connect(self.check_inactivity)
         self.inactivity_timer.start(60000)  # 60000毫秒 = 1分钟
 
-        # 创建欢迎界面
-        self.welcome_widget = self.setup_welcome_ui()
-
         # 首次启动时显示欢迎窗口
         QTimer.singleShot(500, self.show_welcome_ui)
 
@@ -45,7 +44,17 @@ class MainWindow(QMainWindow):
 
     def show_welcome_ui(self):
         """显示欢迎界面"""
+        self.hide_welcome_ui()
+
+        self.welcome_widget = self.setup_welcome_ui()
         self.setCentralWidget(self.welcome_widget)
+
+    def hide_welcome_ui(self):
+        """隐藏欢迎界面"""
+        if self.welcome_widget:
+            self.welcome_widget.deleteLater()
+            del self.welcome_widget
+            self.welcome_widget = None
 
     def on_login_success(self, info: ZhmmFileInfo):
         """登录成功后的处理"""
@@ -58,7 +67,7 @@ class MainWindow(QMainWindow):
         self.data_manager = DataManagerWidget(info['sm_data'])
         self.setCentralWidget(self.data_manager)
         # 隐藏欢迎界面
-        self.welcome_widget.hide()
+        self.hide_welcome_ui()
 
     def check_inactivity(self):
         """检查非活动时间"""
