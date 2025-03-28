@@ -2,12 +2,14 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
+from typing import TypedDict
+
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QTableWidget, QHeaderView, QFileDialog, \
     QTableWidgetItem
 
-from zhmm.ui.login_dialog import LoginDialog
+from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
 
 
 class FileListWidget(QWidget):
@@ -53,7 +55,7 @@ class FileListWidget(QWidget):
         login_dialog.login_success.connect(self.on_login_success)
         login_dialog.exec()
 
-    def on_login_success(self, info: dict):
+    def on_login_success(self, info: ZhmmFileInfo):
         """登录成功后的处理"""
         
         self.login_success.emit()

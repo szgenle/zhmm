@@ -2,19 +2,28 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
+from typing import TypedDict
+
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QGridLayout)
 
 from zhmm import sm_util, sm_data
 from zhmm.qt_components.dialog import Dialog
+from zhmm.sm_data import SmData
 from zhmm.utils import file_util, data_conversion
 from zhmm.utils.log import logger
 
 
+class ZhmmFileInfo(TypedDict):
+    file_path: str
+    openid: str
+    sm_data: SmData | None
+
+
 class LoginDialog(Dialog):
     """登录对话框"""
-    login_success = pyqtSignal(dict)  # 登录成功信号
+    login_success = pyqtSignal(ZhmmFileInfo)  # 登录成功信号
 
     def __init__(self, file_path: str, openid: str | None = None, parent=None):
         super().__init__(parent)
@@ -111,7 +120,12 @@ class LoginDialog(Dialog):
 
                 # 登录成功
                 logger.info(f"用户 {openid} 登录成功")
-                self.login_success.emit({file_path, openid, smdata})
+                info: ZhmmFileInfo = {
+                    'file_path': file_path,
+                    'openid': openid,
+                    'sm_data': smdata
+                }
+                self.login_success.emit(info)
                 self.accept()
             else:
                 QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
