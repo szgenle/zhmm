@@ -96,14 +96,14 @@ class LoginDialog(Dialog):
             pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
             pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix))
 
-            gl_data1 = sm_data.SmData()
-            gl_data1.init(openid, pwd)
+            smdata = sm_data.SmData()
+            smdata.init(openid, pwd)
 
             # 尝试读取并解密文件
             data = file_util.get_file_content(file_path)
 
             if data:
-                decrypt_result = gl_data1.decrypt(data)
+                decrypt_result = smdata.decrypt(data)
 
                 if not decrypt_result or not decrypt_result['res']:
                     QMessageBox.critical(self, "错误", "密码不正确")
@@ -111,7 +111,7 @@ class LoginDialog(Dialog):
 
                 # 登录成功
                 logger.info(f"用户 {openid} 登录成功")
-                self.login_success.emit({file_path, openid})
+                self.login_success.emit({file_path, openid, smdata})
                 self.accept()
             else:
                 QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")

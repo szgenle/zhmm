@@ -53,7 +53,9 @@ class FileListWidget(QWidget):
         login_dialog.login_success.connect(self.on_login_success)
         login_dialog.exec()
 
-    def on_login_success(self):
+    def on_login_success(self, info: dict):
+        """登录成功后的处理"""
+        
         self.login_success.emit()
 
     def add_file_path(self, file_path):
