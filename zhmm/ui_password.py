@@ -261,6 +261,9 @@ class PasswordManagerWidget(QWidget):
         # 新增单元格点击事件处理
         self.table_view.clicked.connect(self.copy_cell_to_clipboard)
 
+        # 新增双击事件处理
+        self.table_view.doubleClicked.connect(self.edit_selected_password)
+
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSortingEnabled(True)
 
@@ -458,4 +461,3 @@ class PasswordManagerWidget(QWidget):
             # 更新状态标签
             self.status_label.setText("已复制到剪贴板")
             QTimer.singleShot(2000, lambda: self.status_label.setText(""))
-
