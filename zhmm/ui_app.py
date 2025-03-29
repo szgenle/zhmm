@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (QApplication)
 from zhmm.qt_components.base_window import BaseWindow
 from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
 from zhmm.ui.welcome_widget import WelcomeWidget
-from zhmm.ui_password import PasswordManagerWidget
+from zhmm.ui_main import MainWindow
 from zhmm.utils.log import logger
 
 
@@ -19,7 +19,7 @@ class AppWindow(BaseWindow):
     """主窗口"""
 
     welcome_widget: WelcomeWidget | None = None
-    data_manager_widget: PasswordManagerWidget | None = None
+    main_widget: MainWindow | None = None
 
     def __init__(self):
         super().__init__()
@@ -61,16 +61,16 @@ class AppWindow(BaseWindow):
 
     def hide_data_ui(self):
         """隐藏数据管理界面"""
-        if self.data_manager_widget:
-            self.data_manager_widget.deleteLater()
-            del self.data_manager_widget
-            self.data_manager_widget = None
+        if self.main_widget:
+            self.main_widget.deleteLater()
+            del self.main_widget
+            self.main_widget = None
 
     def show_data_ui(self, info: ZhmmFileInfo):
         self.hide_data_ui()
         # 创建数据管理界面
-        self.data_manager_widget = PasswordManagerWidget(info)
-        self.setCentralWidget(self.data_manager_widget)
+        self.main_widget = MainWindow(info)
+        self.setCentralWidget(self.main_widget)
         # 隐藏欢迎界面
         self.hide_welcome_ui()
 
