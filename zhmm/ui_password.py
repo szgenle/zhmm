@@ -233,7 +233,7 @@ class PasswordManagerWidget(QWidget):
         # 创建表格视图
         self.table_view = QTableView()
         self.table_model = PasswordTableModel(self.gl_data.mm['data'])
-        
+
         # 设置选择模式（新增这两行）
         self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
@@ -246,12 +246,34 @@ class PasswordManagerWidget(QWidget):
 
         self.table_view.setModel(self.proxy_model)
 
-        # 设置表格属性
-        header = self.table_view.horizontalHeader()
-        if header:
-            header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSortingEnabled(True)
+
+        # 设置自适应列宽策略（新增以下三行）
+        header = self.table_view.horizontalHeader()
+        if header:
+            # 获取表格字体度量
+            font_metrics = self.table_view.fontMetrics()
+
+            # 计算列宽方法
+            def calculate_column_width(string, margin=8):
+                # 计算内容最大宽度
+                content_width = font_metrics.boundingRect(string).width()
+                return content_width + margin
+
+            header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+
+            # 固定列宽度
+            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(0, calculate_column_width('8888888888'))
+            header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(1, calculate_column_width('个人个人'))
+            header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(3, calculate_column_width('********'))
+            header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(4, calculate_column_width('+86888888888888'))
+            header.setSectionResizeMode(8, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(8, calculate_column_width('8888888888'))
 
         main_layout.addWidget(self.table_view)
 
