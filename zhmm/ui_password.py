@@ -177,8 +177,6 @@ class PasswordManagerWidget(QWidget):
             header.resizeSection(0, calculate_column_width('8888888888'))
             header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
             header.resizeSection(1, calculate_column_width('个人个人'))
-            header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(3, calculate_column_width('********'))
             header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
             header.resizeSection(4, calculate_column_width('+86888888888888'))
             header.setSectionResizeMode(8, QHeaderView.ResizeMode.Fixed)
@@ -272,9 +270,7 @@ class PasswordManagerWidget(QWidget):
                 # 更新表格
                 self.table_model.setZhData(self.gl_data.mm['data'])
                 # 保存更改
-                if self.gl_data.save():
-                    QMessageBox.information(self, "成功", "删除成功")
-                else:
+                if not self.gl_data.save():
                     self.gl_data.mm['data'].insert(row, deleted_item)  # 回滚
                     QMessageBox.critical(self, "错误", "删除失败，数据保存错误")
         except Exception as e:

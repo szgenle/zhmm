@@ -1,8 +1,6 @@
 #
 from PyQt6.QtCore import QSettings
 
-from zhmm.utils import file_util
-
 
 class AppConfig:
 
