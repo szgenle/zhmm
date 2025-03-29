@@ -9,11 +9,11 @@ class DragDropButton(QPushButton):
         super().__init__(*args, **kwargs)
         self.setAcceptDrops(True)
 
-    def dragEnterEvent(self, event):
+    def dragEnterEvent(self, event):    # type: ignore
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
 
-    def dropEvent(self, event):
+    def dropEvent(self, event):    # type: ignore
         for url in event.mimeData().urls():
             file_path = url.toLocalFile()
             # self.setText(f"File: {file_path}")
