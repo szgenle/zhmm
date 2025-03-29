@@ -29,5 +29,5 @@ class MainWindow(QWidget):
         main_layout.addWidget(tab_widget)
 
         # 添加标签页
-        tab_widget.addTab(self.data_manager_widget, "密码管理")
+        tab_widget.addTab(self.data_manager_widget, "账号管理")
         tab_widget.addTab(self.setting_widget, "系统设置")

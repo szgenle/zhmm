@@ -124,7 +124,7 @@ class CmdUI:
 
         data = file_util.get_file_content(file_path)
         if not data:
-            print("密码文件打开失败")
+            print("账号文件打开失败")
             return
 
         decrypt_result = self.sm_data.decrypt(data)

@@ -261,7 +261,7 @@ class PasswordManagerWidget(QWidget):
             # 确认删除
             reply = QMessageBox.question(
                 self, "确认删除",
-                "确定要删除该密码记录吗？此操作不可恢复！",
+                "确定要删除该账号记录吗？此操作不可恢复！",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
             if reply == QMessageBox.StandardButton.Yes:
@@ -274,7 +274,7 @@ class PasswordManagerWidget(QWidget):
                     self.gl_data.mm['data'].insert(row, deleted_item)  # 回滚
                     QMessageBox.critical(self, "错误", "删除失败，数据保存错误")
         except Exception as e:
-            logger.error(f"删除密码出错: {str(e)}")
+            logger.error(f"删除账号出错: {str(e)}")
             QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
 
     def edit_selected_password(self):
@@ -294,7 +294,7 @@ class PasswordManagerWidget(QWidget):
         dialog = AddPasswordDialog(self, self.gl_data.mm['roles'], edit_data=edit_data)
         dialog.confirm_button.clicked.connect(lambda: self._process_edit_result(dialog, row))
         dialog.added_role.connect(lambda new_role: self.add_role(new_role))
-        dialog.setWindowTitle("编辑密码信息")
+        dialog.setWindowTitle("编辑账号信息")
         dialog.confirm_button.setText("确认修改")
         dialog.exec()
 
@@ -308,7 +308,7 @@ class PasswordManagerWidget(QWidget):
 
         # 验证必填字段
         if not new_data['userID'] or not new_data['pwd']:
-            QMessageBox.warning(dialog, "警告", "账号和密码不能为空")
+            QMessageBox.warning(dialog, "警告", "账号不能为空")
             return
 
         try:
@@ -320,7 +320,7 @@ class PasswordManagerWidget(QWidget):
             else:
                 QMessageBox.critical(dialog, "错误", "修改失败，无法保存数据")
         except Exception as e:
-            logger.error(f"编辑密码出错: {str(e)}")
+            logger.error(f"编辑账号出错: {str(e)}")
             QMessageBox.critical(dialog, "错误", f"修改失败: {str(e)}")
 
     def confirm_modify_password(self, dialog):

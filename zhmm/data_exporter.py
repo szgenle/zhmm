@@ -43,7 +43,7 @@ class DataExporter:
         # 弹出文件保存对话框
         file_path, _ = QFileDialog.getSaveFileName(
             None,
-            "保存密码文件",
+            "保存账号文件",
             "zhmm.xlsx",  # 默认文件名
             "GL Files (*.xlsx);;All Files (*)"  # 文件过滤器
         )

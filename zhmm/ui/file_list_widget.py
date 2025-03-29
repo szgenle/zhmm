@@ -49,7 +49,7 @@ class FileListWidget(QWidget):
         self.select_button.clicked.connect(self.select_files)
         
         # 新增新建按钮
-        self.new_button = QPushButton('新建密码本')
+        self.new_button = QPushButton('新建账号小本本')
         self.new_button.clicked.connect(self.create_new_file)
 
         # 按钮布局
@@ -98,7 +98,7 @@ class FileListWidget(QWidget):
         content = file_util.get_file_content(file_path)
         if content is None:
             QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
-            print("密码文件打开失败")
+            print("账号文件打开失败")
             return
         login_dialog = LoginDialog(content, openid)
         login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
@@ -115,7 +115,7 @@ class FileListWidget(QWidget):
         message_box = QMessageBox()
         message_box.setWindowTitle("提示")
         message_box.setFont(font)
-        message_box.setText("该文件不存在或未登录，是否创建新密码本？")
+        message_box.setText("该文件不存在或未登录，是否创建新账号小本本？")
         message_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         message_box.setDefaultButton(QMessageBox.StandardButton.No)
         message_box.setIcon(QMessageBox.Icon.Question)
@@ -227,9 +227,9 @@ class FileListWidget(QWidget):
         """新建密码本文件"""
         file_path, _ = QFileDialog.getSaveFileName(
             self, 
-            '新建密码本',
+            '新建账号小本本',
             '',  # 初始路径设为空
-            '密码本文件 (*.gl)'
+            '账号文件 (*.gl)'
         )
         if file_path:
             # 确保文件后缀正确

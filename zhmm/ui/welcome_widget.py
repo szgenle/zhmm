@@ -21,7 +21,7 @@ class WelcomeWidget(QWidget):
         main_layout = QVBoxLayout(self)
 
         # 欢迎标题
-        welcome_label = QLabel("欢迎使用密码管理器")
+        welcome_label = QLabel("欢迎使用账号管理器")
         welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         welcome_label.setFont(QFont("Arial", 24, QFont.Weight.Bold))
         main_layout.addWidget(welcome_label)
@@ -33,7 +33,7 @@ class WelcomeWidget(QWidget):
         main_layout.addWidget(line)
 
         # 说明文本
-        info_label = QLabel("这是一个安全的密码管理工具，可以帮助您管理各种账号密码。")
+        info_label = QLabel("这是一个安全的账号管理工具，可以帮助您管理各种账号密码。")
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info_label.setWordWrap(True)
         main_layout.addWidget(info_label)

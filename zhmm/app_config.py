@@ -5,7 +5,7 @@ from PyQt6.QtCore import QSettings
 class AppConfig:
 
     def __init__(self):
-        self.settings = QSettings("szgenle", "密码本")
+        self.settings = QSettings("szgenle", "账号小本本")
 
     def get_lock_time(self):
         return self.settings.value("lock_time", 10, type=int)

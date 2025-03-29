@@ -24,7 +24,7 @@ class AppWindow(BaseWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("密码管理器")
+        self.setWindowTitle("账号管理器")
 
         # 记录最后活动时间
         self.last_active_time = datetime.now()
@@ -114,7 +114,7 @@ class AppWindow(BaseWindow):
 def main():
     """主函数"""
     app = QApplication(sys.argv)
-    app.setApplicationName("密码管理器")
+    app.setApplicationName("账号小本本")
 
     window = AppWindow()
     window.show()
