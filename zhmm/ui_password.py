@@ -3,13 +3,11 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 
-import json
-from PyQt6.QtCore import Qt, pyqtSignal, QSortFilterProxyModel, QAbstractTableModel, QTimer
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QTimer
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QTableView, QHeaderView,
-                             QMessageBox, QDialog, QGridLayout, QComboBox,
-                             QFrame, QFormLayout, QFileDialog, QCheckBox)
+                             QMessageBox, QDialog, QComboBox, QFormLayout, QCheckBox, QApplication)
 
 from zhmm.data_exporter import DataExporter
 from zhmm.sm_data import SmData
@@ -57,6 +55,20 @@ class PasswordTableModel(QAbstractTableModel):
         self.beginResetModel()
         self._data = data
         self.endResetModel()
+
+
+class CustomProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.show_all_data = True  # 新增控制属性
+
+    def filterAcceptsRow(self, source_row, source_parent):
+        """根据复选框状态调整过滤逻辑"""
+        if self.show_all_data:
+            return super().filterAcceptsRow(source_row, source_parent)
+        if not self.filterRegularExpression().pattern():
+            return False
+        return super().filterAcceptsRow(source_row, source_parent)
 
 
 class AddPasswordDialog(QDialog):
@@ -137,7 +149,7 @@ class AddPasswordDialog(QDialog):
         layout.addLayout(button_layout)
 
         self.setLayout(layout)
-        
+
         # 如果是编辑模式，填充数据
         if edit_data:
             self._populate_data(edit_data)
@@ -199,7 +211,7 @@ class PasswordManagerWidget(QWidget):
         # 新增删除按钮
         self.delete_button = QPushButton("删除")
         self.delete_button.clicked.connect(self.delete_selected_password)
-        
+
         export_button = QPushButton("导出")
         export_button.clicked.connect(self.export_passwords)
 
@@ -223,7 +235,7 @@ class PasswordManagerWidget(QWidget):
         self.show_all_checkbox = QCheckBox("隐藏非搜索数据")
         self.show_all_checkbox.setChecked(False)
         self.show_all_checkbox.toggled.connect(self.toggle_show_all)
-        
+
         search_layout.addWidget(search_label)
         search_layout.addWidget(self.search_input, 1)
         search_layout.addWidget(self.show_all_checkbox)  # 新增复选框
@@ -245,6 +257,9 @@ class PasswordManagerWidget(QWidget):
         self.proxy_model.setFilterKeyColumn(-1)  # -1 表示搜索所有列
 
         self.table_view.setModel(self.proxy_model)
+
+        # 新增单元格点击事件处理
+        self.table_view.clicked.connect(self.copy_cell_to_clipboard)
 
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSortingEnabled(True)
@@ -276,6 +291,12 @@ class PasswordManagerWidget(QWidget):
             header.resizeSection(8, calculate_column_width('8888888888'))
 
         main_layout.addWidget(self.table_view)
+
+        # 添加状态标签（在表格下方）
+        self.status_label = QLabel()
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.status_label.setStyleSheet("color: #666; font-size: 12px;")
+        main_layout.addWidget(self.status_label)
 
     def filter_passwords(self):
         """过滤密码列表"""
@@ -341,7 +362,7 @@ class PasswordManagerWidget(QWidget):
         try:
             # 确认删除
             reply = QMessageBox.question(
-                self, "确认删除", 
+                self, "确认删除",
                 "确定要删除该密码记录吗？此操作不可恢复！",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
@@ -359,10 +380,10 @@ class PasswordManagerWidget(QWidget):
         except Exception as e:
             logger.error(f"删除密码出错: {str(e)}")
             QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
-    
+
     def edit_selected_password(self):
         """编辑选中的密码项"""
-        selected = self.table_view.selectionModel().selectedRows()      # type: ignore
+        selected = self.table_view.selectionModel().selectedRows()  # type: ignore
         if not selected:
             QMessageBox.warning(self, "警告", "请先选择要编辑的项目")
             return
@@ -383,7 +404,7 @@ class PasswordManagerWidget(QWidget):
     def _process_edit_result(self, dialog, original_row):
         """处理编辑结果"""
         new_data = dialog.get_password_data()
-        
+
         # 保留原始ID和创建时间
         new_data['id'] = self.gl_data.mm['data'][original_row]['id']
         new_data['ctime'] = self.gl_data.mm['data'][original_row].get('ctime', date_util.timestamp_int())
@@ -429,19 +450,12 @@ class PasswordManagerWidget(QWidget):
             logger.error(f"添加密码出错: {str(e)}")
             QMessageBox.critical(dialog, "错误", f"添加出错: {str(e)}")
 
-
-class CustomProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.show_all_data = True  # 新增控制属性
-
-    def filterAcceptsRow(self, source_row, source_parent):
-        """根据复选框状态调整过滤逻辑"""
-        if self.show_all_data:
-            return super().filterAcceptsRow(source_row, source_parent)
-        if not self.filterRegularExpression().pattern():
-            return False
-        return super().filterAcceptsRow(source_row, source_parent)
-
-
+    def copy_cell_to_clipboard(self, index):
+        """复制单元格内容到剪贴板"""
+        if index.isValid():
+            text = self.proxy_model.data(index, Qt.ItemDataRole.DisplayRole)
+            QApplication.clipboard().setText(str(text))  # type: ignore
+            # 更新状态标签
+            self.status_label.setText("已复制到剪贴板")
+            QTimer.singleShot(2000, lambda: self.status_label.setText(""))
 
