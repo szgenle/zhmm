@@ -81,6 +81,7 @@ class PasswordManagerWidget(QWidget):
             self.gl_data = SmData()
         else:
             self.gl_data = info['sm_data']
+        self.gl_data.file_path = info['file_path']
         self.setup_ui()
 
     def setup_ui(self):
@@ -204,9 +205,15 @@ class PasswordManagerWidget(QWidget):
 
     def add_password(self):
         """添加密码"""
-        dialog = AddPasswordDialog(self)
+        dialog = AddPasswordDialog(self, self.gl_data.mm['roles'])
         dialog.confirm_button.clicked.connect(lambda: self.confirm_add_password(dialog))
+        dialog.added_role.connect(lambda new_role: self.add_role(new_role))
         dialog.exec()
+
+    def add_role(self, new_role):
+        self.gl_data.mm['roles'].append(new_role)
+        self.gl_data.save()
+        pass
 
     def confirm_add_password(self, dialog):
         """确认添加密码"""
@@ -221,7 +228,7 @@ class PasswordManagerWidget(QWidget):
         try:
             # 使用gl_data添加数据
             self.gl_data.add(password_data)
-            if self.gl_data.save(self.info['file_path']):
+            if self.gl_data.save():
                 # 更新表格模型
                 self.table_model.setZhData(self.gl_data.mm['data'])
                 QMessageBox.information(dialog, "成功", "账号密码添加成功")
@@ -265,7 +272,7 @@ class PasswordManagerWidget(QWidget):
                 # 更新表格
                 self.table_model.setZhData(self.gl_data.mm['data'])
                 # 保存更改
-                if self.gl_data.save(self.info['file_path']):
+                if self.gl_data.save():
                     QMessageBox.information(self, "成功", "删除成功")
                 else:
                     self.gl_data.mm['data'].insert(row, deleted_item)  # 回滚
@@ -288,8 +295,9 @@ class PasswordManagerWidget(QWidget):
         edit_data = self.gl_data.mm['data'][row]
 
         # 创建编辑对话框并传入数据
-        dialog = AddPasswordDialog(self, edit_data=edit_data)
+        dialog = AddPasswordDialog(self, self.gl_data.mm['roles'], edit_data=edit_data)
         dialog.confirm_button.clicked.connect(lambda: self._process_edit_result(dialog, row))
+        dialog.added_role.connect(lambda new_role: self.add_role(new_role))
         dialog.setWindowTitle("编辑密码信息")
         dialog.confirm_button.setText("确认修改")
         dialog.exec()
@@ -310,7 +318,7 @@ class PasswordManagerWidget(QWidget):
         try:
             # 更新数据
             self.gl_data.mm['data'][original_row] = new_data
-            if self.gl_data.save(self.info['file_path']):
+            if self.gl_data.save():
                 self.table_model.setZhData(self.gl_data.mm['data'])
                 QMessageBox.information(dialog, "成功", "修改成功")
             else:
@@ -332,7 +340,7 @@ class PasswordManagerWidget(QWidget):
         try:
             # 使用gl_data添加数据
             self.gl_data.add(password_data)
-            if self.gl_data.save(self.info['file_path']):
+            if self.gl_data.save():
                 # 更新表格模型
                 self.table_model.setZhData(self.gl_data.mm['data'])
                 QMessageBox.information(dialog, "成功", "账号密码添加成功")

@@ -23,6 +23,7 @@ class ZhmmDict(TypedDict):
 
 class ZhmmDataDict(TypedDict):
     data: list[ZhmmDict]
+    roles: list[str]
 
 
 class SmData:
@@ -50,8 +51,11 @@ class SmData:
     suffixHash = ''
 
     mm: ZhmmDataDict = {
-        'data': []
+        'data': [],
+        'roles': ['个人', '工作', '其它']
     }
+
+    file_path = ''
 
     def __init__(self):
         return
@@ -144,6 +148,8 @@ class SmData:
 
     def set_mm(self, user_mm_data: ZhmmDataDict):
         self.mm = user_mm_data
+        if 'roles' not in user_mm_data:
+            self.mm['roles'] = ['个人', '工作', '其它']
 
     def fix_id_is_None(self) -> bool:
         """
@@ -217,7 +223,9 @@ class SmData:
             'utime': info.get('utime', date_util.timestamp_int())
         })
 
-    def save(self, file_path: str) -> bool:
+    def save(self, file_path: str = None) -> bool:
+        if file_path is None:
+            file_path = self.file_path
         data = self.encrypt(json.dumps(self.mm))
         data_size = len(data)
         with open(file_path, 'w') as file:

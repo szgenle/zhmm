@@ -127,7 +127,8 @@ class FileListWidget(QWidget):
             print("用户取消了创建操作")
 
     def on_create_success(self, file_path: str, info: dict):
-        info['sm_data'].save(file_path)
+        info['sm_data'].file_path = file_path
+        info['sm_data'].save()
         self.on_login_success(file_path, info)
 
     def on_login_success(self, file_path: str, info: dict):

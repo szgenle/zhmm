@@ -1,17 +1,21 @@
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QDialog, QLabel, QFormLayout, QComboBox, QLineEdit, QHBoxLayout, QPushButton, QVBoxLayout
+from PyQt6.QtWidgets import QDialog, QLabel, QFormLayout, QComboBox, QLineEdit, QHBoxLayout, QPushButton, QVBoxLayout, QInputDialog
 
+from zhmm.sm_data import SmData
 from zhmm.utils import date_util
 
 
 class AddPasswordDialog(QDialog):
     """添加密码对话框"""
+    added_role = pyqtSignal(str)  # 增加角色信息
 
-    def __init__(self, parent=None, edit_data=None):
+    def __init__(self, parent, roles: list[str], edit_data=None):
         super().__init__(parent)
         self.setWindowTitle("添加账号密码")
         self.setFixedSize(600, 400)
+
+        self.roles = roles
 
         # 创建布局
         layout = QVBoxLayout()
@@ -30,8 +34,20 @@ class AddPasswordDialog(QDialog):
 
         # 类别选择
         self.role_combo = QComboBox()
-        self.role_combo.addItems(["个人", "其他"])
-        form_layout.addRow("类别:", self.role_combo)
+        self.role_combo.setEditable(True)
+        
+        # 加载保存的类别
+        self.role_combo.addItems(self.roles)
+        
+        # 添加新建类别按钮
+        add_role_btn = QPushButton("+")
+        add_role_btn.setFixedSize(30, 30)
+        add_role_btn.clicked.connect(self._add_custom_role)
+        
+        role_layout = QHBoxLayout()
+        role_layout.addWidget(self.role_combo)
+        role_layout.addWidget(add_role_btn)
+        form_layout.addRow("类别:", role_layout)
 
         # 账号输入
         self.userid_input = QLineEdit()
@@ -93,6 +109,19 @@ class AddPasswordDialog(QDialog):
         # 如果是编辑模式，填充数据
         if edit_data:
             self._populate_data(edit_data)
+
+    def _add_custom_role(self):
+        """添加新类别"""
+        new_role, ok = QInputDialog.getText(
+            self, 
+            "新建类别",
+            "请输入新类别名称:",
+            QLineEdit.EchoMode.Normal
+        )
+        if ok and new_role.strip():
+            if new_role not in self.roles:
+                self.added_role.emit(new_role)
+                self.role_combo.addItem(new_role)
 
     def _populate_data(self, data):
         """填充编辑数据"""
