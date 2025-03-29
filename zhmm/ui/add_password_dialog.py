@@ -11,7 +11,7 @@ class AddPasswordDialog(QDialog):
     def __init__(self, parent=None, edit_data=None):
         super().__init__(parent)
         self.setWindowTitle("添加账号密码")
-        self.setFixedSize(500, 400)
+        self.setFixedSize(600, 400)
 
         # 创建布局
         layout = QVBoxLayout()
@@ -35,31 +35,37 @@ class AddPasswordDialog(QDialog):
 
         # 账号输入
         self.userid_input = QLineEdit()
+        self.userid_input.setMinimumWidth(300)
         self.userid_input.setPlaceholderText("请输入账号")
         form_layout.addRow("账号:", self.userid_input)
 
         # 密码输入
         self.password_input = QLineEdit()
+        self.password_input.setMinimumWidth(300)
         self.password_input.setPlaceholderText("请输入密码")
         form_layout.addRow("密码:", self.password_input)
 
         # 手机输入
         self.phone_input = QLineEdit()
+        self.phone_input.setMinimumWidth(300)
         self.phone_input.setPlaceholderText("请输入手机号码（可选）")
         form_layout.addRow("手机:", self.phone_input)
 
         # 邮箱输入
         self.email_input = QLineEdit()
+        self.email_input.setMinimumWidth(300)
         self.email_input.setPlaceholderText("请输入邮箱（可选）")
         form_layout.addRow("邮箱:", self.email_input)
 
         # 网站输入
         self.url_input = QLineEdit()
+        self.url_input.setMinimumWidth(300)
         self.url_input.setPlaceholderText("请输入网站地址（可选）")
         form_layout.addRow("网站:", self.url_input)
 
         # 备注输入
         self.desc_input = QLineEdit()
+        self.desc_input.setMinimumWidth(300)
         self.desc_input.setPlaceholderText("请输入备注信息（可选）")
         form_layout.addRow("备注:", self.desc_input)
 
