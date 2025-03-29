@@ -6,15 +6,16 @@ import sys
 from datetime import datetime, timedelta
 
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import (QApplication, QMainWindow)
+from PyQt6.QtWidgets import (QApplication)
 
+from zhmm.qt_components.base_window import BaseWindow
 from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
 from zhmm.ui.welcome_widget import WelcomeWidget
 from zhmm.ui_password import PasswordManagerWidget
 from zhmm.utils.log import logger
 
 
-class MainWindow(QMainWindow):
+class MainWindow(BaseWindow):
     """主窗口"""
 
     welcome_widget: WelcomeWidget | None = None
@@ -23,7 +24,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("密码管理器")
-        self.resize(1200, 600)
 
         # 记录最后活动时间
         self.last_active_time = datetime.now()
