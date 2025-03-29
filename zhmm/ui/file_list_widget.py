@@ -7,7 +7,7 @@ from typing import TypedDict, Optional
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QTableWidget, QHeaderView, QFileDialog, \
-    QTableWidgetItem, QMenu
+    QTableWidgetItem, QMenu, QMessageBox
 
 from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
 from zhmm.utils import file_util
@@ -95,12 +95,40 @@ class FileListWidget(QWidget):
     def show_login_dialog(self, file_path: str, openid: str | None = None):
         """显示登录对话框"""
         content = file_util.get_file_content(file_path)
-        if not content:
+        if content is None:
+            QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
             print("密码文件打开失败")
             return
         login_dialog = LoginDialog(content, openid)
         login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
         login_dialog.exec()
+
+    def show_create_dialog(self, file_path: str):
+        """
+        显示创建提示对话框，并在用户确认后显示登录对话框
+        """
+        font = QFont()
+        font.setPointSize(12)
+        font.setBold(True)
+
+        message_box = QMessageBox()
+        message_box.setWindowTitle("提示")
+        message_box.setFont(font)
+        message_box.setText("该文件不存在或未登录，是否创建新密码本？")
+        message_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        message_box.setDefaultButton(QMessageBox.StandardButton.No)
+        message_box.setIcon(QMessageBox.Icon.Question)
+        result = message_box.exec()
+        if result == QMessageBox.StandardButton.Yes:
+            login_dialog = LoginDialog('')
+            login_dialog.login_success.connect(lambda info: self.on_create_success(file_path, info))
+            login_dialog.exec()
+        else:
+            print("用户取消了创建操作")
+
+    def on_create_success(self, file_path: str, info: dict):
+        info['sm_data'].save(file_path)
+        self.on_login_success(file_path, info)
 
     def on_login_success(self, file_path: str, info: dict):
         """登录成功后的处理"""
@@ -206,6 +234,4 @@ class FileListWidget(QWidget):
             if not file_path.endswith('.gl'):
                 file_path += '.gl'
             
-            # 创建空文件并添加到列表
-            open(file_path, 'w').close()
-            self.show_login_dialog(file_path)
+            self.show_create_dialog(file_path)

@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushB
 
 from zhmm import sm_util, sm_data
 from zhmm.qt_components.dialog import Dialog
-from zhmm.sm_data import SmData
+from zhmm.sm_data import SmData, ZhmmDict
 from zhmm.utils import file_util, data_conversion
 from zhmm.utils.log import logger
 
@@ -114,18 +114,27 @@ class LoginDialog(Dialog):
             smdata = sm_data.SmData()
             smdata.init(openid, pwd)
 
-            decrypt_result = smdata.decrypt(content)
+            if content == '':
+                user_mm_data = {
+                    'userID': openid,
+                    'pwd': password,
+                    'url': 'szgenle',
+                    'desc': '务必记住当前的userID和密码'
+                }
+                smdata.add_with_dict(user_mm_data)
+            else:
+                decrypt_result = smdata.decrypt(content)
 
-            if not decrypt_result or not decrypt_result['res']:
-                if self.openid_input.isHidden():
-                    QMessageBox.critical(self, "错误", "密码不正确")
-                else:
-                    QMessageBox.critical(self, "错误", "OpenID或者密码不正确")
-                self.password_input.clear()  # 新增：清空密码输入框
-                return
+                if not decrypt_result or not decrypt_result['res']:
+                    if self.openid_input.isHidden():
+                        QMessageBox.critical(self, "错误", "密码不正确")
+                    else:
+                        QMessageBox.critical(self, "错误", "OpenID或者密码不正确")
+                    self.password_input.clear()  # 新增：清空密码输入框
+                    return
 
-            user_mm_data = json.loads(decrypt_result['res'])
-            smdata.set_mm(user_mm_data)
+                user_mm_data = json.loads(decrypt_result['res'])
+                smdata.set_mm(user_mm_data)
 
             # 登录成功
             logger.info(f"用户 {openid} 登录成功")

@@ -10,7 +10,7 @@ from zhmm.utils import data_conversion, date_util
 
 
 class ZhmmDict(TypedDict):
-    id: Optional[int | None]
+    id: Optional[int]
     role: Optional[str]
     userID: str
     pwd: str
@@ -196,13 +196,26 @@ class SmData:
         return False
 
     def add(self, info: ZhmmDict):
-        self.mm['data'].append(info)
         if 'role' not in info or not info['role']:
             info['role'] = '个人'
         if 'id' not in info or not info['id']:
             info['id'] = date_util.timestamp_int()
         if 'utime' not in info or not info['utime']:
             info['utime'] = date_util.timestamp_int()
+        self.mm['data'].append(info)
+
+    def add_with_dict(self, info: dict):
+        self.add({
+            'id': info.get('id', date_util.timestamp_int()),
+            'role': info.get('role', '个人'),
+            'userID': info.get('userID', ''),
+            'pwd': info.get('pwd', ''),
+            'phone': info.get('phone', ''),
+            'email': info.get('email', ''),
+            'url': info.get('url', ''),
+            'desc': info.get('desc', ''),
+            'utime': info.get('utime', date_util.timestamp_int())
+        })
 
     def save(self, file_path: str) -> bool:
         data = self.encrypt(json.dumps(self.mm))
