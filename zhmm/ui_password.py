@@ -213,8 +213,8 @@ class PasswordManagerWidget(QWidget):
         password_data = dialog.get_password_data()
 
         # 验证必填字段
-        if not password_data['userID'] or not password_data['pwd']:
-            QMessageBox.warning(dialog, "警告", "账号和密码不能为空")
+        if not password_data['userID']:
+            QMessageBox.warning(dialog, "警告", "账号不能为空")
             return
 
         # 添加到数据模型
