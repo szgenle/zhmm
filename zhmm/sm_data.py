@@ -223,7 +223,7 @@ class SmData:
             'utime': info.get('utime', date_util.timestamp_int())
         })
 
-    def save(self, file_path: str = None) -> bool:
+    def save(self, file_path: str | None = None) -> bool:
         if file_path is None:
             file_path = self.file_path
         data = self.encrypt(json.dumps(self.mm))

@@ -2,7 +2,7 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame
 
@@ -21,7 +21,7 @@ class WelcomeWidget(QWidget):
         main_layout = QVBoxLayout(self)
 
         # 欢迎标题
-        welcome_label = QLabel("欢迎使用账号管理器")
+        welcome_label = QLabel("欢迎使用账号小笨苯")
         welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         welcome_label.setFont(QFont("Arial", 24, QFont.Weight.Bold))
         main_layout.addWidget(welcome_label)
