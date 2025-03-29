@@ -2,6 +2,7 @@
 # coding=utf-8
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSpinBox, QCheckBox
 
+
 class SettingWidget(QWidget):
     """设置界面组件"""
 
