@@ -220,7 +220,8 @@ class PasswordManagerWidget(QWidget):
         QTimer.singleShot(0, self.search_input.setFocus)  # 延迟聚焦到密码输入框
 
         # 在搜索区域添加复选框
-        self.show_all_checkbox = QCheckBox("显示全部数据")
+        self.show_all_checkbox = QCheckBox("隐藏非搜索数据")
+        self.show_all_checkbox.setChecked(False)
         self.show_all_checkbox.toggled.connect(self.toggle_show_all)
         
         search_layout.addWidget(search_label)
@@ -257,14 +258,11 @@ class PasswordManagerWidget(QWidget):
     def filter_passwords(self):
         """过滤密码列表"""
         search_text = self.search_input.text()
-        if self.show_all_checkbox.isChecked() and not search_text:
-            self.proxy_model.setFilterRegularExpression("")  # 显示所有数据
-        else:
-            self.proxy_model.setFilterWildcard(f"*{search_text}*" if search_text else "")
+        self.proxy_model.setFilterWildcard(f"*{search_text}*" if search_text else "")
 
     def toggle_show_all(self, checked):
         """复选框状态切换处理"""
-        self.proxy_model.show_all_data = checked
+        self.proxy_model.show_all_data = not checked
         # 触发过滤刷新
         self.filter_passwords()
 
@@ -413,7 +411,7 @@ class PasswordManagerWidget(QWidget):
 class CustomProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.show_all_data = False  # 新增控制属性
+        self.show_all_data = True  # 新增控制属性
 
     def filterAcceptsRow(self, source_row, source_parent):
         """根据复选框状态调整过滤逻辑"""
