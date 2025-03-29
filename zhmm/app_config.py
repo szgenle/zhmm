@@ -9,4 +9,11 @@ class AppConfig:
     def __init__(self):
         self.settings = QSettings("szgenle", "密码本")
 
+    def get_lock_time(self):
+        return self.settings.value("lock_time", 10, type=int)
+
+    def save_lock_time(self, minutes):
+        self.settings.setValue("lock_time", minutes)
+        self.settings.sync()
+
 

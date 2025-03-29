@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding=utf-8
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSpinBox, QCheckBox, QPushButton
+from zhmm import config
 
 
 class SettingWidget(QWidget):
@@ -15,10 +16,11 @@ class SettingWidget(QWidget):
         layout = QVBoxLayout(self)
 
         # 自动锁定时间设置
-        self.lock_time_label = QLabel("自动锁定时间（分钟）(暂未实现):")
+        self.lock_time_label = QLabel("自动锁定时间（分钟）:")
         self.lock_time_spinbox = QSpinBox()
         self.lock_time_spinbox.setRange(1, 60)
-        self.lock_time_spinbox.setValue(5)
+        self.lock_time_spinbox.setValue(config.get_lock_time())
+        self.lock_time_spinbox.valueChanged.connect(config.save_lock_time)
         self.lock_time_spinbox.setMaximumWidth(200)
         
         # 主题设置

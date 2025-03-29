@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (QApplication)
 
+from zhmm import config
 from zhmm.qt_components.base_window import BaseWindow
 from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
 from zhmm.ui.welcome_widget import WelcomeWidget
@@ -28,10 +29,10 @@ class AppWindow(BaseWindow):
         # 记录最后活动时间
         self.last_active_time = datetime.now()
 
-        # 创建定时器，每分钟检查一次非活动时间
+        # 创建定时器，使用配置的锁屏时间检查非活动时间
         self.inactivity_timer = QTimer(self)
         self.inactivity_timer.timeout.connect(self.check_inactivity)
-        self.inactivity_timer.start(60000)  # 60000毫秒 = 1分钟
+        self.inactivity_timer.start(config.get_lock_time() * 60000)
 
         # 首次启动时显示欢迎窗口
         QTimer.singleShot(500, self.show_welcome_ui)
@@ -88,8 +89,8 @@ class AppWindow(BaseWindow):
         current_time = datetime.now()
         inactive_duration = current_time - self.last_active_time
 
-        # 如果非活动时间超过3分钟且窗口当前是活动的，则显示登录窗口
-        if inactive_duration > timedelta(minutes=1) and not isinstance(self.centralWidget(), WelcomeWidget):
+        # 使用配置的锁屏时间检查非活动时间
+        if inactive_duration > timedelta(minutes=config.get_lock_time()) and not isinstance(self.centralWidget(), WelcomeWidget):
             logger.info(f"检测到非活动时间: {inactive_duration}，显示登录窗口")
             self.show_welcome_ui()
 
@@ -101,8 +102,8 @@ class AppWindow(BaseWindow):
             current_time = datetime.now()
             inactive_duration = current_time - self.last_active_time
 
-            # 如果非活动时间超过3分钟，显示登录窗口
-            if inactive_duration > timedelta(minutes=3):
+            # 使用配置的锁屏时间检查非活动时间
+            if inactive_duration > timedelta(minutes=config.get_lock_time()):
                 logger.info(f"窗口重新激活，非活动时间: {inactive_duration}，显示登录窗口")
                 self.show_welcome_ui()
 
