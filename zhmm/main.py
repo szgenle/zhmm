@@ -7,7 +7,7 @@
 
 from PyQt6.QtCore import QCoreApplication
 
-from zhmm import ui_main
+from zhmm import ui_app
 from zhmm.utils.log import logger
 
 QCoreApplication.setApplicationName("zhmm")
@@ -22,7 +22,7 @@ QCoreApplication.setOrganizationName("szgenle")  # 替换为您的组织名称
 
 def main():
     # cmd_main.main()
-    ui_main.main()
+    ui_app.main()
     pass
 
 

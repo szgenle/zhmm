@@ -15,7 +15,7 @@ from zhmm.ui_password import PasswordManagerWidget
 from zhmm.utils.log import logger
 
 
-class MainWindow(BaseWindow):
+class AppWindow(BaseWindow):
     """主窗口"""
 
     welcome_widget: WelcomeWidget | None = None
@@ -115,7 +115,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("密码管理器")
 
-    window = MainWindow()
+    window = AppWindow()
     window.show()
 
     sys.exit(app.exec())
