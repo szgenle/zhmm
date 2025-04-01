@@ -11,8 +11,8 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushB
 
 from zhmm import sm_util, sm_data
 from zhmm.qt_components.dialog import Dialog
-from zhmm.sm_data import SmData, ZhmmDict
-from zhmm.utils import file_util, data_conversion
+from zhmm.sm_data import SmData
+from zhmm.utils import data_conversion
 from zhmm.utils.log import logger
 
 

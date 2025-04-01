@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QApplication)
 
 from zhmm import config
 from zhmm.qt_components.base_window import BaseWindow
-from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
+from zhmm.ui.login_dialog import ZhmmFileInfo
 from zhmm.ui.welcome_widget import WelcomeWidget
 from zhmm.ui_main import MainWindow
 from zhmm.utils.log import logger

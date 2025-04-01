@@ -227,7 +227,7 @@ class FileListWidget(QWidget):
         """新建密码本文件"""
         file_path, _ = QFileDialog.getSaveFileName(
             self, 
-            '新建账号小本本',
+            '新建账号小本本文件',
             '',  # 初始路径设为空
             '账号文件 (*.gl)'
         )
