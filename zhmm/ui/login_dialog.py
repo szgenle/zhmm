@@ -19,7 +19,7 @@ from zhmm.utils.log import logger
 class ZhmmFileInfo(TypedDict):
     file_path: str
     openid: str
-    sm_data: Optional[SmData | None]
+    sm_data: Optional[SmData]
 
 
 class LoginDialog(Dialog):
