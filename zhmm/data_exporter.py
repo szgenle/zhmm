@@ -1,5 +1,6 @@
 import pandas as pd  # 添加pandas库导入
 from PyQt6.QtWidgets import QFileDialog
+from pandas._typing import DtypeArg
 
 from zhmm.sm_data import ZhmmDict
 
@@ -18,7 +19,9 @@ class DataImporter:
         en_heads = ['id', 'role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc', 'utime']
         
         try:
-            df = pd.read_excel(xlsx_file_path)
+            # 指定列数据类型，确保手机号列读取为字符串
+            dtype: DtypeArg = {'手机': str}
+            df = pd.read_excel(xlsx_file_path, dtype=dtype)
             
             # 检查列名是否匹配
             if not all(col in df.columns for col in cn_heads):
@@ -34,6 +37,9 @@ class DataImporter:
                         value = '' if cell_value.isna().all() else str(cell_value.iloc[0])
                     else:
                         value = '' if pd.isna(cell_value) else str(cell_value)
+                    # 特殊处理手机号列
+                    if cn_col == '手机' and value.endswith('.0'):
+                        value = value[:-2]
                     # 还原特殊字符
                     value = value.replace('[r]', '\r').replace('[n]', '\n')
                     item[en_heads[i]] = value
