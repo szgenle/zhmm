@@ -168,7 +168,20 @@ class FileListWidget(QWidget):
     def load_saved_files(self):
         """加载已保存文件"""
         saved_files = self.load_all_saved_files()
-        for file_path, info in saved_files.items():
+        # 按照last_access_time倒序排序
+        sorted_files = {}
+        if saved_files:
+            # 将字典转换为列表并按照last_access_time倒序排序
+            sorted_items = sorted(
+                saved_files.items(),
+                key=lambda x: x[1].get('last_access_time', ''),
+                reverse=True  # 倒序排序，最近的日期排在前面
+            )
+            # 转回字典
+            sorted_files = dict(sorted_items)
+        
+        # 添加到表格中
+        for file_path, info in sorted_files.items():
             self.add_file_path(file_path, info['openid'])
 
     def load_all_saved_files(self) -> dict:
