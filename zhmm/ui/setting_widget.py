@@ -41,7 +41,7 @@ class SettingWidget(QWidget):
         self.download_xlsx_button = QPushButton("下载xlsx模版(暂未实现)")
         self.download_xlsx_button.setMaximumWidth(200)
 
-        export_button = QPushButton("导出xlsx")
+        export_button = QPushButton("导出xlsx文件")
         export_button.clicked.connect(self.export_passwords)
         export_button.setMaximumWidth(200)
 
