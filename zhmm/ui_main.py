@@ -18,6 +18,7 @@ class MainWindow(QWidget):
         super().__init__()
         self.data_manager_widget = PasswordManagerWidget(info)
         self.setting_widget = SettingWidget(info)
+        self.setting_widget.imported_xlsx.connect(self.imported_xlsx_data)
         self.setup_ui()
 
     def setup_ui(self):
@@ -31,3 +32,7 @@ class MainWindow(QWidget):
         # 添加标签页
         tab_widget.addTab(self.data_manager_widget, "账号管理")
         tab_widget.addTab(self.setting_widget, "系统设置")
+
+    def imported_xlsx_data(self):
+        if self.data_manager_widget:
+            self.data_manager_widget.refresh_data()

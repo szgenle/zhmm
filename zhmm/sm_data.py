@@ -6,7 +6,7 @@ import json
 from typing import TypedDict, Optional
 
 from zhmm import sm_util
-from zhmm.utils import data_conversion, date_util
+from zhmm.utils import data_conversion, date_util, dict_util
 
 
 class ZhmmDict(TypedDict):
@@ -213,6 +213,44 @@ class SmData:
             info['utime'] = date_util.timestamp_int()
         self.mm['data'].append(info)
         self.mm['utime'] = date_util.timestamp_int()
+
+    def merge(self, other: list[ZhmmDict]):
+        """
+        将other的每一项数据合并到mm['data']中
+        如果这一项中有一项不存在相同id的项中，就合并
+        如果这一项中在mm['data']相同id的项中是完全一样的，就不合并
+        """
+        if not other:
+            return 
+            
+        append_times = 0
+        update_times = 0
+        for item in other:
+            if 'id' not in item:
+                continue
+                
+            existing_item = next((x for x in self.mm['data'] if 'id' in x and x['id'] == item['id']), None)
+            
+            if not existing_item:
+                self.mm['data'].append(item)
+                self.mm['utime'] = date_util.timestamp_int()
+                append_times += 1
+            elif not dict_util.is_equal(existing_item, item):   # type: ignore
+                """"比较utime, 使用utime相对比较大的数据"""
+                if 'utime' not in item or not item['utime'] or 'utime' not in existing_item or not existing_item['utime']:
+                    self.mm['data'].append(item)
+                    self.mm['utime'] = date_util.timestamp_int()
+                    append_times += 1
+                elif item['utime'] > existing_item['utime']:
+                    print('existing_item', existing_item)
+                    print('other_item', item)
+                    existing_item.update(item)
+                    self.mm['utime'] = date_util.timestamp_int()
+                    update_times += 1
+        print(f'合并完成, 新增{append_times}条, 更新{update_times}条')
+        if append_times + update_times > 0:
+            self.save()
+        return append_times, update_times
 
     def add_with_dict(self, info: dict):
         self.add({

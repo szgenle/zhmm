@@ -1,10 +1,52 @@
 import pandas as pd  # 添加pandas库导入
 from PyQt6.QtWidgets import QFileDialog
 
-from zhmm.utils import file_util
+from zhmm.sm_data import ZhmmDict
 
 
-# ... 已有导入代码 ...
+class DataImporter:
+    @staticmethod
+    def import_from_file(xlsx_file_path: str) -> list[ZhmmDict] | None:
+        """
+        从文件导入数据
+        检查文件格式
+        检查文件内容
+        导入数据
+        返回导入结果
+        """
+        cn_heads = ['ID', '类别', '账号', '密码', '手机', '邮箱', '网站', '备注', '更新时间']
+        en_heads = ['id', 'role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc', 'utime']
+        
+        try:
+            df = pd.read_excel(xlsx_file_path)
+            
+            # 检查列名是否匹配
+            if not all(col in df.columns for col in cn_heads):
+                print("Excel文件列名不匹配")
+                return None
+                
+            data: list[ZhmmDict] = []
+            for _, row in df.iterrows():
+                item = {}
+                for i, cn_col in enumerate(cn_heads):
+                    cell_value = row[cn_col]
+                    if isinstance(cell_value, pd.Series):
+                        value = '' if cell_value.isna().all() else str(cell_value.iloc[0])
+                    else:
+                        value = '' if pd.isna(cell_value) else str(cell_value)
+                    # 还原特殊字符
+                    value = value.replace('[r]', '\r').replace('[n]', '\n')
+                    item[en_heads[i]] = value
+                data.append(item)           # type: ignore
+                
+            print(f"成功从 {xlsx_file_path} 导入 {len(data)} 条数据")
+            return data
+            
+        except Exception as e:
+            print(f"导入Excel文件失败: {str(e)}")
+            return None
+
+
 class DataExporter:
     """数据导出工具类"""
     @staticmethod

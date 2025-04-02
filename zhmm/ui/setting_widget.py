@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # coding=utf-8
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSpinBox, QCheckBox, QPushButton
 from zhmm import config
 from zhmm.data_exporter import DataExporter
@@ -8,6 +9,8 @@ from zhmm.ui.login_dialog import ZhmmFileInfo
 
 class SettingWidget(QWidget):
     """设置界面组件"""
+
+    imported_xlsx = pyqtSignal()  # 登录成功信号
 
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
@@ -35,6 +38,7 @@ class SettingWidget(QWidget):
 
         # 导入xlsx文件
         self.import_xlsx_button = QPushButton("导入xlsx文件(暂未实现)")
+        self.import_xlsx_button.clicked.connect(self.import_xlsx)
         self.import_xlsx_button.setMaximumWidth(200)
 
         # 下载xlsx模版
@@ -61,3 +65,32 @@ class SettingWidget(QWidget):
         sm_data = self.info['sm_data']
         if sm_data:
             DataExporter.export_to_file(sm_data.mm['data'])
+
+    def import_xlsx(self):
+        """导入xlsx文件"""
+        from PyQt6.QtWidgets import QFileDialog
+        from zhmm.data_exporter import DataImporter
+        
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, 
+            "选择xlsx文件", 
+            "", 
+            "Excel文件 (*.xlsx)"
+        )
+        
+        if file_path:
+            try:
+                imported_data = DataImporter.import_from_file(file_path)
+                if not imported_data:
+                    return False
+                sm_data = self.info['sm_data']
+                if sm_data:
+                    """讲导入的数据合并到sm_data中"""
+                    append_times, update_times = sm_data.merge(imported_data)   # type: ignore
+                    if append_times is None:
+                        return False
+                    self.imported_xlsx.emit()
+            except Exception as e:
+                print(f"导入xlsx文件失败: {e}")
+                
+        return False
