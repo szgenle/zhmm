@@ -3,6 +3,7 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 from typing import TypedDict, Optional
+from datetime import datetime
 
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
@@ -147,7 +148,8 @@ class FileListWidget(QWidget):
         saved_files = self.load_all_saved_files()
         saved_files[file_info['file_path']] = {
             "openid": file_info['openid'],
-            "filename": file_info['file_path'].split('/')[-1]
+            "filename": file_info['file_path'].split('/')[-1],
+            "last_access_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         self.save_all_saved_files(saved_files)
         
