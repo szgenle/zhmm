@@ -24,6 +24,7 @@ class ZhmmDict(TypedDict):
 class ZhmmDataDict(TypedDict):
     data: list[ZhmmDict]
     roles: list[str]
+    utime: int
 
 
 class SmData:
@@ -52,7 +53,8 @@ class SmData:
 
     mm: ZhmmDataDict = {
         'data': [],
-        'roles': ['个人', '工作', '其它']
+        'roles': ['个人', '工作', '其它'],
+        'utime': 0,
     }
 
     file_path = ''
@@ -198,6 +200,7 @@ class SmData:
         for data in self.mm['data']:
             if 'id' in data and data['id'] == id:
                 self.mm['data'].remove(data)
+                self.mm['utime'] = date_util.timestamp_int()
                 return True
         return False
 
@@ -209,6 +212,7 @@ class SmData:
         if 'utime' not in info or not info['utime']:
             info['utime'] = date_util.timestamp_int()
         self.mm['data'].append(info)
+        self.mm['utime'] = date_util.timestamp_int()
 
     def add_with_dict(self, info: dict):
         self.add({
