@@ -17,7 +17,7 @@ class MainWindow(QWidget):
     def __init__(self, info: ZhmmFileInfo):
         super().__init__()
         self.data_manager_widget = PasswordManagerWidget(info)
-        self.setting_widget = SettingWidget()
+        self.setting_widget = SettingWidget(info)
         self.setup_ui()
 
     def setup_ui(self):

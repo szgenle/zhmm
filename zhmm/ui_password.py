@@ -103,13 +103,9 @@ class PasswordManagerWidget(QWidget):
         self.delete_button = QPushButton("删除")
         self.delete_button.clicked.connect(self.delete_selected_password)
 
-        export_button = QPushButton("导出")
-        export_button.clicked.connect(self.export_passwords)
-
         button_layout.addWidget(add_button)
         button_layout.addWidget(self.edit_button)
         button_layout.addWidget(self.delete_button)  # 添加删除按钮
-        button_layout.addWidget(export_button)
 
         main_layout.addLayout(button_layout)
 

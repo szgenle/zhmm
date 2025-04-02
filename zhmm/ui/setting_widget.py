@@ -2,13 +2,16 @@
 # coding=utf-8
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSpinBox, QCheckBox, QPushButton
 from zhmm import config
+from zhmm.data_exporter import DataExporter
+from zhmm.ui.login_dialog import ZhmmFileInfo
 
 
 class SettingWidget(QWidget):
     """设置界面组件"""
 
-    def __init__(self, parent=None):
+    def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
+        self.info = info
         self.setup_ui()
 
     def setup_ui(self):
@@ -38,12 +41,23 @@ class SettingWidget(QWidget):
         self.download_xlsx_button = QPushButton("下载xlsx模版(暂未实现)")
         self.download_xlsx_button.setMaximumWidth(200)
 
+        export_button = QPushButton("导出xlsx")
+        export_button.clicked.connect(self.export_passwords)
+        export_button.setMaximumWidth(200)
+
         layout.addWidget(self.lock_time_label)
         layout.addWidget(self.lock_time_spinbox)
         layout.addWidget(self.dark_theme_checkbox)
         layout.addWidget(self.change_openid_button)
         layout.addWidget(self.import_xlsx_button)
         layout.addWidget(self.download_xlsx_button)
+        layout.addWidget(export_button)
 
 
         layout.addStretch()
+
+    def export_passwords(self):
+        """导出密码列表"""
+        sm_data = self.info['sm_data']
+        if sm_data:
+            DataExporter.export_to_file(sm_data.mm['data'])
