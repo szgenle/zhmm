@@ -29,11 +29,12 @@ class FileListWidget(QWidget):
         
         # 文件列表表格
         self.file_table = QTableWidget()
-        self.file_table.setColumnCount(3)  # 增加OpenID列
-        self.file_table.setHorizontalHeaderLabels(['文件名', '文件路径', 'OpenID'])
+        self.file_table.setColumnCount(4)  # 增加OpenID列
+        self.file_table.setHorizontalHeaderLabels(['文件名', '文件路径', 'OpenID', '最近访问时间'])
         self.file_table.setColumnHidden(0, True)  # 设置文件名列宽度
         self.file_table.setColumnHidden(2, True)  # 设置文件名列宽度
         self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # type: ignore
+        self.file_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)  # type: ignore
         self.file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.file_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # 启用右键菜单
         self.file_table.customContextMenuRequested.connect(self.show_context_menu)
@@ -154,16 +155,19 @@ class FileListWidget(QWidget):
         self.save_all_saved_files(saved_files)
         
         # 更新表格显示
-        self.add_file_path(file_info['file_path'], file_info['openid'])
+        self.add_file_path(file_info['file_path'], file_info)
 
-    def add_file_path(self, file_path, openid=None):
-        if not file_path:
+    def add_file_path(self, file_path, file_info):
+        if not file_path or not file_info:
             return
+        openid = file_info.get('openid')
+        last_access_time = file_info.get('last_access_time')
         row = self.file_table.rowCount()
         self.file_table.insertRow(row)
         self.file_table.setItem(row, 0, QTableWidgetItem(file_path.split('/')[-1]))
         self.file_table.setItem(row, 1, QTableWidgetItem(file_path))
         self.file_table.setItem(row, 2, QTableWidgetItem(openid or ""))
+        self.file_table.setItem(row, 3, QTableWidgetItem(last_access_time or ""))
 
     def load_saved_files(self):
         """加载已保存文件"""
@@ -182,7 +186,7 @@ class FileListWidget(QWidget):
         
         # 添加到表格中
         for file_path, info in sorted_files.items():
-            self.add_file_path(file_path, info['openid'])
+            self.add_file_path(file_path, info)
 
     def load_all_saved_files(self) -> dict:
         """从文件加载所有保存记录"""
