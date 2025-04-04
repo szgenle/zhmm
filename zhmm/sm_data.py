@@ -23,8 +23,8 @@ class ZhmmDict(TypedDict):
 
 class ZhmmDataDict(TypedDict):
     data: list[ZhmmDict]
-    roles: list[str]
-    utime: int
+    roles: Optional[list[str]]
+    utime: Optional[int]
 
 
 class SmData:
@@ -150,8 +150,15 @@ class SmData:
 
     def set_mm(self, user_mm_data: ZhmmDataDict):
         self.mm = user_mm_data
-        if 'roles' not in user_mm_data:
-            self.mm['roles'] = ['个人', '工作', '其它']
+        if 'roles' not in user_mm_data or not user_mm_data['roles']:
+            user_mm_data['roles'] = ['个人', '工作', '其它']
+        # 遍历user_mm_data['data'], 判断role是否在roles中，如果不在就添加
+        for data in user_mm_data['data']:
+            if 'role' not in data or not data['role']:
+                data['role'] = '个人'
+            if data['role'] not in user_mm_data['roles']:
+                user_mm_data['roles'].append(data['role'])
+        user_mm_data.setdefault('utime', date_util.timestamp_int())
 
     def fix_id_is_None(self) -> bool:
         """
