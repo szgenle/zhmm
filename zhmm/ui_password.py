@@ -169,26 +169,24 @@ class PasswordManagerWidget(QWidget):
         main_layout.addWidget(self.status_label)
 
     def setup_ui_button(self, main_layout):
-
         # 创建按钮区域
         button_layout = QHBoxLayout()
-
-        add_button = QPushButton("添加")
-        add_button.setMaximumWidth(128)
-        add_button.clicked.connect(self.add_password)
-
-        # # 新增编辑按钮
-        # self.edit_button = QPushButton("编辑")
-        # self.edit_button.clicked.connect(self.edit_selected_password)
+        
+        # 在布局开始处添加伸缩项
+        button_layout.addStretch()
 
         # 新增删除按钮
         self.delete_button = QPushButton("删除")
         self.delete_button.setMaximumWidth(128)
         self.delete_button.clicked.connect(self.delete_selected_password)
 
+        add_button = QPushButton("添加")
+        add_button.setMaximumWidth(128)
+        add_button.clicked.connect(self.add_password)
+
+        # 添加按钮顺序保持不变，但会被伸缩项推到右边
+        button_layout.addWidget(self.delete_button)
         button_layout.addWidget(add_button)
-        # button_layout.addWidget(self.edit_button)
-        button_layout.addWidget(self.delete_button)  # 添加删除按钮
 
         main_layout.addLayout(button_layout)
 
