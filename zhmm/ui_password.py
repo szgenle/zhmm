@@ -3,7 +3,7 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 
-from PyQt6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QTimer
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QAbstractTableModel, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QTableView, QHeaderView,
                              QMessageBox, QCheckBox, QApplication)
@@ -73,6 +73,7 @@ class CustomProxyModel(QSortFilterProxyModel):
 
 class PasswordManagerWidget(QWidget):
     """密码管理界面"""
+    return_requested = pyqtSignal()  # 然后首页的信号
 
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
@@ -172,20 +173,24 @@ class PasswordManagerWidget(QWidget):
         # 创建按钮区域
         button_layout = QHBoxLayout()
         
-        # 在布局开始处添加伸缩项
-        button_layout.addStretch()
+        # 新增返回按钮
+        return_btn = QPushButton("返回首页")
+        return_btn.clicked.connect(self.return_requested.emit)
 
         # 新增删除按钮
-        self.delete_button = QPushButton("删除")
-        self.delete_button.setMaximumWidth(128)
-        self.delete_button.clicked.connect(self.delete_selected_password)
+        delete_button = QPushButton("删除")
+        delete_button.setMaximumWidth(128)
+        delete_button.clicked.connect(self.delete_selected_password)
 
         add_button = QPushButton("添加")
         add_button.setMaximumWidth(128)
         add_button.clicked.connect(self.add_password)
 
         # 添加按钮顺序保持不变，但会被伸缩项推到右边
-        button_layout.addWidget(self.delete_button)
+        button_layout.addWidget(return_btn)
+        # 在布局开始处添加伸缩项
+        button_layout.addStretch()
+        button_layout.addWidget(delete_button)
         button_layout.addWidget(add_button)
 
         main_layout.addLayout(button_layout)

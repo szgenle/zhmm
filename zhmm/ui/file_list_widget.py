@@ -63,18 +63,19 @@ class FileListWidget(QWidget):
         main_layout.addLayout(button_layout)
         self.load_saved_files()
 
-        QTimer.singleShot(0, self.auto_select_last_file)  # 延迟聚焦到密码输入框
-
-    def auto_select_last_file(self):
+    def select_last_file(self):
         if self.file_table.rowCount() == 0:
             return
-        
+
         # 自动选择第一行
         self.file_table.setCurrentCell(0, 0)
         self.file_table.setFocus()
-        
+
         # 延迟触发点击事件（确保界面渲染完成）
         QTimer.singleShot(100, self.trigger_auto_login)
+
+    def auto_select_last_file(self):
+        QTimer.singleShot(0, self.select_last_file)  # 延迟聚焦到密码输入框
 
     def trigger_auto_login(self):
         """触发自动登录"""

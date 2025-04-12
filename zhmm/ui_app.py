@@ -37,18 +37,20 @@ class AppWindow(BaseWindow):
         # 首次启动时显示欢迎窗口
         QTimer.singleShot(500, self.show_welcome_ui)
 
-    def setup_welcome_ui(self):
+    def setup_welcome_ui(self, show_login_dialog: bool = True):
         """设置欢迎界面"""
         welcome_widget = WelcomeWidget(self)
+        if show_login_dialog:
+            welcome_widget.file_list.auto_select_last_file()
         welcome_widget.file_list.login_success.connect(lambda info: self.on_login_success(info))
         self.setCentralWidget(welcome_widget)
         return welcome_widget
 
-    def show_welcome_ui(self):
+    def show_welcome_ui(self, show_login_dialog: bool = True):
         """显示欢迎界面"""
         self.hide_welcome_ui()
 
-        self.welcome_widget = self.setup_welcome_ui()
+        self.welcome_widget = self.setup_welcome_ui(show_login_dialog)
         self.setCentralWidget(self.welcome_widget)
 
         self.hide_data_ui()
@@ -72,6 +74,8 @@ class AppWindow(BaseWindow):
         # 创建数据管理界面
         self.main_widget = MainWindow(info)
         self.setCentralWidget(self.main_widget)
+        # 添加返回按钮信号连接
+        self.main_widget.data_manager_widget.return_requested.connect(lambda: self.show_welcome_ui(False))  # 新增
         # 隐藏欢迎界面
         self.hide_welcome_ui()
 
