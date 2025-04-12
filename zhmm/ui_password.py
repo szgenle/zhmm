@@ -89,25 +89,6 @@ class PasswordManagerWidget(QWidget):
         # 创建主布局
         main_layout = QVBoxLayout(self)
 
-        # 创建按钮区域
-        button_layout = QHBoxLayout()
-
-        add_button = QPushButton("添加")
-        add_button.clicked.connect(self.add_password)
-
-        # 新增编辑按钮
-        self.edit_button = QPushButton("编辑")
-        self.edit_button.clicked.connect(self.edit_selected_password)
-
-        # 新增删除按钮
-        self.delete_button = QPushButton("删除")
-        self.delete_button.clicked.connect(self.delete_selected_password)
-
-        button_layout.addWidget(add_button)
-        button_layout.addWidget(self.edit_button)
-        button_layout.addWidget(self.delete_button)  # 添加删除按钮
-
-        main_layout.addLayout(button_layout)
 
         # 创建搜索区域
         search_layout = QHBoxLayout()
@@ -179,12 +160,38 @@ class PasswordManagerWidget(QWidget):
             header.resizeSection(8, calculate_column_width('8888888888'))
 
         main_layout.addWidget(self.table_view)
+        self.setup_ui_button(main_layout)
 
         # 添加状态标签（在表格下方）
         self.status_label = QLabel()
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setStyleSheet("color: #666; font-size: 12px;")
         main_layout.addWidget(self.status_label)
+
+    def setup_ui_button(self, main_layout):
+
+        # 创建按钮区域
+        button_layout = QHBoxLayout()
+
+        add_button = QPushButton("添加")
+        add_button.setMaximumWidth(128)
+        add_button.clicked.connect(self.add_password)
+
+        # # 新增编辑按钮
+        # self.edit_button = QPushButton("编辑")
+        # self.edit_button.clicked.connect(self.edit_selected_password)
+
+        # 新增删除按钮
+        self.delete_button = QPushButton("删除")
+        self.delete_button.setMaximumWidth(128)
+        self.delete_button.clicked.connect(self.delete_selected_password)
+
+        button_layout.addWidget(add_button)
+        # button_layout.addWidget(self.edit_button)
+        button_layout.addWidget(self.delete_button)  # 添加删除按钮
+
+        main_layout.addLayout(button_layout)
+
 
     def filter_passwords(self):
         """过滤密码列表"""
