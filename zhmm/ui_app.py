@@ -90,6 +90,11 @@ class AppWindow(BaseWindow):
 
     def check_inactivity(self):
         """检查非活动时间"""
+        if self.isActiveWindow():
+            logger.info('isActiveWindow')
+            self.last_active_time = datetime.now()
+            return
+
         current_time = datetime.now()
         inactive_duration = current_time - self.last_active_time
 
@@ -97,22 +102,24 @@ class AppWindow(BaseWindow):
         if inactive_duration > timedelta(minutes=config.get_lock_time()) and not isinstance(self.centralWidget(), WelcomeWidget):
             logger.info(f"检测到非活动时间: {inactive_duration}，显示登录窗口")
             self.show_welcome_ui()
+        else:
+            logger.info('check_inactivity .. ')
 
-    def changeEvent(self, event):  # type: ignore
-        """窗口状态改变事件"""
-        super().changeEvent(event)
-        # 当窗口从非活动状态变为活动状态时
-        if event.type() == event.Type.ActivationChange and self.isActiveWindow():
-            current_time = datetime.now()
-            inactive_duration = current_time - self.last_active_time
-
-            # 使用配置的锁屏时间检查非活动时间
-            if inactive_duration > timedelta(minutes=config.get_lock_time()):
-                logger.info(f"窗口重新激活，非活动时间: {inactive_duration}，显示登录窗口")
-                self.show_welcome_ui()
-
-            # 更新最后活动时间
-            self.last_active_time = current_time
+    # def changeEvent(self, event):  # type: ignore
+    #     """窗口状态改变事件"""
+    #     super().changeEvent(event)
+    #     # 当窗口从非活动状态变为活动状态时
+    #     if event.type() == event.Type.ActivationChange and self.isActiveWindow():
+    #         current_time = datetime.now()
+    #         inactive_duration = current_time - self.last_active_time
+    #
+    #         # 使用配置的锁屏时间检查非活动时间
+    #         if inactive_duration > timedelta(minutes=config.get_lock_time()):
+    #             logger.info(f"窗口重新激活，非活动时间: {inactive_duration}，显示登录窗口")
+    #             self.show_welcome_ui()
+    #
+    #         # 更新最后活动时间
+    #         self.last_active_time = current_time
 
 
 def main():
