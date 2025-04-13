@@ -5,8 +5,11 @@
 import sys
 from datetime import datetime, timedelta
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, QCoreApplication
 from PyQt6.QtWidgets import (QApplication)
+
+QCoreApplication.setApplicationName("zhmm")
+QCoreApplication.setOrganizationName("szgenle")  # 替换为您的组织名称
 
 from zhmm import config
 from zhmm.qt_components.base_window import BaseWindow
@@ -14,7 +17,6 @@ from zhmm.ui.login_dialog import ZhmmFileInfo
 from zhmm.ui.welcome_widget import WelcomeWidget
 from zhmm.ui_main import MainWindow
 from zhmm.utils.log import logger
-
 
 class AppWindow(BaseWindow):
     """主窗口"""
@@ -125,7 +127,6 @@ class AppWindow(BaseWindow):
 def main():
     """主函数"""
     app = QApplication(sys.argv)
-    app.setApplicationName("账号小本本")
 
     window = AppWindow()
     window.show()
