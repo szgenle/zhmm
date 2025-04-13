@@ -26,7 +26,7 @@ class WelcomeWidget(QWidget):
         welcome_label = QLabel("欢迎使用账号小笨苯")
         welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         welcome_label.setStyleSheet("color: #2c3e50;")
-        welcome_label.setFont(QFont("Microsoft YaHei", 28, QFont.Weight.ExtraBold))
+        welcome_label.setFont(QFont("Arial", 28, QFont.Weight.ExtraBold))
         main_layout.addWidget(welcome_label)
 
         # 分隔线
@@ -41,7 +41,7 @@ class WelcomeWidget(QWidget):
             "请选择已有数据库文件或创建新文件开始使用。"
         )
         info_label.setStyleSheet("color: #7f8c8d; font-size: 14px;")
-        info_label.setFont(QFont("Microsoft YaHei", 12))
+        info_label.setFont(QFont("Arial", 12))
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info_label.setWordWrap(True)
         main_layout.addWidget(info_label)
