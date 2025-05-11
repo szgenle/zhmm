@@ -1,0 +1,28 @@
+[project]
+name = "zhmm"
+version = "0.1.0"
+description = "网站App的账号码及其它相关信息的管理"
+authors = [
+    {name = "Lioesquieu",email = "2056387427@qq.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = "3.10.17"
+dependencies = [
+    "gmssl (==3.2.2)",
+    "numpy (==2.2.5)",
+    "pandas (==2.2.3)",
+    "pycryptodomex (==3.22.0)",
+    "pyqt6 (==6.9.0)",
+    "pyqt6-qt6 (==6.9.0)",
+    "pyqt6-sip (==13.10.0)",
+    "python-dateutil (==2.9.0.post0)",
+    "pytz (==2025.2)",
+    "six (==1.17.0)",
+    "tzdata (==2025.2)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
