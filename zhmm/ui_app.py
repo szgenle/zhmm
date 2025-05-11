@@ -6,7 +6,7 @@ import sys
 from datetime import datetime, timedelta
 
 from PyQt6.QtCore import QTimer, QCoreApplication
-from PyQt6.QtWidgets import (QApplication)
+from PyQt6.QtWidgets import (QApplication, QMessageBox)
 
 QCoreApplication.setApplicationName("zhmm")
 QCoreApplication.setOrganizationName("szgenle")  # 替换为您的组织名称
@@ -130,6 +130,11 @@ def main():
 
     window = AppWindow()
     window.show()
+
+    print(len(sys.argv))
+    print(sys.argv[0])
+    if len(sys.argv) > 1:
+        QMessageBox.information(None, "提示", sys.argv[1])
 
     sys.exit(app.exec())
 
