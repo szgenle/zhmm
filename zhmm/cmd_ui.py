@@ -147,7 +147,7 @@ class CmdUI:
             self.user_input_ui()
         except KeyboardInterrupt:
             print('\n再见\n')
-            exit(0)
+            quit(0)
     
     def user_input_ui(self):
         """响应用户的输入操作"""
