@@ -22,9 +22,9 @@ def get_files_content(file_paths):
     return content
 
 
-def get_file_content(file_path):
+def get_file_content(file_path, default=None):
     if not os.path.exists(file_path):
-        return None
+        return default
     with open(file_path, 'r') as file:
         return file.read()
 
