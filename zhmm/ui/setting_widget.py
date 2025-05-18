@@ -3,7 +3,7 @@
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSpinBox, QCheckBox, QPushButton
 from zhmm import config
-from zhmm.data_exporter import DataExporter
+from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui.login_dialog import ZhmmFileInfo
 
 
@@ -64,7 +64,7 @@ class SettingWidget(QWidget):
         """导出密码列表"""
         sm_data = self.info['sm_data']
         if sm_data:
-            DataExporter.export_to_file(sm_data.mm['data'])
+            UiDataExporter.export_to_file(sm_data.mm['data'])
 
     def import_xlsx(self):
         """导入xlsx文件"""

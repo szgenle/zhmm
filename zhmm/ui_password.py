@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QTableView, QHeaderView,
                              QMessageBox, QCheckBox, QApplication, QComboBox)
 
-from zhmm.data_exporter import DataExporter
+from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.sm_data import SmData
 from zhmm.ui.add_password_dialog import AddPasswordDialog
 from zhmm.ui.login_dialog import ZhmmFileInfo
@@ -281,7 +281,7 @@ class PasswordManagerWidget(QWidget):
 
     def export_passwords(self):
         """导出密码列表"""
-        DataExporter.export_to_file(self.gl_data.mm['data'])
+        UiDataExporter.export_to_file(self.gl_data.mm['data'])
 
     def refresh_data(self):
         """刷新数据"""

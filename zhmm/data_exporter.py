@@ -1,5 +1,4 @@
 import pandas as pd  # 添加pandas库导入
-from PyQt6.QtWidgets import QFileDialog
 from pandas._typing import DtypeArg
 
 from zhmm.sm_data import ZhmmDict
@@ -84,16 +83,3 @@ class DataExporter:
             except Exception as csv_e:
                 print(f"CSV导出也失败: {str(csv_e)}")
             return False
-
-    @staticmethod
-    def export_to_file(data):
-        """执行导出操作"""
-        # 弹出文件保存对话框
-        file_path, _ = QFileDialog.getSaveFileName(
-            None,
-            "保存账号文件",
-            "zhmm.xlsx",  # 默认文件名
-            "GL Files (*.xlsx);;All Files (*)"  # 文件过滤器
-        )
-        if file_path:
-            return DataExporter.export_xlsx(file_path, data)
