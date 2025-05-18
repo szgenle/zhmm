@@ -15,7 +15,6 @@ sys.path.append(current_dir)  # 将项目根目录添加到模块搜索路径
 
 from zhmm.cmd_ui import CmdUI
 
-
 def main():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--input', '-i', type=str, help='要加载的加密文件路径')
@@ -53,10 +52,15 @@ def main():
             print("警告: 在当前环境中无法隐藏密码输入，密码可能会显示在屏幕上")
             password = input("请输入密码: ")
         except KeyboardInterrupt:
-            exit(0)
+            sys.exit(0)
         if len(password) > 0:
             gl_ui.run(file_path, user_input_args.openId, password)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print('\n再见\n')
+    finally:
+        sys.exit(0)
