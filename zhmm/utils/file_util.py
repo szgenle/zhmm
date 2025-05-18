@@ -23,6 +23,8 @@ def get_files_content(file_paths):
 
 
 def get_file_content(file_path):
+    if not os.path.exists(file_path):
+        return None
     with open(file_path, 'r') as file:
         return file.read()
 
