@@ -1,6 +1,6 @@
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QDialog, QLabel, QFormLayout, QComboBox, QLineEdit, QHBoxLayout, QPushButton, QVBoxLayout, QInputDialog
+from PyQt6.QtWidgets import QDialog, QLabel, QFormLayout, QComboBox, QLineEdit, QHBoxLayout, QPushButton, QVBoxLayout, QInputDialog, QTextEdit
 
 from zhmm.sm_data import SmData
 from zhmm.utils import date_util
@@ -80,8 +80,9 @@ class AddPasswordDialog(QDialog):
         form_layout.addRow("网站:", self.url_input)
 
         # 备注输入
-        self.desc_input = QLineEdit()
+        self.desc_input = QTextEdit()
         self.desc_input.setMinimumWidth(300)
+        self.desc_input.setMaximumHeight(100)
         self.desc_input.setPlaceholderText("请输入备注信息（可选）")
         form_layout.addRow("备注:", self.desc_input)
 
