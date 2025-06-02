@@ -146,7 +146,7 @@ class AddPasswordDialog(QDialog):
             'phone': self.phone_input.text().strip(),
             'email': self.email_input.text().strip(),
             'url': self.url_input.text().strip(),
-            'desc': self.desc_input.text().strip(),
+            'desc': self.desc_input.toPlainText().strip(),
             'utime': date_util.timestamp_int()
         }
 
