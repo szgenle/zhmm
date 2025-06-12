@@ -16,6 +16,12 @@ class AppConfig:
 
     def __init__(self):
         pass
+
+    def get_lock_time(self):
+        return 10
+
+    def save_lock_time(self, v):
+        return
        
     def get(self, key, default_value=None):
         return self.config.get(key, default_value)
