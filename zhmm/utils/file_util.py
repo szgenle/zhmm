@@ -29,6 +29,18 @@ def get_file_content(file_path, default=None):
         return file.read()
 
 
+def set_file_content(file_path, content):
+    with open(file_path, 'w', encoding="utf-8") as file:
+        file.write(content)
+        return True
+
+
+def set_file_bytes(file_path, content):
+    with open(file_path, 'wb') as file:
+        file.write(content)
+        return True
+
+
 def load_json(filepath: str, default=None):
     if not os.path.exists(filepath):
         return default
