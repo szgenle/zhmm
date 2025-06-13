@@ -2,6 +2,7 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
+import bcrypt
 import json
 from typing import TypedDict, Optional
 
@@ -19,19 +20,22 @@ from zhmm.utils.log import logger
 class ZhmmFileInfo(TypedDict):
     file_path: str
     openid: str
+    hashpw: str
     sm_data: Optional[SmData]
 
 
 class LoginDialog(Dialog):
     """登录对话框"""
     login_success = pyqtSignal(dict)  # 保持信号声明不变
+    hashpw: str = None
 
-    def __init__(self, content: str, openid: str | None = None, parent=None):
+    def __init__(self, content: str, openid: str | None = None, hashpw: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint)
         self.setModal(True)
+        self.hashpw = hashpw
 
         # 创建布局
         layout = QVBoxLayout()
@@ -105,6 +109,14 @@ class LoginDialog(Dialog):
             QMessageBox.warning(self, "警告", "密码不能为空")
             return
 
+        try:
+            if self.hashpw and not bcrypt.checkpw(password.encode(), self.hashpw.encode()):
+                self.show_error("密码错误")
+                return
+        except ValueError as e:
+            self.show_error(f"认证失败: {str(e)}")
+            return
+
         # 验证逻辑，使用现有的gl_data验证方法
         try:
             # 处理密码，与cmd_ui.py中相同的逻辑
@@ -141,6 +153,7 @@ class LoginDialog(Dialog):
             # 登录成功时需要显式指定字典类型
             info = {
                 'openid': openid,
+                'hashpw':  bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode('utf-8'),
                 'sm_data': smdata
             }
             
@@ -151,3 +164,6 @@ class LoginDialog(Dialog):
             logger.error(f"登录验证出错: {str(e)}")
             QMessageBox.critical(self, "错误", f"登录验证出错: {str(e)}")
             self.password_input.clear()  # 新增：异常情况下清空
+
+    def show_error(self, msg):
+        QMessageBox.critical(self, "错误", msg)

@@ -29,12 +29,13 @@ class FileListWidget(QWidget):
         
         # 文件列表表格
         self.file_table = QTableWidget()
-        self.file_table.setColumnCount(4)  # 增加OpenID列
-        self.file_table.setHorizontalHeaderLabels(['文件名', '文件路径', 'OpenID', '最近访问时间'])
-        self.file_table.setColumnHidden(0, True)  # 设置文件名列宽度
-        self.file_table.setColumnHidden(2, True)  # 设置文件名列宽度
+        self.file_table.setColumnCount(5)  # 增加OpenID列
+        self.file_table.setHorizontalHeaderLabels(['文件名', '文件路径', 'OpenID', '密码', '最近访问时间'])
+        self.file_table.setColumnHidden(0, True)
+        self.file_table.setColumnHidden(2, True)
+        self.file_table.setColumnHidden(3, True)
         self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # type: ignore
-        self.file_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)  # type: ignore
+        self.file_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # type: ignore
         self.file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.file_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # 启用右键菜单
         self.file_table.customContextMenuRequested.connect(self.show_context_menu)
@@ -96,14 +97,14 @@ class FileListWidget(QWidget):
         if file_path:
             self.show_login_dialog(file_path)
         
-    def show_login_dialog(self, file_path: str, openid: str | None = None):
+    def show_login_dialog(self, file_path: str, openid: str | None = None, hashpw: str | None = None):
         """显示登录对话框"""
         content = file_util.get_file_content(file_path)
         if content is None:
             QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
             print("账号文件打开失败")
             return
-        login_dialog = LoginDialog(content, openid)
+        login_dialog = LoginDialog(content, openid, hashpw)
         login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
         login_dialog.exec()
 
@@ -140,6 +141,7 @@ class FileListWidget(QWidget):
         file_info: ZhmmFileInfo = {
             "file_path": file_path,
             "openid": info['openid'],
+            "hashpw": info['hashpw'],
             "sm_data": info['sm_data']
         }
         self.save_file_path_and_openid(file_info)
@@ -150,6 +152,7 @@ class FileListWidget(QWidget):
         saved_files = self.load_all_saved_files()
         saved_files[file_info['file_path']] = {
             "openid": file_info['openid'],
+            "hashpw": file_info['hashpw'],
             "filename": file_info['file_path'].split('/')[-1],
             "last_access_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -162,13 +165,15 @@ class FileListWidget(QWidget):
         if not file_path or not file_info:
             return
         openid = file_info.get('openid')
+        hashpw = file_info.get('hashpw')
         last_access_time = file_info.get('last_access_time')
         row = self.file_table.rowCount()
         self.file_table.insertRow(row)
         self.file_table.setItem(row, 0, QTableWidgetItem(file_path.split('/')[-1]))
         self.file_table.setItem(row, 1, QTableWidgetItem(file_path))
         self.file_table.setItem(row, 2, QTableWidgetItem(openid or ""))
-        self.file_table.setItem(row, 3, QTableWidgetItem(last_access_time or ""))
+        self.file_table.setItem(row, 3, QTableWidgetItem(hashpw or ""))
+        self.file_table.setItem(row, 4, QTableWidgetItem(last_access_time or ""))
 
     def load_saved_files(self):
         """加载已保存文件"""
@@ -227,7 +232,8 @@ class FileListWidget(QWidget):
         row = item.row()
         file_path = self.file_table.item(row, 1).text()         # type: ignore
         openid = self.file_table.item(row, 2).text()            # type: ignore
-        self.show_login_dialog(file_path, openid)               # type: ignore
+        hashpw = self.file_table.item(row, 3).text()            # type: ignore
+        self.show_login_dialog(file_path, openid, hashpw)       # type: ignore
 
     # 新增以下两个方法实现拖拽功能
     def dragEnterEvent(self, event):                            # type: ignore
