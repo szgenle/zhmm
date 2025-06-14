@@ -13,9 +13,9 @@ QCoreApplication.setOrganizationName("szgenle")  # 替换为您的组织名称
 
 from zhmm import config
 from zhmm.qt_components.base_window import BaseWindow
-from zhmm.window_login.login_window import ZhmmFileInfo
 from zhmm.ui.welcome_widget import WelcomeWidget
 from zhmm.ui_main import MainWindow
+from zhmm.ui_define import ZhmmFileInfo
 from zhmm.utils.log import logger
 
 class AppWindow(BaseWindow):

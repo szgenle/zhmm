@@ -4,7 +4,6 @@
 # @LastEditTime: 2024-07-03
 import bcrypt
 import json
-from typing import TypedDict, Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -12,18 +11,10 @@ from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushB
 
 from zhmm import sm_util, sm_data
 from zhmm.qt_components.dialog import Dialog
-from zhmm.sm_data import SmData
 from zhmm.utils import data_conversion
 from zhmm.utils.log import logger
 
 from zhmm import config
-
-
-class ZhmmFileInfo(TypedDict):
-    file_path: str
-    openid: str
-    hashpw: str
-    sm_data: Optional[SmData]
 
 
 class LoginWindow(Dialog):

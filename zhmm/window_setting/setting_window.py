@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QButtonGroup, QCheckBox, QGroupBox, QHBoxLayout, QLa
 
 from zhmm import config
 from zhmm.ui_data_exporter import UiDataExporter
-from zhmm.window_login.login_window import ZhmmFileInfo
+from zhmm.ui_define import ZhmmFileInfo
 from zhmm.window_setting.credentials_input_dialog_cos import CredentialsDialogCos
 
 
