@@ -3,7 +3,7 @@
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 import json
-from typing import TypedDict, Optional
+from typing import Optional, TypedDict
 
 from zhmm import sm_util
 from zhmm.utils import data_conversion, date_util, dict_util

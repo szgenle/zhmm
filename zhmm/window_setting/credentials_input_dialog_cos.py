@@ -1,5 +1,6 @@
 
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QFormLayout, QLineEdit, QVBoxLayout
+from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLineEdit,
+                             QVBoxLayout)
 
 from zhmm import config
 

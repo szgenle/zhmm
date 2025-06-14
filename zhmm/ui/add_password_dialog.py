@@ -1,6 +1,8 @@
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QDialog, QLabel, QFormLayout, QComboBox, QLineEdit, QHBoxLayout, QPushButton, QVBoxLayout, QInputDialog, QTextEdit
+from PyQt6.QtWidgets import (QComboBox, QDialog, QFormLayout, QHBoxLayout,
+                             QInputDialog, QLabel, QLineEdit, QPushButton,
+                             QTextEdit, QVBoxLayout)
 
 from zhmm.sm_data import SmData
 from zhmm.utils import date_util

@@ -2,11 +2,11 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QTabWidget)
-from zhmm.window_setting.setting_window import SettingWindow
+from PyQt6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.ui_password import PasswordManagerWidget
+from zhmm.window_setting.setting_window import SettingWindow
 
 
 class MainWindow(QWidget):

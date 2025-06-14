@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import QPushButton
 
 
 class DragDropButton(QPushButton):

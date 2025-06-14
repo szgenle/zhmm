@@ -4,7 +4,7 @@
 # @LastEditTime: 2024-07-03
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame
+from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
 from zhmm.ui.file_list_widget import FileListWidget
 

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # coding=utf-8
 
+import json
+import os
+from pathlib import Path
+
 from cryptography.fernet import Fernet  # 新增加密库导入
 
-import os
-import json
-from pathlib import Path
-from zhmm.utils import file_util
-from zhmm.cloud.cloud_cos import CloudBase
 from zhmm import setting
+from zhmm.cloud.cloud_cos import CloudBase
+from zhmm.utils import file_util
+
 
 class AppConfig:
 

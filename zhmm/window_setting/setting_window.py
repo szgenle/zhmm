@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # coding=utf-8
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSpinBox, QCheckBox, QPushButton
-from PyQt6.QtWidgets import QButtonGroup, QCheckBox, QGroupBox, QHBoxLayout, QLabel, QRadioButton, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (QButtonGroup, QCheckBox, QGroupBox, QHBoxLayout,
+                             QLabel, QPushButton, QRadioButton, QSpinBox,
+                             QVBoxLayout, QWidget)
 
 from zhmm import config
 from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
-from zhmm.window_setting.credentials_input_dialog_cos import CredentialsDialogCos
+from zhmm.window_setting.credentials_input_dialog_cos import \
+    CredentialsDialogCos
 
 
 class SettingWindow(QWidget):
@@ -74,6 +76,7 @@ class SettingWindow(QWidget):
     def import_xlsx(self):
         """导入xlsx文件"""
         from PyQt6.QtWidgets import QFileDialog
+
         from zhmm.data_exporter import DataImporter
         
         file_path, _ = QFileDialog.getOpenFileName(

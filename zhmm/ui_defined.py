@@ -1,6 +1,8 @@
 
-from typing import TypedDict, Optional
+from typing import Optional, TypedDict
+
 from zhmm.sm_data import SmData
+
 
 class ZhmmFileInfo(TypedDict):
     file_path: str

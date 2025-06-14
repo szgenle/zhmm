@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtGui import QCloseEvent  # 新增导入
+from PyQt6.QtWidgets import QMainWindow
 
 from zhmm.ui_config import UIConfig
 

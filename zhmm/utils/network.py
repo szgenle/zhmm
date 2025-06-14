@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from PyQt6.QtCore import QUrl, QObject, pyqtSlot
-from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PyQt6.QtCore import QObject, QUrl, pyqtSlot
+from PyQt6.QtNetwork import (QNetworkAccessManager, QNetworkReply,
+                             QNetworkRequest)
 
 
 class SsNetwork(QObject):

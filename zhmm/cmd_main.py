@@ -15,6 +15,7 @@ sys.path.append(current_dir)  # 将项目根目录添加到模块搜索路径
 
 from zhmm.cmd_ui import CmdUI
 
+
 def main():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--input', '-i', type=str, help='要加载的加密文件路径')

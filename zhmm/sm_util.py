@@ -2,8 +2,9 @@
 # coding=utf-8
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
-from typing import Union, List
-from gmssl import sm3, sm4, func
+from typing import List, Union
+
+from gmssl import func, sm3, sm4
 
 from zhmm.utils import data_conversion
 
