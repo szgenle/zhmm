@@ -1,3 +1,2 @@
-rm -rf /Applications/zhmm.app    
-mv ./dist/zhmm.app /Applications 
-
+rm -rf /Applications/zhmm.app
+mv ./dist/zhmm.app /Applications

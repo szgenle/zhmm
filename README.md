@@ -25,7 +25,7 @@
 
 
 # portry 启动应用
-poetry run python -m zhmm.main 
+poetry run python -m zhmm.main
 
 
 # 在Trae中调试，使用Poetry
@@ -35,4 +35,3 @@ poetry run python -m zhmm.main
     - 按下 Cmd+Shift+P 打开命令面板
     - 输入并选择 Python: Select Interpreter
     - 在列表中找到并选择Poetry创建的虚拟环境（通常会显示为 Poetry (项目名) 或完整路径），或者输入上面获得的虚拟路径地址
-
