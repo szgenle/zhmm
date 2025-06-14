@@ -3,18 +3,13 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 import bcrypt
-import json
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QGridLayout)
 
-from zhmm import sm_util, sm_data
 from zhmm.qt_components.dialog import Dialog
-from zhmm.utils import data_conversion
 from zhmm.utils.log import logger
-
-from zhmm import config
 
 
 class LoginWindow(Dialog):
@@ -22,7 +17,7 @@ class LoginWindow(Dialog):
     login_success = pyqtSignal(dict)  # 保持信号声明不变
     hashpw: str = None
 
-    def __init__(self, content: str, openid: str | None = None, hashpw: str | None = None, parent=None):
+    def __init__(self, openid: str | None = None, hashpw: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
@@ -77,7 +72,7 @@ class LoginWindow(Dialog):
 
         # 登录按钮
         self.login_button = QPushButton("登录")
-        self.login_button.clicked.connect(lambda: self.verify_login(content))
+        self.login_button.clicked.connect(lambda: self.verify_login())
         button_layout.addWidget(self.login_button)
 
         # 取消按钮
@@ -89,7 +84,7 @@ class LoginWindow(Dialog):
 
         self.setLayout(layout)
 
-    def verify_login(self, content: str):
+    def verify_login(self):
         """验证登录信息"""
         openid = self.openid_input.text().strip()
         password = self.password_input.text().strip()
@@ -110,65 +105,17 @@ class LoginWindow(Dialog):
             self.show_error(f"认证失败: {str(e)}")
             return
 
-        '''
-            获取cloud配置,从cloud获取文件zhmm.ver和zhmm.gl。
-            1. 对比版本号，如果服务端更新日期较新，先备份本地文件，然后直接下载覆盖。
-        '''
-        # 将openid处理成md5，把md5作为文件名
-        import hashlib
-        file_name = hashlib.md5(openid.encode('utf-8')).hexdigest()
-        password_md5 = hashlib.md5(password.encode('utf-8')).hexdigest()
-        config.init(file_name, password_md5)
-        if config.cloud:
-            pass
-
-        # 验证逻辑，使用现有的gl_data验证方法
-        try:
-            # 处理密码，与cmd_ui.py中相同的逻辑
-            pwd_suffix = password + 'woie*#jk20kH2^D@U28)'
-            pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix))
-
-            smdata = sm_data.SmData()
-            smdata.init(openid, pwd)
-
-            if content == '':
-                user_mm_data = {
-                    'userID': openid,
-                    'pwd': password,
-                    'url': 'szgenle',
-                    'desc': '务必记住当前的userID和密码'
-                }
-                smdata.add_with_dict(user_mm_data)
-            else:
-                decrypt_result = smdata.decrypt(content)
-
-                if not decrypt_result or not decrypt_result['res']:
-                    if self.openid_input.isHidden():
-                        QMessageBox.critical(self, "错误", "密码不正确")
-                    else:
-                        QMessageBox.critical(self, "错误", "OpenID或者密码不正确")
-                    self.password_input.clear()  # 新增：清空密码输入框
-                    return
-
-                user_mm_data = json.loads(decrypt_result['res'])
-                smdata.set_mm(user_mm_data)
-
-            # 登录成功
-            logger.info(f"用户 {openid} 登录成功")
-            # 登录成功时需要显式指定字典类型
-            info = {
-                'openid': openid,
-                'hashpw':  bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode('utf-8'),
-                'sm_data': smdata
-            }
-            
-            self.login_success.emit(info)  # 直接传递强类型对象
-            self.accept()
-
-        except Exception as e:
-            logger.error(f"登录验证出错: {str(e)}")
-            QMessageBox.critical(self, "错误", f"登录验证出错: {str(e)}")
-            self.password_input.clear()  # 新增：异常情况下清空
+        # 登录成功
+        logger.info(f"用户 {openid} 登录成功")
+        # 登录成功时需要显式指定字典类型
+        info = {
+            'openid': openid,
+            'password': password,
+            'hashpw':  bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode('utf-8')
+        }
+        
+        self.login_success.emit(info)  # 直接传递强类型对象
+        self.accept()
 
     def show_error(self, msg):
         QMessageBox.critical(self, "错误", msg)

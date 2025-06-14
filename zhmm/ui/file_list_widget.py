@@ -12,6 +12,9 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QTab
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.window_login.login_window import LoginWindow
 from zhmm.utils import file_util
+from zhmm.ui_decrypt_data import UIDecryptData
+
+from zhmm import config
 
 
 class FileListWidget(QWidget):
@@ -98,13 +101,7 @@ class FileListWidget(QWidget):
             self.show_login_dialog(file_path)
         
     def show_login_dialog(self, file_path: str, openid: str | None = None, hashpw: str | None = None):
-        """显示登录对话框"""
-        content = file_util.get_file_content(file_path)
-        if content is None:
-            QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
-            print("账号文件打开失败")
-            return
-        login_dialog = LoginWindow(content, openid, hashpw)
+        login_dialog = LoginWindow(openid, hashpw)
         login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
         login_dialog.exec()
 
@@ -137,12 +134,30 @@ class FileListWidget(QWidget):
         self.on_login_success(file_path, info)
 
     def on_login_success(self, file_path: str, info: dict):
+        '''
+            获取cloud配置,从cloud获取文件zhmm.ver和zhmm.gl。
+            1. 对比版本号，如果服务端更新日期较新，先备份本地文件，然后直接下载覆盖。
+        '''
+        # 将openid处理成md5，把md5作为文件名
+        import hashlib
+        file_name = hashlib.md5(info['openid'].encode('utf-8')).hexdigest()
+        password_md5 = hashlib.md5(info['password'].encode('utf-8')).hexdigest()
+        config.init(file_name, password_md5)
+        if config.cloud:
+            pass
+
+        decryptor = UIDecryptData()
+        sm_data = decryptor.decrypt_file(file_path, info['openid'], info['password'])
+        if sm_data is None:
+            QMessageBox.critical(self, "错误", "文件解密失败")
+            return
+
         """登录成功后的处理"""
         file_info: ZhmmFileInfo = {
             "file_path": file_path,
             "openid": info['openid'],
             "hashpw": info['hashpw'],
-            "sm_data": info['sm_data']
+            "sm_data": sm_data
         }
         self.save_file_path_and_openid(file_info)
         self.login_success.emit(file_info)
