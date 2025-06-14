@@ -52,7 +52,8 @@ class CloudCos(CloudBase):
             fp = response["Body"].get_raw_stream()
             content = fp.read()
             fp.close()
-            return content
+            if content:
+                return content.decode('utf-8')
         except Exception as e:
             print(e)
             return None

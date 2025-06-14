@@ -8,6 +8,7 @@ from cryptography.fernet import Fernet  # 新增加密库导入
 from zhmm import setting
 from zhmm.cloud.cloud_cos import CloudBase
 from zhmm.utils import file_util
+from zhmm.utils import date_util
 
 
 class AppConfig:
@@ -96,3 +97,32 @@ class AppConfig:
         self.set("cloud_platform", cloud_type)
         self.save_config()
         self.init_cloud()
+
+    def sync_cloud_file(self, file_path):
+        if not self.cloud:
+            return False
+        cloud_ver = self.cloud.get_file_content('zhmm.ver')
+        local_ver = self.get('zhmm_ver')
+        if cloud_ver:
+            if not local_ver or (cloud_ver > local_ver):
+                data = self.cloud.get_file_content('zhmm.gl')
+                if data:
+                    file_util.set_file_content(file_path, data)
+                    self.set('zhmm_ver', cloud_ver)
+                    return True
+        return False
+
+    def upload_cloud(self, file_path):
+        if not self.cloud:
+            return False
+        data = file_util.get_file_content(file_path)
+        if not data:
+            return False
+        if self.cloud.set_file_content('zhmm.gl', data) is None:
+            return False
+        cloud_ver = date_util.time_now()
+        if self.cloud.set_file_content('zhmm.ver', cloud_ver):
+            self.set('zhmm_ver', cloud_ver)
+            self.save_config()
+            return True
+        pass

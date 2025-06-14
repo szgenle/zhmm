@@ -15,6 +15,7 @@ from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.utils import date_util
 from zhmm.utils.log import logger
+from zhmm import config
 
 
 class PasswordTableModel(QAbstractTableModel):
@@ -266,7 +267,7 @@ class PasswordManagerWidget(QWidget):
 
     def add_role(self, new_role):
         self.gl_data.mm["roles"].append(new_role)
-        self.gl_data.save()
+        self.save()
         pass
 
     def confirm_add_password(self, dialog):
@@ -282,7 +283,7 @@ class PasswordManagerWidget(QWidget):
         try:
             # 使用gl_data添加数据
             self.gl_data.add(password_data)
-            if self.gl_data.save():
+            if self.save():
                 # 更新表格模型
                 self.table_model.setZhData(self.gl_data.mm["data"])
                 QMessageBox.information(dialog, "成功", "账号密码添加成功")
@@ -327,7 +328,7 @@ class PasswordManagerWidget(QWidget):
                 # 更新表格
                 self.table_model.setZhData(self.gl_data.mm["data"])
                 # 保存更改
-                if not self.gl_data.save():
+                if not self.save():
                     self.gl_data.mm["data"].insert(row, deleted_item)  # 回滚
                     QMessageBox.critical(self, "错误", "删除失败，数据保存错误")
         except Exception as e:
@@ -375,7 +376,7 @@ class PasswordManagerWidget(QWidget):
         try:
             # 更新数据
             self.gl_data.mm["data"][original_row] = new_data
-            if self.gl_data.save():
+            if self.save():
                 self.table_model.setZhData(self.gl_data.mm["data"])
                 QMessageBox.information(dialog, "成功", "修改成功")
             else:
@@ -397,7 +398,7 @@ class PasswordManagerWidget(QWidget):
         try:
             # 使用gl_data添加数据
             self.gl_data.add(password_data)
-            if self.gl_data.save():
+            if self.save():
                 # 更新表格模型
                 self.table_model.setZhData(self.gl_data.mm["data"])
                 QMessageBox.information(dialog, "成功", "账号密码添加成功")
@@ -416,3 +417,8 @@ class PasswordManagerWidget(QWidget):
             # 更新状态标签
             self.status_label.setText("已复制到剪贴板")
             QTimer.singleShot(2000, lambda: self.status_label.setText(""))
+
+    def save(self):
+        if self.gl_data.save():
+            return config.upload_cloud(self.gl_data.file_path)
+        return False

@@ -141,7 +141,6 @@ class SettingWindow(QWidget):
         # # 从配置加载上次选择
         cloud_platform = config.get("cloud_platform", "")
         self.cos_radio.setChecked(cloud_platform == "cos")
-        self.oss_radio.setChecked(cloud_platform == "oss")
 
         main_layout.addLayout(work_dir_container)
 
@@ -154,8 +153,6 @@ class SettingWindow(QWidget):
             return
         if button == self.cos_radio:
             platform = "cos"
-        elif button == self.oss_radio:
-            platform = "oss"
         else:
             platform = ""
         config.reset_sync_cloud(platform)

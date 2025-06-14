@@ -157,8 +157,7 @@ class FileListWidget(QWidget):
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
         password_md5 = hashlib.md5(info["password"].encode("utf-8")).hexdigest()
         config.init(file_name, password_md5)
-        if config.cloud:
-            pass
+        config.sync_cloud_file(file_path)
 
         decryptor = UIDecryptData()
         sm_data = decryptor.decrypt_file(file_path, info["openid"], info["password"])
