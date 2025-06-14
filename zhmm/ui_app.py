@@ -15,7 +15,7 @@ from zhmm import config
 from zhmm.qt_components.base_window import BaseWindow
 from zhmm.ui.welcome_widget import WelcomeWidget
 from zhmm.ui_main import MainWindow
-from zhmm.ui_define import ZhmmFileInfo
+from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.utils.log import logger
 
 class AppWindow(BaseWindow):

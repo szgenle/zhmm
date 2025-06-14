@@ -9,7 +9,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QTableWidget, QHeaderView, QFileDialog, \
     QTableWidgetItem, QMenu, QMessageBox
 
-from zhmm.ui_define import ZhmmFileInfo
+from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.window_login.login_window import LoginWindow
 from zhmm.utils import file_util
 
