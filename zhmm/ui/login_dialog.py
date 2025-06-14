@@ -16,6 +16,8 @@ from zhmm.sm_data import SmData
 from zhmm.utils import data_conversion
 from zhmm.utils.log import logger
 
+from zhmm import config
+
 
 class ZhmmFileInfo(TypedDict):
     file_path: str
@@ -116,6 +118,18 @@ class LoginDialog(Dialog):
         except ValueError as e:
             self.show_error(f"认证失败: {str(e)}")
             return
+
+        '''
+            获取cloud配置,从cloud获取文件zhmm.ver和zhmm.gl。
+            1. 对比版本号，如果服务端更新日期较新，先备份本地文件，然后直接下载覆盖。
+        '''
+        # 将openid处理成md5，把md5作为文件名
+        import hashlib
+        file_name = hashlib.md5(openid.encode('utf-8')).hexdigest()
+        password_md5 = hashlib.md5(password.encode('utf-8')).hexdigest()
+        config.init(file_name, password_md5)
+        if config.cloud:
+            pass
 
         # 验证逻辑，使用现有的gl_data验证方法
         try:

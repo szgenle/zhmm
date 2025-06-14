@@ -7,6 +7,7 @@ import os
 import json
 from pathlib import Path
 from zhmm.utils import file_util
+from zhmm.cloud.cloud_cos import CloudBase
 
 
 class AppConfig:
@@ -14,8 +15,15 @@ class AppConfig:
     save_file_name: str = "save"
     my_encryption_key: str = None
 
+    cloud: CloudBase = None
+
     def __init__(self):
         pass
+
+    def init(self, file_name, pwd):
+        self.save_file_name = file_name
+        self.my_encryption_key = pwd
+        self.load_config()
 
     def get_lock_time(self):
         return 10
@@ -34,7 +42,7 @@ class AppConfig:
         # 检查配置文件是否存在
         if not cfg_Path.exists():
             self.config = {}
-            return
+            return True
         # 读取加密内容并解密
         with open(cfg_Path.as_posix(), 'rb') as f:
             encrypted_data = f.read()
@@ -49,12 +57,13 @@ class AppConfig:
             except Exception as e:
                 print("错误: 配置文件解密失败，请检查密钥或配置文件是否损坏")
                 self.config = {}
-                return
+
         # 解析解密后的JSON
         self.config = json.loads(decrypted_data)
-        if self.config:
-            self.api_key = self.config.get('api_key')
-            self.work_dir = self.config.get('work_dir', os.getcwd())
+        cloud_cfg = self.config.get('cloud')
+        if cloud_cfg:
+            self.cloud = CloudCos()
+            self.cloud.init(cloud_cfg)
 
     def save_config(self):
         cfg_Path = file_util.get_full_path(self.save_file_name)
