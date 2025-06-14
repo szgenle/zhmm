@@ -6,7 +6,7 @@ import bcrypt
 import json
 from typing import TypedDict, Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QGridLayout)
 
@@ -26,7 +26,7 @@ class ZhmmFileInfo(TypedDict):
     sm_data: Optional[SmData]
 
 
-class LoginDialog(Dialog):
+class LoginWindow(Dialog):
     """登录对话框"""
     login_success = pyqtSignal(dict)  # 保持信号声明不变
     hashpw: str = None

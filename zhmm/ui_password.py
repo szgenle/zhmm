@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.sm_data import SmData
 from zhmm.ui.add_password_dialog import AddPasswordDialog
-from zhmm.ui.login_dialog import ZhmmFileInfo
+from zhmm.window_login.login_window import ZhmmFileInfo
 from zhmm.utils import date_util
 from zhmm.utils.log import logger
 

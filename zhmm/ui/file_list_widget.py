@@ -2,7 +2,6 @@
 # coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
-from typing import TypedDict, Optional
 from datetime import datetime
 
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
@@ -10,7 +9,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QTableWidget, QHeaderView, QFileDialog, \
     QTableWidgetItem, QMenu, QMessageBox
 
-from zhmm.ui.login_dialog import LoginDialog, ZhmmFileInfo
+from zhmm.window_login.login_window import LoginWindow, ZhmmFileInfo
 from zhmm.utils import file_util
 
 
@@ -104,7 +103,7 @@ class FileListWidget(QWidget):
             QMessageBox.critical(self, "错误", f"无法读取文件: {file_path}")
             print("账号文件打开失败")
             return
-        login_dialog = LoginDialog(content, openid, hashpw)
+        login_dialog = LoginWindow(content, openid, hashpw)
         login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
         login_dialog.exec()
 
@@ -125,7 +124,7 @@ class FileListWidget(QWidget):
         message_box.setIcon(QMessageBox.Icon.Question)
         result = message_box.exec()
         if result == QMessageBox.StandardButton.Yes:
-            login_dialog = LoginDialog('')
+            login_dialog = LoginWindow('')
             login_dialog.login_success.connect(lambda info: self.on_create_success(file_path, info))
             login_dialog.exec()
         else:
