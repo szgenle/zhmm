@@ -379,6 +379,7 @@ class PasswordManagerWidget(QWidget):
             if self.save():
                 self.table_model.setZhData(self.gl_data.mm["data"])
                 QMessageBox.information(dialog, "成功", "修改成功")
+                dialog.accept()
             else:
                 QMessageBox.critical(dialog, "错误", "修改失败，无法保存数据")
         except Exception as e:
