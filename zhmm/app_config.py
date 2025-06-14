@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from zhmm.utils import file_util
 from zhmm.cloud.cloud_cos import CloudBase
-
+from zhmm import setting
 
 class AppConfig:
 
@@ -20,9 +20,9 @@ class AppConfig:
     def __init__(self):
         pass
 
-    def init(self, file_name, pwd):
+    def init(self, file_name, password):
         self.save_file_name = file_name
-        self.my_encryption_key = pwd
+        self.my_encryption_key = setting.generate_key_from_string(password)
         self.load_config()
 
     def get_lock_time(self):
@@ -60,10 +60,20 @@ class AppConfig:
 
         # 解析解密后的JSON
         self.config = json.loads(decrypted_data)
-        cloud_cfg = self.config.get('cloud')
-        if cloud_cfg:
-            self.cloud = CloudCos()
-            self.cloud.init(cloud_cfg)
+        self.init_cloud()
+
+    def init_cloud(self):
+        platform = self.get('cloud_platform', '')
+        if platform == 'cos':
+            from zhmm.cloud.cloud_cos import CloudCos
+            cloud = CloudCos()
+            if cloud.init(self.config):
+                self.cloud = cloud
+        elif platform == 'oss':
+            from zhmm.cloud.cloud_oss import CloudOss
+            self.cloud = CloudOss(self.config)
+        else:
+            self.cloud = None
 
     def save_config(self):
         cfg_Path = file_util.get_full_path(self.save_file_name)
@@ -79,5 +89,11 @@ class AppConfig:
         else:
             encrypted_data = json.dumps(self.config)
             file_util.set_file_content(str(cfg_Path), encrypted_data)
+    
+    def reset_sync_cloud(self, cloud_type: str):
+        print("重置同步云盘", cloud_type)
+        self.set('cloud_platform', cloud_type)
+        self.save_config()
+        self.init_cloud()
 
 
