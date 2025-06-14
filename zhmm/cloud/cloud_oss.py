@@ -10,9 +10,7 @@ class CloudOss(CloudBase):
     bucket: str = None
     work_dir = os.getcwd()
 
-    def __init__(self, config, work_dir):
-        if work_dir:
-            self.work_dir = work_dir
+    def __init__(self, config):
         pass
     
     def sync_data(self):
