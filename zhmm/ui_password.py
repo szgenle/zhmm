@@ -22,8 +22,18 @@ class PasswordTableModel(QAbstractTableModel):
 
     def __init__(self, data=None):
         super().__init__()
-        self.headers = ['ID', '类别', '账号', '密码', '手机', '邮箱', '网站', '备注', '更新时间']
-        self.keys = ['id', 'role', 'userID', 'pwd', 'phone', 'email', 'url', 'desc', 'utime']
+        self.headers = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
+        self.keys = [
+            "id",
+            "role",
+            "userID",
+            "pwd",
+            "phone",
+            "email",
+            "url",
+            "desc",
+            "utime",
+        ]
         self._data = data if data else []
 
     def rowCount(self, parent=None):
@@ -43,12 +53,15 @@ class PasswordTableModel(QAbstractTableModel):
             key = self.keys[col]
 
             # 返回对应的数据，如果不存在则返回空字符串
-            return str(item.get(key, ''))
+            return str(item.get(key, ""))
 
         return None
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
-        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
+        if (
+            role == Qt.ItemDataRole.DisplayRole
+            and orientation == Qt.Orientation.Horizontal
+        ):
             return self.headers[section]
         return None
 
@@ -74,34 +87,34 @@ class CustomProxyModel(QSortFilterProxyModel):
             role_value = model.data(role_index, Qt.ItemDataRole.DisplayRole)
             if role_value != self.filter_role:
                 return False
-        
+
         # 然后检查是否显示所有数据
         if not self.show_all_data and not self.filterRegularExpression().pattern():
             return False
-            
+
         # 最后应用正则表达式过滤
         return super().filterAcceptsRow(source_row, source_parent)
 
 
 class PasswordManagerWidget(QWidget):
     """密码管理界面"""
+
     return_requested = pyqtSignal()  # 然后首页的信号
 
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
         self.info = info
-        if 'sm_data' not in info or not info['sm_data']:
+        if "sm_data" not in info or not info["sm_data"]:
             self.gl_data = SmData()
         else:
-            self.gl_data = info['sm_data']
-        self.gl_data.file_path = info['file_path']
+            self.gl_data = info["sm_data"]
+        self.gl_data.file_path = info["file_path"]
         self.setup_ui()
 
     def setup_ui(self):
         """设置界面"""
         # 创建主布局
         main_layout = QVBoxLayout(self)
-
 
         # 创建搜索区域
         search_layout = QHBoxLayout()
@@ -111,11 +124,11 @@ class PasswordManagerWidget(QWidget):
         self.role_filter_combo = QComboBox()
         self.role_filter_combo.addItem("全部", "")  # 添加一个默认选项
         # 从数据中获取所有角色并添加到下拉框
-        if self.gl_data.mm and 'roles' in self.gl_data.mm:
-            for role in self.gl_data.mm['roles']:
+        if self.gl_data.mm and "roles" in self.gl_data.mm:
+            for role in self.gl_data.mm["roles"]:
                 self.role_filter_combo.addItem(role, role)
         self.role_filter_combo.currentIndexChanged.connect(self.filter_role)
-        
+
         search_layout.addWidget(role_filter_label)
         search_layout.addWidget(self.role_filter_combo)
 
@@ -138,7 +151,7 @@ class PasswordManagerWidget(QWidget):
 
         # 创建表格视图
         self.table_view = QTableView()
-        self.table_model = PasswordTableModel(self.gl_data.mm['data'])
+        self.table_model = PasswordTableModel(self.gl_data.mm["data"])
 
         # 设置选择模式（新增这两行）
         self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
@@ -177,13 +190,13 @@ class PasswordManagerWidget(QWidget):
 
             # 固定列宽度
             header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(0, calculate_column_width('8888888888'))
+            header.resizeSection(0, calculate_column_width("8888888888"))
             header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(1, calculate_column_width('个人个人'))
+            header.resizeSection(1, calculate_column_width("个人个人"))
             header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(4, calculate_column_width('+86888888888888'))
+            header.resizeSection(4, calculate_column_width("+86888888888888"))
             header.setSectionResizeMode(8, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(8, calculate_column_width('8888888888'))
+            header.resizeSection(8, calculate_column_width("8888888888"))
 
         main_layout.addWidget(self.table_view)
         self.setup_ui_button(main_layout)
@@ -197,7 +210,7 @@ class PasswordManagerWidget(QWidget):
     def setup_ui_button(self, main_layout):
         # 创建按钮区域
         button_layout = QHBoxLayout()
-        
+
         # 新增返回按钮
         return_btn = QPushButton("返回首页")
         return_btn.clicked.connect(self.return_requested.emit)
@@ -227,14 +240,14 @@ class PasswordManagerWidget(QWidget):
         # 设置角色过滤
         self.proxy_model.use_role_filter = bool(selected_role)  # 如果有选中角色则启用角色过滤
         self.proxy_model.filter_role = selected_role  # 设置过滤的角色值
-            
+
         # 触发过滤刷新
         self.filter_passwords()
 
     def filter_passwords(self):
         """过滤密码列表"""
         search_text = self.search_input.text()
-        
+
         # 设置通配符过滤
         self.proxy_model.setFilterWildcard(f"*{search_text}*" if search_text else "")
 
@@ -246,13 +259,13 @@ class PasswordManagerWidget(QWidget):
 
     def add_password(self):
         """添加密码"""
-        dialog = AddPasswordDialog(self, self.gl_data.mm['roles'])
+        dialog = AddPasswordDialog(self, self.gl_data.mm["roles"])
         dialog.confirm_button.clicked.connect(lambda: self.confirm_add_password(dialog))
         dialog.added_role.connect(lambda new_role: self.add_role(new_role))
         dialog.exec()
 
     def add_role(self, new_role):
-        self.gl_data.mm['roles'].append(new_role)
+        self.gl_data.mm["roles"].append(new_role)
         self.gl_data.save()
         pass
 
@@ -261,7 +274,7 @@ class PasswordManagerWidget(QWidget):
         password_data = dialog.get_password_data()
 
         # 验证必填字段
-        if not password_data['userID']:
+        if not password_data["userID"]:
             QMessageBox.warning(dialog, "警告", "账号不能为空")
             return
 
@@ -271,7 +284,7 @@ class PasswordManagerWidget(QWidget):
             self.gl_data.add(password_data)
             if self.gl_data.save():
                 # 更新表格模型
-                self.table_model.setZhData(self.gl_data.mm['data'])
+                self.table_model.setZhData(self.gl_data.mm["data"])
                 QMessageBox.information(dialog, "成功", "账号密码添加成功")
                 dialog.accept()
             else:
@@ -282,11 +295,11 @@ class PasswordManagerWidget(QWidget):
 
     def export_passwords(self):
         """导出密码列表"""
-        UiDataExporter.export_to_file(self.gl_data.mm['data'])
+        UiDataExporter.export_to_file(self.gl_data.mm["data"])
 
     def refresh_data(self):
         """刷新数据"""
-        self.table_model.setZhData(self.gl_data.mm['data'])
+        self.table_model.setZhData(self.gl_data.mm["data"])
 
     def delete_selected_password(self):
         """删除选中的密码项"""
@@ -303,18 +316,19 @@ class PasswordManagerWidget(QWidget):
         try:
             # 确认删除
             reply = QMessageBox.question(
-                self, "确认删除",
+                self,
+                "确认删除",
                 "确定要删除该账号记录吗？此操作不可恢复！",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
             if reply == QMessageBox.StandardButton.Yes:
                 # 从数据源中删除
-                deleted_item = self.gl_data.mm['data'].pop(row)
+                deleted_item = self.gl_data.mm["data"].pop(row)
                 # 更新表格
-                self.table_model.setZhData(self.gl_data.mm['data'])
+                self.table_model.setZhData(self.gl_data.mm["data"])
                 # 保存更改
                 if not self.gl_data.save():
-                    self.gl_data.mm['data'].insert(row, deleted_item)  # 回滚
+                    self.gl_data.mm["data"].insert(row, deleted_item)  # 回滚
                     QMessageBox.critical(self, "错误", "删除失败，数据保存错误")
         except Exception as e:
             logger.error(f"删除账号出错: {str(e)}")
@@ -331,11 +345,13 @@ class PasswordManagerWidget(QWidget):
         proxy_index = selected[0]
         source_index = self.proxy_model.mapToSource(proxy_index)
         row = source_index.row()
-        edit_data = self.gl_data.mm['data'][row]
+        edit_data = self.gl_data.mm["data"][row]
 
         # 创建编辑对话框并传入数据
-        dialog = AddPasswordDialog(self, self.gl_data.mm['roles'], edit_data=edit_data)
-        dialog.confirm_button.clicked.connect(lambda: self._process_edit_result(dialog, row))
+        dialog = AddPasswordDialog(self, self.gl_data.mm["roles"], edit_data=edit_data)
+        dialog.confirm_button.clicked.connect(
+            lambda: self._process_edit_result(dialog, row)
+        )
         dialog.added_role.connect(lambda new_role: self.add_role(new_role))
         dialog.setWindowTitle("编辑账号信息")
         dialog.confirm_button.setText("确认修改")
@@ -346,19 +362,21 @@ class PasswordManagerWidget(QWidget):
         new_data = dialog.get_password_data()
 
         # 保留原始ID和创建时间
-        new_data['id'] = self.gl_data.mm['data'][original_row]['id']
-        new_data['ctime'] = self.gl_data.mm['data'][original_row].get('ctime', date_util.timestamp_int())
+        new_data["id"] = self.gl_data.mm["data"][original_row]["id"]
+        new_data["ctime"] = self.gl_data.mm["data"][original_row].get(
+            "ctime", date_util.timestamp_int()
+        )
 
         # 验证必填字段
-        if not new_data['userID'] or not new_data['pwd']:
+        if not new_data["userID"] or not new_data["pwd"]:
             QMessageBox.warning(dialog, "警告", "账号不能为空")
             return
 
         try:
             # 更新数据
-            self.gl_data.mm['data'][original_row] = new_data
+            self.gl_data.mm["data"][original_row] = new_data
             if self.gl_data.save():
-                self.table_model.setZhData(self.gl_data.mm['data'])
+                self.table_model.setZhData(self.gl_data.mm["data"])
                 QMessageBox.information(dialog, "成功", "修改成功")
             else:
                 QMessageBox.critical(dialog, "错误", "修改失败，无法保存数据")
@@ -371,7 +389,7 @@ class PasswordManagerWidget(QWidget):
         password_data = dialog.get_password_data()
 
         # 验证必填字段
-        if not password_data['userID'] or not password_data['pwd']:
+        if not password_data["userID"] or not password_data["pwd"]:
             QMessageBox.warning(dialog, "警告", "账号和密码不能为空")
             return
 
@@ -381,7 +399,7 @@ class PasswordManagerWidget(QWidget):
             self.gl_data.add(password_data)
             if self.gl_data.save():
                 # 更新表格模型
-                self.table_model.setZhData(self.gl_data.mm['data'])
+                self.table_model.setZhData(self.gl_data.mm["data"])
                 QMessageBox.information(dialog, "成功", "账号密码添加成功")
                 dialog.accept()
             else:

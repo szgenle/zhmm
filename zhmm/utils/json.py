@@ -6,7 +6,7 @@ def get_values_from_json(json_data, key_path):
     :param key_path: 键路径，例如 "as/b"
     :return: 指定键路径的所有值
     """
-    keys = key_path.split('/')
+    keys = key_path.split("/")
     result = []
 
     def _find_values(data, current_keys):

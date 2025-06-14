@@ -15,7 +15,7 @@ def to_hex_string(data: Union[List[int], bytes, bytearray]) -> str:
     Returns:
         十六进制字符串
     """
-    return ''.join([format(b, '02x') for b in data])
+    return "".join([format(b, "02x") for b in data])
 
 
 def chars_to_bytes(chars: Union[str, List[str]]) -> List[int]:
@@ -41,7 +41,7 @@ def hex_to_array(hex_str: str) -> List[int]:
     """
     # 如果字符串长度不是偶数，添加一个前导'0'
     if len(hex_str) % 2 != 0:
-        hex_str = '0' + hex_str
+        hex_str = "0" + hex_str
 
     # 将十六进制字符串转换为字节数组
     bytes_array = bytearray.fromhex(hex_str)

@@ -10,18 +10,20 @@ from zhmm.utils import data_conversion
 
 block_len = 64
 iPad = bytearray([0x36] * block_len)
-oPad = bytearray([0x5c] * block_len)
-iv = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x27\x00\x00\x00\x00\x03'  # bytes类型
+oPad = bytearray([0x5C] * block_len)
+iv = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x27\x00\x00\x00\x00\x03"  # bytes类型
 
 
-def hash_by_sm3(input_bytes: List[int], key: str = '9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1') -> str:
+def hash_by_sm3(
+    input_bytes: List[int], key: str = "9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1"
+) -> str:
     """
     使用SM3算法计算哈希值
-    
+
     Args:
         input_bytes: 输入字节数组（整数列表）
         key: 密钥字符串
-        
+
     Returns:
         哈希字符串
     """
@@ -46,22 +48,22 @@ def hash_by_sm3(input_bytes: List[int], key: str = '9gx^1-z:ixYWe(@JAJKFu1*k@913
 def decrypt_by_sm4(encrypt_value: str, key: str) -> bytes:
     """
     使用SM4算法解密数据
-    
+
     Args:
         encrypt_value: 十六进制字符串形式的加密数据
         key: 十六进制字符串形式的密钥
-        
+
     Returns:
         解密后的字节数据
     """
     # 将十六进制字符串转换为字节数组
     encrypt_bytes = data_conversion.hex_to_array(encrypt_value)
     key_bytes = data_conversion.hex_to_array(key)
-    
+
     # 初始化SM4加密器
     crypt_sm4 = sm4.CryptSM4()
     crypt_sm4.set_key(key_bytes, sm4.SM4_DECRYPT)
-    
+
     # 解密数据
     return crypt_sm4.crypt_cbc(iv, encrypt_bytes)
 
@@ -69,20 +71,20 @@ def decrypt_by_sm4(encrypt_value: str, key: str) -> bytes:
 def encrypt_by_sm4(encrypt_bytes: bytes, key: str) -> bytes:
     """
     使用SM4算法加密数据
-    
+
     Args:
         encrypt_bytes: 要加密的字节数据
         key: 十六进制字符串形式的密钥
-        
+
     Returns:
         加密后的字节数据
     """
     # 将密钥转换为字节数组
     key_bytes = data_conversion.hex_to_array(key)
-    
+
     # 初始化SM4加密器
     crypt_sm4 = sm4.CryptSM4()
     crypt_sm4.set_key(key_bytes, sm4.SM4_ENCRYPT)
-    
+
     # 加密数据
     return crypt_sm4.crypt_cbc(iv, encrypt_bytes)

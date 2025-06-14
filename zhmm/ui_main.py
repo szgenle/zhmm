@@ -24,7 +24,7 @@ class MainWindow(QWidget):
     def setup_ui(self):
         # 创建标签容器
         tab_widget = QTabWidget()
-        
+
         # 创建主布局
         main_layout = QVBoxLayout(self)
         main_layout.addWidget(tab_widget)

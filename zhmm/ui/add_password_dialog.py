@@ -10,6 +10,7 @@ from zhmm.utils import date_util
 
 class AddPasswordDialog(QDialog):
     """添加密码对话框"""
+
     added_role = pyqtSignal(str)  # 增加角色信息
 
     def __init__(self, parent, roles: list[str], edit_data=None):
@@ -37,15 +38,15 @@ class AddPasswordDialog(QDialog):
         # 类别选择
         self.role_combo = QComboBox()
         self.role_combo.setEditable(True)
-        
+
         # 加载保存的类别
         self.role_combo.addItems(self.roles)
-        
+
         # 添加新建类别按钮
         add_role_btn = QPushButton("+")
         add_role_btn.setFixedSize(30, 30)
         add_role_btn.clicked.connect(self._add_custom_role)
-        
+
         role_layout = QHBoxLayout()
         role_layout.addWidget(self.role_combo)
         role_layout.addWidget(add_role_btn)
@@ -116,10 +117,7 @@ class AddPasswordDialog(QDialog):
     def _add_custom_role(self):
         """添加新类别"""
         new_role, ok = QInputDialog.getText(
-            self, 
-            "新建类别",
-            "请输入新类别名称:",
-            QLineEdit.EchoMode.Normal
+            self, "新建类别", "请输入新类别名称:", QLineEdit.EchoMode.Normal
         )
         if ok and new_role.strip():
             if new_role not in self.roles:
@@ -128,27 +126,26 @@ class AddPasswordDialog(QDialog):
 
     def _populate_data(self, data):
         """填充编辑数据"""
-        index = self.role_combo.findText(data['role'])
+        index = self.role_combo.findText(data["role"])
         if index >= 0:
             self.role_combo.setCurrentIndex(index)
-        self.userid_input.setText(data['userID'])
-        self.password_input.setText(data['pwd'])
-        self.phone_input.setText(data.get('phone', ''))
-        self.email_input.setText(data.get('email', ''))
-        self.url_input.setText(data.get('url', ''))
-        self.desc_input.setText(data.get('desc', ''))
+        self.userid_input.setText(data["userID"])
+        self.password_input.setText(data["pwd"])
+        self.phone_input.setText(data.get("phone", ""))
+        self.email_input.setText(data.get("email", ""))
+        self.url_input.setText(data.get("url", ""))
+        self.desc_input.setText(data.get("desc", ""))
 
     def get_password_data(self):
         """获取表单数据"""
         return {
-            'id': date_util.timestamp_int(),
-            'role': self.role_combo.currentText(),
-            'userID': self.userid_input.text().strip(),
-            'pwd': self.password_input.text().strip(),
-            'phone': self.phone_input.text().strip(),
-            'email': self.email_input.text().strip(),
-            'url': self.url_input.text().strip(),
-            'desc': self.desc_input.toPlainText().strip(),
-            'utime': date_util.timestamp_int()
+            "id": date_util.timestamp_int(),
+            "role": self.role_combo.currentText(),
+            "userID": self.userid_input.text().strip(),
+            "pwd": self.password_input.text().strip(),
+            "phone": self.phone_input.text().strip(),
+            "email": self.email_input.text().strip(),
+            "url": self.url_input.text().strip(),
+            "desc": self.desc_input.toPlainText().strip(),
+            "utime": date_util.timestamp_int(),
         }
-

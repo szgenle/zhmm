@@ -2,8 +2,6 @@
 # coding=utf-8
 
 import json
-import os
-from pathlib import Path
 
 from cryptography.fernet import Fernet  # 新增加密库导入
 
@@ -13,7 +11,6 @@ from zhmm.utils import file_util
 
 
 class AppConfig:
-
     save_file_name: str = "save"
     my_encryption_key: str = None
 
@@ -32,7 +29,7 @@ class AppConfig:
 
     def save_lock_time(self, v):
         return
-       
+
     def get(self, key, default_value=None):
         return self.config.get(key, default_value)
 
@@ -46,7 +43,7 @@ class AppConfig:
             self.config = {}
             return True
         # 读取加密内容并解密
-        with open(cfg_Path.as_posix(), 'rb') as f:
+        with open(cfg_Path.as_posix(), "rb") as f:
             encrypted_data = f.read()
         # 获取加密密钥（示例使用QSettings存储）
         key = self.my_encryption_key
@@ -65,14 +62,16 @@ class AppConfig:
         self.init_cloud()
 
     def init_cloud(self):
-        platform = self.get('cloud_platform', '')
-        if platform == 'cos':
+        platform = self.get("cloud_platform", "")
+        if platform == "cos":
             from zhmm.cloud.cloud_cos import CloudCos
+
             cloud = CloudCos()
             if cloud.init(self.config):
                 self.cloud = cloud
-        elif platform == 'oss':
+        elif platform == "oss":
             from zhmm.cloud.cloud_oss import CloudOss
+
             self.cloud = CloudOss(self.config)
         else:
             self.cloud = None
@@ -91,11 +90,9 @@ class AppConfig:
         else:
             encrypted_data = json.dumps(self.config)
             file_util.set_file_content(str(cfg_Path), encrypted_data)
-    
+
     def reset_sync_cloud(self, cloud_type: str):
         print("重置同步云盘", cloud_type)
-        self.set('cloud_platform', cloud_type)
+        self.set("cloud_platform", cloud_type)
         self.save_config()
         self.init_cloud()
-
-

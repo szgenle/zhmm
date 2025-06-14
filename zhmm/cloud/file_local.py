@@ -5,8 +5,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import QMessageBox
 
 
-class FileLocal():
-
+class FileLocal:
     work_dir = os.getcwd()
 
     def __init__(self, work_dir):
@@ -26,7 +25,7 @@ class FileLocal():
     def get_file_content(self, path):
         full_path = self.get_full_path(path)
         if full_path.exists():
-            with open(full_path, 'r', encoding='utf-8') as f:
+            with open(full_path, "r", encoding="utf-8") as f:
                 return f.read()
         return None
 
@@ -34,7 +33,7 @@ class FileLocal():
         full_path = self.get_full_path(path)
         try:
             full_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(full_path, 'w', encoding='utf-8') as f:
+            with open(full_path, "w", encoding="utf-8") as f:
                 f.write(content)
             print(f"文件已成功写入: {full_path}")
             return True  # 写入成功返回True
@@ -45,7 +44,7 @@ class FileLocal():
     def load_json(self, path, default_value=None):
         full_path = self.get_full_path(path)
         if full_path.exists():
-            with open(full_path, 'r', encoding='utf-8') as f:
+            with open(full_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         return default_value
 
@@ -53,7 +52,7 @@ class FileLocal():
         full_path = self.get_full_path(path)
         full_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with open(full_path, 'w', encoding='utf-8') as f:
+            with open(full_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             QMessageBox.critical(None, "错误", f"保存数据失败: {str(e)}")

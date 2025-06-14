@@ -11,22 +11,18 @@ class SsNetwork(QObject):
         self.manager.finished.connect(self.on_finished)
         self.callbacks = {}  # 存储 QNetworkReply 对象及其回调函数
 
-    def request(self, url: str, post_data, callback, method='POST', stream=False):
+    def request(self, url: str, post_data, callback, method="POST", stream=False):
         # 创建网络请求
         request = QNetworkRequest(QUrl(url))
         self.set_header(request)
 
         # 发送 POST 请求
-        if method == 'POST':
+        if method == "POST":
             reply = self.manager.post(request, post_data)
         else:
             reply = self.manager.get(request, post_data)
 
-        self.callbacks[reply] = {
-            'callback': callback,
-            'stream': stream,
-            'buffer': b''
-        }
+        self.callbacks[reply] = {"callback": callback, "stream": stream, "buffer": b""}
 
         # 如果是流式请求，连接readyRead信号
         if stream and reply:
@@ -44,7 +40,7 @@ class SsNetwork(QObject):
 
         try:
             # 处理流式请求的残留数据
-            if entry['stream'] and entry['buffer']:
+            if entry["stream"] and entry["buffer"]:
                 self.on_stream_ready(reply)
                 return
 
@@ -75,17 +71,17 @@ class SsNetwork(QObject):
 
         # 读取所有可用数据
         data = reply.readAll().data()
-        entry['buffer'] += data
+        entry["buffer"] += data
 
         # 处理SSE格式（data: {...}\n\n）
         while True:
-            head, sep, tail = entry['buffer'].partition(b"\n\n")
+            head, sep, tail = entry["buffer"].partition(b"\n\n")
             if not sep:
                 break
 
             # 处理单个事件
             event_data = head
-            entry['buffer'] = tail
+            entry["buffer"] = tail
 
             if event_data.startswith(b"data: "):
                 payload = event_data[6:].strip()

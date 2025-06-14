@@ -20,7 +20,11 @@ class PlainTextEdit(QTextEdit):
 
     def keyPressEvent(self, e):
         # 捕获键盘事件
-        if e and e.key() == Qt.Key.Key_Return and e.modifiers() == Qt.KeyboardModifier.ControlModifier:
+        if (
+            e
+            and e.key() == Qt.Key.Key_Return
+            and e.modifiers() == Qt.KeyboardModifier.ControlModifier
+        ):
             # 如果按下 Ctrl+Enter，调用 on_ok 方法
             if self.on_ok:
                 self.on_ok()

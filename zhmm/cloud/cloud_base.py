@@ -4,7 +4,6 @@ from pathlib import Path
 
 
 class CloudBase(ABC):
-
     def __init__(self):
         pass
 
@@ -32,7 +31,7 @@ class CloudBase(ABC):
         content = self.get_file_content(path)
         if content is None:
             return default_value
-        return json.loads(content.decode('utf-8'))
+        return json.loads(content.decode("utf-8"))
 
     def save_json(self, path, data):
         content = json.dumps(data, ensure_ascii=False, indent=4)

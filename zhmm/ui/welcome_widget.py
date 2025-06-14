@@ -36,10 +36,7 @@ class WelcomeWidget(QWidget):
         main_layout.addWidget(line)
 
         # 说明文本（增强可读性）
-        info_label = QLabel(
-            "这是一个安全的账号管理工具，可以帮助您管理各种账号密码。\n"
-            "请选择已有数据库文件或创建新文件开始使用。"
-        )
+        info_label = QLabel("这是一个安全的账号管理工具，可以帮助您管理各种账号密码。\n" "请选择已有数据库文件或创建新文件开始使用。")
         info_label.setStyleSheet("color: #7f8c8d; font-size: 14px;")
         info_label.setFont(QFont("Arial", 12))
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)

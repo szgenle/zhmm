@@ -1,4 +1,3 @@
-import json
 import os
 from pathlib import Path
 
@@ -6,13 +5,12 @@ from zhmm.cloud.cloud_base import CloudBase
 
 
 class CloudOss(CloudBase):
-
     bucket: str = None
     work_dir = os.getcwd()
 
     def __init__(self, config):
         pass
-    
+
     def sync_data(self):
         pass
 

@@ -17,26 +17,26 @@ def is_macos():
 def get_files_content(file_paths):
     content = ""
     for file_path in file_paths:
-        with open(file_path, 'r', encoding="utf-8") as file:
-            content += '\n' + file.read()
+        with open(file_path, "r", encoding="utf-8") as file:
+            content += "\n" + file.read()
     return content
 
 
 def get_file_content(file_path, default=None):
     if not os.path.exists(file_path):
         return default
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         return file.read()
 
 
 def set_file_content(file_path, content):
-    with open(file_path, 'w', encoding="utf-8") as file:
+    with open(file_path, "w", encoding="utf-8") as file:
         file.write(content)
         return True
 
 
 def set_file_bytes(file_path, content):
-    with open(file_path, 'wb') as file:
+    with open(file_path, "wb") as file:
         file.write(content)
         return True
 
@@ -48,7 +48,7 @@ def load_json(filepath: str, default=None):
         return default
     json_data = default
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             json_data = json.load(f)
     finally:
         return json_data
@@ -56,7 +56,7 @@ def load_json(filepath: str, default=None):
 
 def save_json(filepath: str, json_data):
     try:
-        with open(str(filepath), 'w', encoding='utf-8') as f:
+        with open(str(filepath), "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=2)
     except Exception as e:
         QMessageBox.critical(None, "错误", f"保存数据失败: {str(e)}")
@@ -68,7 +68,7 @@ def rm_file(filepath):
 
 
 def resource_Path(file_name):
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # noinspection PyProtectedMember
         base_dir = sys._MEIPASS  # type: ignore
         return Path(base_dir, "resources", file_name)
@@ -81,7 +81,7 @@ data_dir = None
 
 
 def get_writable_dir():
-    """ 获取平台合规的可写数据目录 """
+    """获取平台合规的可写数据目录"""
     global data_dir
     if data_dir is None:
         # 使用Qt的自动路径拼接功能，避免手动拼接目录名
@@ -100,7 +100,9 @@ def get_full_path(file_name):
 
 def get_application_support_path():
     # 获取Application Support目录
-    paths = QStandardPaths.standardLocations(QStandardPaths.StandardLocation.AppDataLocation)
+    paths = QStandardPaths.standardLocations(
+        QStandardPaths.StandardLocation.AppDataLocation
+    )
     if paths:
         return paths[0]
     return None

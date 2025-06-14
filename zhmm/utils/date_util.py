@@ -11,11 +11,11 @@ def today_str():
 
 
 def filename():
-    return datetime.now().strftime('%Y-%m-%d %H:%M:%S').replace(':', '')
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S").replace(":", "")
 
 
 def time_now():
-    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def timestamp_int():

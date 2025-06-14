@@ -14,10 +14,13 @@ from zhmm.utils.log import logger
 
 class LoginWindow(Dialog):
     """登录对话框"""
+
     login_success = pyqtSignal(dict)  # 保持信号声明不变
     hashpw: str = None
 
-    def __init__(self, openid: str | None = None, hashpw: str | None = None, parent=None):
+    def __init__(
+        self, openid: str | None = None, hashpw: str | None = None, parent=None
+    ):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
@@ -98,7 +101,9 @@ class LoginWindow(Dialog):
             return
 
         try:
-            if self.hashpw and not bcrypt.checkpw(password.encode(), self.hashpw.encode()):
+            if self.hashpw and not bcrypt.checkpw(
+                password.encode(), self.hashpw.encode()
+            ):
                 self.show_error("密码错误")
                 return
         except ValueError as e:
@@ -108,12 +113,13 @@ class LoginWindow(Dialog):
         # 登录成功
         logger.info(f"用户 {openid} 登录成功")
         # 登录成功时需要显式指定字典类型
+        hashpw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")
         info = {
-            'openid': openid,
-            'password': password,
-            'hashpw':  bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode('utf-8')
+            "openid": openid,
+            "password": password,
+            "hashpw": hashpw,
         }
-        
+
         self.login_success.emit(info)  # 直接传递强类型对象
         self.accept()
 

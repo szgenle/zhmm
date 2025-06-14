@@ -5,7 +5,6 @@ from zhmm.ui_config import UIConfig
 
 
 class BaseWindow(QMainWindow):
-
     def __init__(self):
         super().__init__()
         self.config = UIConfig()
@@ -23,4 +22,3 @@ class BaseWindow(QMainWindow):
         # 保存窗口位置和大小
         self.config.settings.setValue("geometry", self.geometry())
         super().closeEvent(event)
-

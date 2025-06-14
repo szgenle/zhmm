@@ -3,7 +3,6 @@ from PyQt6.QtWidgets import QDialog
 
 
 class Dialog(QDialog):
-
     def __init__(self, geometry=None):
         super().__init__()
         self._geometry = geometry
@@ -16,16 +15,26 @@ class Dialog(QDialog):
             # 解析 geometry
             if isinstance(geometry, str):
                 # 将字符串解析为四个整数
-                x, y, width, height = map(int, geometry.split(','))
+                x, y, width, height = map(int, geometry.split(","))
             else:
                 # 如果 geometry 是 QRect 对象，直接提取值
-                x, y, width, height = geometry.x(), geometry.y(), geometry.width(), geometry.height()
+                x, y, width, height = (
+                    geometry.x(),
+                    geometry.y(),
+                    geometry.width(),
+                    geometry.height(),
+                )
 
             # 解析 *__args
             if len(__args) == 1 and isinstance(__args[0], QRect):
                 # 如果传入的是 QRect 对象
                 args_rect = __args[0]
-                args_x, args_y, args_width, args_height = args_rect.x(), args_rect.y(), args_rect.width(), args_rect.height()
+                args_x, args_y, args_width, args_height = (
+                    args_rect.x(),
+                    args_rect.y(),
+                    args_rect.width(),
+                    args_rect.height(),
+                )
             elif len(__args) == 4:
                 # 如果传入的是四个整数
                 args_x, args_y, args_width, args_height = __args

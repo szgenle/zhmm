@@ -6,7 +6,6 @@ from zhmm.cloud.cloud_oss import CloudOss
 
 
 class CloudSync:
-
     cloud: CloudBase = None
     platform: str = None
     work_dir: str = None
@@ -15,9 +14,9 @@ class CloudSync:
         self.platform = platform
         self.work_dir = work_dir
 
-        if platform == 'cos':
+        if platform == "cos":
             self.cloud = CloudCos(config, work_dir)
-        elif platform == 'oss':
+        elif platform == "oss":
             self.cloud = CloudOss(config, work_dir)
         else:
             self.cloud = None

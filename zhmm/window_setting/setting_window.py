@@ -33,7 +33,7 @@ class SettingWindow(QWidget):
         self.lock_time_spinbox.setValue(config.get_lock_time())
         self.lock_time_spinbox.valueChanged.connect(config.save_lock_time)
         self.lock_time_spinbox.setMaximumWidth(200)
-        
+
         # 主题设置
         self.dark_theme_checkbox = QCheckBox("启用深色主题(暂未实现)")
 
@@ -64,43 +64,39 @@ class SettingWindow(QWidget):
 
         self.init_sync_work_dir(layout)
 
-
         layout.addStretch()
 
     def export_passwords(self):
         """导出密码列表"""
-        sm_data = self.info['sm_data']
+        sm_data = self.info["sm_data"]
         if sm_data:
-            UiDataExporter.export_to_file(sm_data.mm['data'])
+            UiDataExporter.export_to_file(sm_data.mm["data"])
 
     def import_xlsx(self):
         """导入xlsx文件"""
         from PyQt6.QtWidgets import QFileDialog
 
         from zhmm.data_exporter import DataImporter
-        
+
         file_path, _ = QFileDialog.getOpenFileName(
-            self, 
-            "选择xlsx文件", 
-            "", 
-            "Excel文件 (*.xlsx)"
+            self, "选择xlsx文件", "", "Excel文件 (*.xlsx)"
         )
-        
+
         if file_path:
             try:
                 imported_data = DataImporter.import_from_file(file_path)
                 if not imported_data:
                     return False
-                sm_data = self.info['sm_data']
+                sm_data = self.info["sm_data"]
                 if sm_data:
                     """讲导入的数据合并到sm_data中"""
-                    append_times, update_times = sm_data.merge(imported_data)   # type: ignore
+                    append_times, update_times = sm_data.merge(imported_data)  # type: ignore
                     if append_times is None:
                         return False
                     self.imported_xlsx.emit()
             except Exception as e:
                 print(f"导入xlsx文件失败: {e}")
-                
+
         return False
 
     def init_sync_work_dir(self, main_layout: QVBoxLayout):
@@ -108,13 +104,13 @@ class SettingWindow(QWidget):
         datasave_label = QLabel("云存储位置")
         datasave_label.setObjectName("setting-datasave-title")
         main_layout.addWidget(datasave_label)
-        
+
         work_dir_container = QVBoxLayout()
         # 新增工作目录选择
         self.sync_group = QButtonGroup(self)
 
-        radios = ['腾讯云-对象存储', '阿里云-对象存储']
-        
+        radios = ["腾讯云-对象存储", "阿里云-对象存储"]
+
         for radio in radios:
             # 创建分组容器（带边框）
             group_box = QGroupBox()
@@ -132,23 +128,20 @@ class SettingWindow(QWidget):
 
             editor_button = QPushButton("编辑")
             # 根据不同存储类型绑定不同的编辑对话框
-            if radio == '腾讯云-对象存储':
+            if radio == "腾讯云-对象存储":
                 self.cos_radio = radio_btn
                 editor_button.clicked.connect(lambda: CredentialsDialogCos(self).exec())
-            elif radio == '阿里云-对象存储':
-                self.oss_radio = radio_btn
-                editor_button.clicked.connect(lambda: CredentialsDialogOss(self).exec())
 
             group_layout.addWidget(radio_btn)
             group_layout.addWidget(sync_button)
             group_layout.addWidget(editor_button)
 
             work_dir_container.addWidget(group_box)
-        
+
         # # 从配置加载上次选择
-        cloud_platform = config.get('cloud_platform', '')
-        self.cos_radio.setChecked(cloud_platform == 'cos')
-        self.oss_radio.setChecked(cloud_platform == 'oss')
+        cloud_platform = config.get("cloud_platform", "")
+        self.cos_radio.setChecked(cloud_platform == "cos")
+        self.oss_radio.setChecked(cloud_platform == "oss")
 
         main_layout.addLayout(work_dir_container)
 
@@ -160,11 +153,11 @@ class SettingWindow(QWidget):
         if not checked:
             return
         if button == self.cos_radio:
-            platform = 'cos'
+            platform = "cos"
         elif button == self.oss_radio:
-            platform = 'oss'
+            platform = "oss"
         else:
-            platform = ''
+            platform = ""
         config.reset_sync_cloud(platform)
 
     def sync_data(self, cloud_type: str):

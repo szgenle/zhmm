@@ -22,26 +22,30 @@ class TablePrinter:
         # 打印表头
         for item, width in zip(data[0], max_widths):
             w = item_width(item, width)
-            print(f"{item:^{w}}", end='|')
+            print(f"{item:^{w}}", end="|")
         print()
 
         # 打印表格内容
         for row in data[1:]:
             for item, width in zip(row, max_widths):
                 w = item_width(item, width)
-                print(f"{item:<{w}}", end='|')
+                print(f"{item:<{w}}", end="|")
             print()
 
     @staticmethod
-    def print_info(infos: list[dict], required_fields: list[str], cn_headers: list[str] | None = None):
+    def print_info(
+        infos: list[dict],
+        required_fields: list[str],
+        cn_headers: list[str] | None = None,
+    ):
         """
         通用信息表格打印方法
-        
+
         参数：
         infos -- 字典列表，每个字典代表一条数据记录
-        required_fields -- 需要展示的英文字段名列表 
+        required_fields -- 需要展示的英文字段名列表
         cn_headers -- 可选的中文表头列表，默认为None时使用required_fields直接展示
-        
+
         示例：
         >>> TablePrinter.print_info(
         ...     [{'userID': 'admin', 'pwd': '123456'}],
@@ -49,16 +53,16 @@ class TablePrinter:
         ...     cn_headers=[SmData.field_mapping['userID'], SmData.field_mapping['pwd']]
         ... )
         """
-        
+
         arrs = []
         if cn_headers:
             arrs.append(cn_headers)
-        
+
         for info in infos:
             values = []
             for field in required_fields:
                 # 统一使用字段映射获取值
-                value = info.get(field, '')
+                value = info.get(field, "")
                 if not isinstance(value, str):
                     value = str(value)
                 values.append(value)
