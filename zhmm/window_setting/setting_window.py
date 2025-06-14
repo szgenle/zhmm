@@ -10,7 +10,7 @@ from zhmm.ui.login_dialog import ZhmmFileInfo
 from zhmm.window_setting.credentials_input_dialog_cos import CredentialsDialogCos
 
 
-class SettingWidget(QWidget):
+class SettingWindow(QWidget):
     """设置界面组件"""
 
     imported_xlsx = pyqtSignal()  # 登录成功信号
