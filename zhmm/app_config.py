@@ -12,7 +12,7 @@ from zhmm.utils import date_util
 
 
 class AppConfig:
-    save_file_name: str = "save"
+    cfg_file_name: str = "save"
     my_encryption_key: str = None
 
     cloud: CloudBase = None
@@ -21,9 +21,9 @@ class AppConfig:
         pass
 
     def init(self, file_name, password):
-        self.save_file_name = file_name
+        self.cfg_file_name = file_name
         self.my_encryption_key = setting.generate_key_from_string(password)
-        self.load_config()
+        return self.load_config()
 
     def get_lock_time(self):
         return 10
@@ -38,7 +38,7 @@ class AppConfig:
         self.config[key] = value
 
     def load_config(self):
-        cfg_Path = file_util.get_full_path(self.save_file_name)
+        cfg_Path = file_util.get_full_path(self.cfg_file_name)
         # 检查配置文件是否存在
         if not cfg_Path.exists():
             self.config = {}
@@ -48,6 +48,8 @@ class AppConfig:
             encrypted_data = f.read()
         # 获取加密密钥（示例使用QSettings存储）
         key = self.my_encryption_key
+
+        decrypted_data = None
         if key is None:
             decrypted_data = encrypted_data
         else:
@@ -56,11 +58,14 @@ class AppConfig:
                 decrypted_data = cipher_suite.decrypt(encrypted_data).decode()
             except Exception as e:
                 print("错误: 配置文件解密失败，请检查密钥或配置文件是否损坏")
-                self.config = {}
+
+        if decrypted_data is None:
+            return False
 
         # 解析解密后的JSON
         self.config = json.loads(decrypted_data)
         self.init_cloud()
+        return True
 
     def init_cloud(self):
         platform = self.get("cloud_platform", "")
@@ -78,7 +83,7 @@ class AppConfig:
             self.cloud = None
 
     def save_config(self):
-        cfg_Path = file_util.get_full_path(self.save_file_name)
+        cfg_Path = file_util.get_full_path(self.cfg_file_name)
         cfg_Path.parent.mkdir(parents=True, exist_ok=True)
         # 获取加密密钥
         key = self.my_encryption_key
@@ -101,11 +106,14 @@ class AppConfig:
     def sync_cloud_file(self, file_path):
         if not self.cloud:
             return False
-        cloud_ver = self.cloud.get_file_content('zhmm.ver')
+        cloud_ver = self.cloud.get_file_content(f'zhmm/{self.cfg_file_name}.ver')
         local_ver = self.get('zhmm_ver')
+        if local_ver and file_util.get_file_content(file_path) is None:
+            local_ver = None
+            self.set('zhmm_ver', local_ver)
         if cloud_ver:
             if not local_ver or (cloud_ver > local_ver):
-                data = self.cloud.get_file_content('zhmm.gl')
+                data = self.cloud.get_file_content(f'zhmm/{self.cfg_file_name}.gl')
                 if data:
                     file_util.set_file_content(file_path, data)
                     self.set('zhmm_ver', cloud_ver)
@@ -118,10 +126,10 @@ class AppConfig:
         data = file_util.get_file_content(file_path)
         if not data:
             return False
-        if self.cloud.set_file_content('zhmm.gl', data) is None:
+        if self.cloud.set_file_content(f'zhmm/{self.cfg_file_name}.gl', data) is None:
             return False
         cloud_ver = date_util.time_now()
-        if self.cloud.set_file_content('zhmm.ver', cloud_ver):
+        if self.cloud.set_file_content(f'zhmm/{self.cfg_file_name}.ver', cloud_ver):
             self.set('zhmm_ver', cloud_ver)
             self.save_config()
             return True

@@ -142,8 +142,13 @@ class FileListWidget(QWidget):
             print("用户取消了创建操作")
 
     def on_create_success(self, file_path: str, info: dict):
-        info["sm_data"].file_path = file_path
-        info["sm_data"].save()
+        import hashlib
+
+        file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
+        password_md5 = hashlib.md5(info["password"].encode("utf-8")).hexdigest()
+        if config.init(file_name, password_md5) is False:
+            QMessageBox.critical(self, "错误", "账号已存在，请输入正确的密码")
+            return
         self.on_login_success(file_path, info)
 
     def on_login_success(self, file_path: str, info: dict):
@@ -156,7 +161,8 @@ class FileListWidget(QWidget):
 
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
         password_md5 = hashlib.md5(info["password"].encode("utf-8")).hexdigest()
-        config.init(file_name, password_md5)
+        if config.init(file_name, password_md5) is False:
+            return
         config.sync_cloud_file(file_path)
 
         decryptor = UIDecryptData()
