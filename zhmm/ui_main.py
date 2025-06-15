@@ -5,7 +5,7 @@
 from PyQt6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from zhmm.ui_defined import ZhmmFileInfo
-from zhmm.ui_password import PasswordManagerWidget
+from zhmm.window_password.ui_password import PasswordManagerWidget
 from zhmm.window_setting.setting_window import SettingWindow
 
 
