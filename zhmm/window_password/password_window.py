@@ -97,7 +97,7 @@ class CustomProxyModel(QSortFilterProxyModel):
         return super().filterAcceptsRow(source_row, source_parent)
 
 
-class PasswordManagerWidget(QWidget):
+class PasswordWindow(QWidget):
     """密码管理界面"""
 
     return_requested = pyqtSignal()  # 然后首页的信号

@@ -5,18 +5,18 @@
 from PyQt6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from zhmm.ui_defined import ZhmmFileInfo
-from zhmm.window_password.ui_password import PasswordManagerWidget
+from zhmm.window_password.password_window import PasswordWindow
 from zhmm.window_setting.setting_window import SettingWindow
 
 
 class MainWindow(QWidget):
     """主窗口"""
 
-    data_manager_widget: PasswordManagerWidget | None = None
+    data_manager_widget: PasswordWindow | None = None
 
     def __init__(self, info: ZhmmFileInfo):
         super().__init__()
-        self.data_manager_widget = PasswordManagerWidget(info)
+        self.data_manager_widget = PasswordWindow(info)
         self.setting_widget = SettingWindow(info)
         self.setting_widget.imported_xlsx.connect(self.imported_xlsx_data)
         self.setup_ui()
