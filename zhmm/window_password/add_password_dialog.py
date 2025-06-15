@@ -4,7 +4,6 @@ from PyQt6.QtWidgets import (QComboBox, QDialog, QFormLayout, QHBoxLayout,
                              QInputDialog, QLabel, QLineEdit, QPushButton,
                              QTextEdit, QVBoxLayout)
 
-from zhmm.sm_data import SmData
 from zhmm.utils import date_util
 
 

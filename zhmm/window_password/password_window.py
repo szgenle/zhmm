@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QHBoxLayout,
                              QPushButton, QTableView, QVBoxLayout, QWidget)
 
 from zhmm.sm_data import SmData
-from zhmm.ui.add_password_dialog import AddPasswordDialog
+from zhmm.window_password.add_password_dialog import AddPasswordDialog
 from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.utils import date_util
