@@ -369,7 +369,7 @@ class PasswordManagerWidget(QWidget):
         )
 
         # 验证必填字段
-        if not new_data["userID"] or not new_data["pwd"]:
+        if not new_data["userID"]:
             QMessageBox.warning(dialog, "警告", "账号不能为空")
             return
 
