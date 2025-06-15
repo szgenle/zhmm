@@ -121,17 +121,7 @@ class PasswordManagerWidget(QWidget):
         search_layout = QHBoxLayout()
 
         # 添加类别筛选下拉框
-        role_filter_label = QLabel("类别:")
-        self.role_filter_combo = QComboBox()
-        self.role_filter_combo.addItem("全部", "")  # 添加一个默认选项
-        # 从数据中获取所有角色并添加到下拉框
-        if self.gl_data.mm and "roles" in self.gl_data.mm:
-            for role in self.gl_data.mm["roles"]:
-                self.role_filter_combo.addItem(role, role)
-        self.role_filter_combo.currentIndexChanged.connect(self.filter_role)
-
-        search_layout.addWidget(role_filter_label)
-        search_layout.addWidget(self.role_filter_combo)
+        self.ini_role_ui(search_layout)
 
         search_label = QLabel("搜索:")
         self.search_input = QLineEdit()
@@ -233,6 +223,20 @@ class PasswordManagerWidget(QWidget):
         button_layout.addWidget(add_button)
 
         main_layout.addLayout(button_layout)
+
+    def ini_role_ui(self, search_layout):# 添加类别筛选下拉框
+        role_filter_label = QLabel("类别:")
+        self.role_filter_combo = QComboBox()
+        self.role_filter_combo.addItem("全部", "")  # 添加一个默认选项
+        # 从数据中获取所有角色并添加到下拉框
+        if self.gl_data.mm and "roles" in self.gl_data.mm:
+            for role in self.gl_data.mm["roles"]:
+                self.role_filter_combo.addItem(role, role)
+        self.role_filter_combo.currentIndexChanged.connect(self.filter_role)
+
+        search_layout.addWidget(role_filter_label)
+        search_layout.addWidget(self.role_filter_combo)
+        pass
 
     def filter_role(self):
         # 获取选中的角色
