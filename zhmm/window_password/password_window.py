@@ -75,11 +75,20 @@ class PasswordTableModel(QAbstractTableModel):
 class CustomProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.show_all_data = True  # 控制是否显示所有数据
+        self.show_all_data = False  # 控制是否显示所有数据
         self.filter_role = ""  # 角色过滤值
         self.use_role_filter = False  # 是否使用角色过滤
+        self._has_filter = False
 
-    def filterAcceptsRow(self, source_row, source_parent):
+    def setFilterRegularExpression(self, pattern):
+        self._has_filter = bool(pattern and pattern.strip())
+        super().setFilterRegularExpression(pattern)
+
+    def setFilterFixedString(self, text):
+        self._has_filter = bool(text and text.strip())
+        super().setFilterFixedString(text)
+
+    def filterAcceptsRow(self, source_row: int, source_parent) -> bool:
         """根据复选框状态和角色过滤调整过滤逻辑"""
         # 首先检查是否需要角色过滤
         if self.use_role_filter and self.filter_role:
@@ -89,12 +98,14 @@ class CustomProxyModel(QSortFilterProxyModel):
             if role_value != self.filter_role:
                 return False
 
-        # 然后检查是否显示所有数据
-        if not self.show_all_data and not self.filterRegularExpression().pattern():
-            return False
-
-        # 最后应用正则表达式过滤
-        return super().filterAcceptsRow(source_row, source_parent)
+        if self.show_all_data:
+            # 正常过滤
+            return super().filterAcceptsRow(source_row, source_parent)
+        else:
+            if not self._has_filter:
+                return False
+            # 当没有过滤条件时，隐藏所有数据
+            return super().filterAcceptsRow(source_row, source_parent)
 
 
 class PasswordWindow(QWidget):
@@ -131,7 +142,7 @@ class PasswordWindow(QWidget):
 
         # 在搜索区域添加复选框
         self.show_all_checkbox = QCheckBox("隐藏非搜索数据")
-        self.show_all_checkbox.setChecked(False)
+        self.show_all_checkbox.setChecked(True)
         self.show_all_checkbox.toggled.connect(self.toggle_show_all)
 
         search_layout.addWidget(search_label)
@@ -259,7 +270,7 @@ class PasswordWindow(QWidget):
         search_text = self.search_input.text()
 
         # 设置通配符过滤
-        self.proxy_model.setFilterWildcard(f"*{search_text}*" if search_text else "")
+        self.proxy_model.setFilterFixedString(search_text)
 
     def toggle_show_all(self, checked):
         """复选框状态切换处理"""
