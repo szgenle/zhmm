@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (QComboBox, QDialog, QFormLayout, QHBoxLayout,
                              QTextEdit, QVBoxLayout)
 
 from zhmm.utils import date_util
-
+from zhmm.window_password.random_password_dialog import RandomPasswordDialog
 
 class AddPasswordDialog(QDialog):
     """添加密码对话框"""
@@ -61,7 +61,17 @@ class AddPasswordDialog(QDialog):
         self.password_input = QLineEdit()
         self.password_input.setMinimumWidth(300)
         self.password_input.setPlaceholderText("请输入密码")
-        form_layout.addRow("密码:", self.password_input)
+        
+        # 添加随机密码按钮
+        self.random_pwd_btn = QPushButton("随机密码")
+        self.random_pwd_btn.clicked.connect(self.show_random_pwd_dialog)
+        
+        # 将输入框和按钮放入水平布局
+        pwd_layout = QHBoxLayout()
+        pwd_layout.addWidget(self.password_input)
+        pwd_layout.addWidget(self.random_pwd_btn)
+        
+        form_layout.addRow("密码:", pwd_layout)
 
         # 手机输入
         self.phone_input = QLineEdit()
@@ -134,6 +144,12 @@ class AddPasswordDialog(QDialog):
         self.email_input.setText(data.get("email", ""))
         self.url_input.setText(data.get("url", ""))
         self.desc_input.setText(data.get("desc", ""))
+
+    def show_random_pwd_dialog(self):
+        """显示随机密码生成对话框"""
+        dialog = RandomPasswordDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.password_input.setText(dialog.get_password())
 
     def get_password_data(self):
         """获取表单数据"""
