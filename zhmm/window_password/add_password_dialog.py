@@ -16,48 +16,6 @@ class AddPasswordDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("添加账号密码")
         self.setFixedSize(600, 650)  # 增加高度容纳优化后的布局
-        self.setStyleSheet("""
-            QDialog { background-color: #f5f7fa; border-radius: 8px; }
-            QLabel#title_label { color: #2c3e50; font-size: 18px; font-weight: bold; }
-            QLabel { color: #34495e; font-size: 14px; }
-            QLineEdit, QTextEdit, QComboBox {
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                padding: 6px 10px;
-                background-color: white;
-                selection-background-color: #3498db;
-                selection-color: white;
-            }
-            QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
-                border-color: #3498db;
-                outline: none;
-            }
-            QPushButton {
-                border-radius: 4px;
-                padding: 6px 12px;
-                font-size: 14px;
-            }
-            QPushButton#confirm_button {
-                background-color: #3498db;
-                color: white;
-                border: none;
-            }
-            QPushButton#confirm_button:hover { background-color: #2980b9; }
-            QPushButton#cancel_button {
-                background-color: #ecf0f1;
-                color: #34495e;
-                border: 1px solid #bdc3c7;
-            }
-            QPushButton#cancel_button:hover { background-color: #dcdde1; }
-            QPushButton#add_role_btn, QPushButton#random_pwd_btn {
-                background-color: #3498db;
-                color: white;
-                border: none;
-            }
-            QPushButton#add_role_btn:hover, QPushButton#random_pwd_btn:hover {
-                background-color: #2980b9;
-            }
-        """)
 
         self.roles = roles
 
