@@ -15,38 +15,83 @@ class AddPasswordDialog(QDialog):
     def __init__(self, parent, roles: list[str], edit_data=None):
         super().__init__(parent)
         self.setWindowTitle("添加账号密码")
-        self.setFixedSize(600, 400)
+        self.setFixedSize(600, 650)  # 增加高度容纳优化后的布局
+        self.setStyleSheet("""
+            QDialog { background-color: #f5f7fa; border-radius: 8px; }
+            QLabel#title_label { color: #2c3e50; font-size: 18px; font-weight: bold; }
+            QLabel { color: #34495e; font-size: 14px; }
+            QLineEdit, QTextEdit, QComboBox {
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                padding: 6px 10px;
+                background-color: white;
+                selection-background-color: #3498db;
+                selection-color: white;
+            }
+            QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
+                border-color: #3498db;
+                outline: none;
+            }
+            QPushButton {
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+            QPushButton#confirm_button {
+                background-color: #3498db;
+                color: white;
+                border: none;
+            }
+            QPushButton#confirm_button:hover { background-color: #2980b9; }
+            QPushButton#cancel_button {
+                background-color: #ecf0f1;
+                color: #34495e;
+                border: 1px solid #bdc3c7;
+            }
+            QPushButton#cancel_button:hover { background-color: #dcdde1; }
+            QPushButton#add_role_btn, QPushButton#random_pwd_btn {
+                background-color: #3498db;
+                color: white;
+                border: none;
+            }
+            QPushButton#add_role_btn:hover, QPushButton#random_pwd_btn:hover {
+                background-color: #2980b9;
+            }
+        """)
 
         self.roles = roles
 
         # 创建布局
         layout = QVBoxLayout()
+        layout.setContentsMargins(30, 20, 30, 20)  # 增加外间距
+        layout.setSpacing(15)  # 统一控件间距
 
         # 标题标签
         title_label = QLabel("请输入账号密码信息")
+        title_label.setObjectName("title_label")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+        title_label.setFixedHeight(40)
         layout.addWidget(title_label)
-
-        # 添加一些间距
-        layout.addSpacing(20)
 
         # 创建表单布局
         form_layout = QFormLayout()
+        form_layout.setSpacing(12)  # 表单控件间距
+        form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
 
         # 类别选择
         self.role_combo = QComboBox()
+        self.role_combo.setFixedHeight(36)  # 增加控件高度
         self.role_combo.setEditable(True)
-
-        # 加载保存的类别
         self.role_combo.addItems(self.roles)
 
         # 添加新建类别按钮
         add_role_btn = QPushButton("+")
-        add_role_btn.setFixedSize(30, 30)
+        add_role_btn.setObjectName("add_role_btn")
+        add_role_btn.setFixedSize(36, 36)
         add_role_btn.clicked.connect(self._add_custom_role)
 
         role_layout = QHBoxLayout()
+        role_layout.setSpacing(8)
         role_layout.addWidget(self.role_combo)
         role_layout.addWidget(add_role_btn)
         form_layout.addRow("类别:", role_layout)
@@ -54,69 +99,78 @@ class AddPasswordDialog(QDialog):
         # 账号输入
         self.userid_input = QLineEdit()
         self.userid_input.setMinimumWidth(300)
+        self.userid_input.setFixedHeight(30)
         self.userid_input.setPlaceholderText("请输入账号")
         form_layout.addRow("账号:", self.userid_input)
 
         # 密码输入
         self.password_input = QLineEdit()
         self.password_input.setMinimumWidth(300)
+        self.password_input.setFixedHeight(30)
         self.password_input.setPlaceholderText("请输入密码")
-        
+
         # 添加随机密码按钮
         self.random_pwd_btn = QPushButton("随机密码")
+        self.random_pwd_btn.setFixedHeight(30)
         self.random_pwd_btn.clicked.connect(self.show_random_pwd_dialog)
-        
+
         # 将输入框和按钮放入水平布局
         pwd_layout = QHBoxLayout()
-        pwd_layout.addWidget(self.password_input)
-        pwd_layout.addWidget(self.random_pwd_btn)
-        
+        pwd_layout.addWidget(self.password_input, stretch=4)
+        pwd_layout.addWidget(self.random_pwd_btn, stretch=1)
+
         form_layout.addRow("密码:", pwd_layout)
 
         # 手机输入
         self.phone_input = QLineEdit()
         self.phone_input.setMinimumWidth(300)
+        self.phone_input.setFixedHeight(30)
         self.phone_input.setPlaceholderText("请输入手机号码（可选）")
         form_layout.addRow("手机:", self.phone_input)
 
         # 邮箱输入
         self.email_input = QLineEdit()
         self.email_input.setMinimumWidth(300)
+        self.email_input.setFixedHeight(36)
         self.email_input.setPlaceholderText("请输入邮箱（可选）")
         form_layout.addRow("邮箱:", self.email_input)
 
         # 网站输入
         self.url_input = QLineEdit()
         self.url_input.setMinimumWidth(300)
+        self.url_input.setFixedHeight(30)
         self.url_input.setPlaceholderText("请输入网站地址（可选）")
         form_layout.addRow("网站:", self.url_input)
 
         # 备注输入
         self.desc_input = QTextEdit()
         self.desc_input.setMinimumWidth(300)
-        self.desc_input.setMaximumHeight(100)
+        self.desc_input.setMinimumHeight(120)  # 优化备注框高度
         self.desc_input.setPlaceholderText("请输入备注信息（可选）")
+        self.desc_input.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         form_layout.addRow("备注:", self.desc_input)
 
         layout.addLayout(form_layout)
 
-        # 添加一些间距
-        layout.addSpacing(20)
-
         # 按钮布局
         button_layout = QHBoxLayout()
+        button_layout.setSpacing(15)
+        button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # 确认按钮
         self.confirm_button = QPushButton("确认添加")
+        self.confirm_button.setObjectName("confirm_button")
+        self.confirm_button.setFixedSize(100, 36)
         button_layout.addWidget(self.confirm_button)
 
         # 取消按钮
         cancel_button = QPushButton("取消")
+        cancel_button.setObjectName("cancel_button")
+        cancel_button.setFixedSize(100, 36)
         cancel_button.clicked.connect(self.reject)
         button_layout.addWidget(cancel_button)
 
         layout.addLayout(button_layout)
-
         self.setLayout(layout)
 
         # 如果是编辑模式，填充数据
