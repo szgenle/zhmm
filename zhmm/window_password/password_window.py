@@ -80,11 +80,11 @@ class CustomProxyModel(QSortFilterProxyModel):
         self.use_role_filter = False  # 是否使用角色过滤
         self._has_filter = False
 
-    def setFilterRegularExpression(self, pattern):
+    def setFilterRegularExpression(self, pattern):  # type: ignore
         self._has_filter = bool(pattern and pattern.strip())
         super().setFilterRegularExpression(pattern)
 
-    def setFilterFixedString(self, text):
+    def setFilterFixedString(self, text):  # type: ignore
         self._has_filter = bool(text and text.strip())
         super().setFilterFixedString(text)
 
@@ -93,6 +93,8 @@ class CustomProxyModel(QSortFilterProxyModel):
         # 首先检查是否需要角色过滤
         if self.use_role_filter and self.filter_role:
             model = self.sourceModel()
+            if model is None:
+                return False
             role_index = model.index(source_row, 1)  # 1是角色列
             role_value = model.data(role_index, Qt.ItemDataRole.DisplayRole)
             if role_value != self.filter_role:
@@ -255,8 +257,10 @@ class PasswordWindow(QWidget):
         self.role_filter_combo.clear()
         self.role_filter_combo.addItem("全部", "")  # 添加一个默认选项
         if self.gl_data.mm and "roles" in self.gl_data.mm:
-            for role in self.gl_data.mm["roles"]:
-                self.role_filter_combo.addItem(role, role)
+            roles = self.gl_data.mm["roles"]
+            if roles is not None:
+                for role in roles:
+                    self.role_filter_combo.addItem(role, role)
         pass
 
     def filter_role(self):
@@ -285,12 +289,15 @@ class PasswordWindow(QWidget):
 
     def add_password(self):
         """添加密码"""
-        dialog = AddPasswordDialog(self, self.gl_data.mm["roles"])
+        roles = self.gl_data.mm.get("roles") or []
+        dialog = AddPasswordDialog(self, roles)
         dialog.confirm_button.clicked.connect(lambda: self.confirm_add_password(dialog))
         dialog.added_role.connect(lambda new_role: self.add_role(new_role))
         dialog.exec()
 
     def add_role(self, new_role):
+        if "roles" not in self.gl_data.mm or self.gl_data.mm["roles"] is None:
+            self.gl_data.mm["roles"] = []
         self.gl_data.mm["roles"].append(new_role)
         self.save()
         self.reset_roles_option()
@@ -375,7 +382,8 @@ class PasswordWindow(QWidget):
         edit_data = self.gl_data.mm["data"][row]
 
         # 创建编辑对话框并传入数据
-        dialog = AddPasswordDialog(self, self.gl_data.mm["roles"], edit_data=edit_data)
+        roles = self.gl_data.mm.get("roles") or []
+        dialog = AddPasswordDialog(self, roles, edit_data=edit_data)
         dialog.confirm_button.clicked.connect(
             lambda: self._process_edit_result(dialog, row)
         )
