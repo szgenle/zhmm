@@ -82,13 +82,14 @@ class ThemeManager:
         }
         QTabBar::tab:hover { background-color: #dcdde1; }
 
-        QTableWidget {
+        QTableWidget, QTableView {
             background-color: #ffffff;
             alternate-background-color: #f8f9fa;
             gridline-color: #e0e0e0;
             selection-background-color: #3498db;
             selection-color: white;
             border: 1px solid #bdc3c7;
+            color: #2c3e50;
         }
         QHeaderView::section {
             background-color: #ecf0f1;
@@ -215,7 +216,7 @@ class ThemeManager:
         }
         QTabBar::tab:hover { background-color: #465664; }
 
-        QTableWidget {
+        QTableWidget, QTableView {
             background-color: #1e272e;
             alternate-background-color: #2c3e50;
             gridline-color: #34495e;
