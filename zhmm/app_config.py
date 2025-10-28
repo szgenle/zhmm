@@ -12,9 +12,9 @@ from zhmm.utils import date_util, file_util
 
 class AppConfig:
     cfg_file_name: str = "save"
-    my_encryption_key: str = None
+    my_encryption_key: str
 
-    cloud: CloudBase = None
+    cloud: CloudBase
 
     def __init__(self):
         pass
@@ -25,10 +25,18 @@ class AppConfig:
         return self.load_config()
 
     def get_lock_time(self):
-        return 10
+        return setting.get_lock_time()
 
     def save_lock_time(self, v):
-        return
+        setting.save_lock_time(v)
+
+    def get_theme(self):
+        """获取主题设置"""
+        return setting.get_theme()
+
+    def save_theme(self, theme):
+        """保存主题设置"""
+        setting.save_theme(theme)
 
     def get(self, key, default_value=None):
         return self.config.get(key, default_value)
@@ -78,8 +86,6 @@ class AppConfig:
             from zhmm.cloud.cloud_oss import CloudOss
 
             self.cloud = CloudOss(self.config)
-        else:
-            self.cloud = None
 
     def save_config(self):
         cfg_Path = file_util.get_full_path(self.cfg_file_name)

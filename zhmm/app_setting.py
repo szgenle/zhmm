@@ -38,3 +38,26 @@ class AppSetting(QSettings):
         self.setValue("remember_password", value)
         if not value:
             self.remove("encrypted_password")
+
+    def get_lock_time(self):
+        """获取自动锁定时间（分钟）"""
+        return self.value("lock_time", 10, type=int)
+
+    def save_lock_time(self, minutes):
+        """保存自动锁定时间"""
+        self.setValue("lock_time", minutes)
+        self.sync()
+
+    def get_theme(self):
+        """获取主题设置，默认为浅色主题
+        返回值: 'light', 'dark', 'auto'
+        """
+        return self.value("theme", "light", type=str)
+
+    def save_theme(self, theme):
+        """保存主题设置
+        参数:
+            theme: 'light', 'dark', 'auto'
+        """
+        self.setValue("theme", theme)
+        self.sync()

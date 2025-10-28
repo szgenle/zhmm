@@ -80,9 +80,10 @@ class AppWindow(BaseWindow):
         self.main_widget = MainWindow(info)
         self.setCentralWidget(self.main_widget)
         # 添加返回按钮信号连接
-        self.main_widget.data_manager_widget.return_requested.connect(
-            lambda: self.show_welcome_ui(False)
-        )  # 新增
+        if self.main_widget.data_manager_widget:
+            self.main_widget.data_manager_widget.return_requested.connect(
+                lambda: self.show_welcome_ui(False)
+            )  # 新增
         # 隐藏欢迎界面
         self.hide_welcome_ui()
 
@@ -135,49 +136,12 @@ def main():
     """主函数"""
     app = QApplication(sys.argv)
 
-    # 应用全局样式表
-    app.setStyleSheet("""
-        QDialog { background-color: #f5f7fa; border-radius: 8px; }
-        QLabel#title_label { color: #2c3e50; font-size: 18px; font-weight: bold; }
-        QLabel { color: #34495e; font-size: 14px; }
-        QLineEdit, QTextEdit, QComboBox {
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            padding: 6px 10px;
-            background-color: white;
-            selection-background-color: #3498db;
-            selection-color: white;
-        }
-        QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-        QPushButton {
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-size: 14px;
-        }
-        QPushButton#confirm_button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-        }
-        QPushButton#confirm_button:hover { background-color: #2980b9; }
-        QPushButton#cancel_button {
-            background-color: #ecf0f1;
-            color: #34495e;
-            border: 1px solid #bdc3c7;
-        }
-        QPushButton#cancel_button:hover { background-color: #dcdde1; }
-        QPushButton#add_role_btn, QPushButton#random_pwd_btn {
-            background-color: #3498db;
-            color: white;
-            border: none;
-        }
-        QPushButton#add_role_btn:hover, QPushButton#random_pwd_btn:hover {
-            background-color: #2980b9;
-        }
-    """)
+    # 根据保存的主题设置应用样式
+    from zhmm.theme_manager import ThemeManager
+
+    current_theme = config.get_theme()
+    stylesheet = ThemeManager.get_theme_stylesheet(current_theme)
+    app.setStyleSheet(stylesheet)
 
     window = AppWindow()
     window.show()

@@ -35,7 +35,35 @@ class SettingWindow(QWidget):
         self.lock_time_spinbox.setMaximumWidth(200)
 
         # 主题设置
-        self.dark_theme_checkbox = QCheckBox("启用深色主题(暂未实现)")
+        theme_group = QGroupBox("主题设置")
+        theme_layout = QVBoxLayout()
+
+        self.theme_button_group = QButtonGroup(self)
+        self.light_theme_radio = QRadioButton("浅色主题")
+        self.dark_theme_radio = QRadioButton("深色主题")
+        self.auto_theme_radio = QRadioButton("跟随系统")
+
+        self.theme_button_group.addButton(self.light_theme_radio)
+        self.theme_button_group.addButton(self.dark_theme_radio)
+        self.theme_button_group.addButton(self.auto_theme_radio)
+
+        theme_layout.addWidget(self.light_theme_radio)
+        theme_layout.addWidget(self.dark_theme_radio)
+        theme_layout.addWidget(self.auto_theme_radio)
+        theme_group.setLayout(theme_layout)
+        theme_group.setMaximumWidth(300)
+
+        # 从配置加载当前主题
+        current_theme = config.get_theme()
+        if current_theme == 'dark':
+            self.dark_theme_radio.setChecked(True)
+        elif current_theme == 'auto':
+            self.auto_theme_radio.setChecked(True)
+        else:
+            self.light_theme_radio.setChecked(True)
+
+        # 连接主题切换信号
+        self.theme_button_group.buttonClicked.connect(self.on_theme_changed)
 
         # 更改OpenID
         self.change_openid_button = QPushButton("更改OpenID(暂未实现)")
@@ -56,7 +84,7 @@ class SettingWindow(QWidget):
 
         layout.addWidget(self.lock_time_label)
         layout.addWidget(self.lock_time_spinbox)
-        layout.addWidget(self.dark_theme_checkbox)
+        layout.addWidget(theme_group)
         layout.addWidget(self.change_openid_button)
         layout.addWidget(self.import_xlsx_button)
         layout.addWidget(self.download_xlsx_button)
@@ -159,3 +187,27 @@ class SettingWindow(QWidget):
 
     def sync_data(self, cloud_type: str):
         pass
+
+    def on_theme_changed(self, button):
+        """主题切换事件处理"""
+        from PyQt6.QtWidgets import QApplication
+        from zhmm.theme_manager import ThemeManager
+
+        # 确定选择的主题
+        if button == self.light_theme_radio:
+            theme = 'light'
+        elif button == self.dark_theme_radio:
+            theme = 'dark'
+        elif button == self.auto_theme_radio:
+            theme = 'auto'
+        else:
+            return
+
+        # 保存主题设置
+        config.save_theme(theme)
+
+        # 应用主题
+        app_instance = QApplication.instance()
+        if app_instance and isinstance(app_instance, QApplication):
+            stylesheet = ThemeManager.get_theme_stylesheet(theme)
+            app_instance.setStyleSheet(stylesheet)
