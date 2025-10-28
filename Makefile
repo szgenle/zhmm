@@ -1,0 +1,126 @@
+.PHONY: help install run run-gui run-cmd debug build-app build-cmd build-all clean clean-build clean-dist env-info format lint pre-commit
+
+# 默认目标：显示帮助信息
+help:
+	@echo "可用的 Make 命令："
+	@echo "  make install       - 安装项目依赖"
+	@echo "  make run           - 运行GUI应用程序"
+	@echo "  make run-gui       - 运行GUI应用程序（同 run）"
+	@echo "  make run-cmd       - 运行命令行应用程序"
+	@echo "  make debug         - 使用调试模式运行应用程序"
+	@echo "  make build-app     - 构建GUI应用程序"
+	@echo "  make build-cmd     - 构建命令行应用程序"
+	@echo "  make build-all     - 构建所有应用程序"
+	@echo "  make clean         - 清理所有构建文件"
+	@echo "  make clean-build   - 清理构建缓存"
+	@echo "  make clean-dist    - 清理分发文件"
+	@echo "  make env-info      - 显示Poetry虚拟环境信息"
+	@echo "  make format        - 格式化代码（使用isort）"
+	@echo "  make lint          - 代码检查（使用flake8）"
+	@echo "  make pre-commit    - 运行pre-commit检查"
+
+# 安装依赖
+install:
+	@echo "安装项目依赖..."
+	poetry install
+	@echo "依赖安装完成！"
+
+# 运行GUI应用程序
+run:
+	@echo "启动GUI应用程序..."
+	poetry run python -m zhmm.main
+
+run-gui: run
+
+# 运行命令行应用程序
+run-cmd:
+	@echo "启动命令行应用程序..."
+	poetry run python -m zhmm.cmd_main
+
+# 调试模式运行
+debug:
+	@echo "使用调试模式启动应用程序..."
+	poetry run python -m pdb -m zhmm.main
+
+# 构建GUI应用程序
+build-app: clean-build
+	@echo "构建GUI应用程序..."
+	poetry add pyinstaller --group dev
+	poetry run pyinstaller --onefile --windowed --name "zhmm" \
+		--osx-bundle-identifier "com.szgenle.zhmm" \
+		--icon=myicon.icns \
+		zhmm/main.py \
+		--paths zhmm/
+	@echo "GUI应用程序构建完成！"
+
+# 构建命令行应用程序
+build-cmd: clean-build
+	@echo "构建命令行应用程序..."
+	poetry add pyinstaller --group dev
+	poetry run pyinstaller --onefile --name "zhmm_cmd" \
+		--osx-bundle-identifier "com.szgenle.zhmm" \
+		--icon=myicon.icns \
+		zhmm/cmd_main.py \
+		--paths zhmm/
+	@echo "命令行应用程序构建完成！"
+
+# 构建所有应用程序
+build-all: clean-build
+	@echo "构建所有应用程序..."
+	poetry add pyinstaller --group dev
+	@echo "构建GUI应用程序..."
+	poetry run pyinstaller --onefile --windowed --name "zhmm" \
+		--osx-bundle-identifier "com.szgenle.zhmm" \
+		--icon=myicon.icns \
+		zhmm/main.py \
+		--paths zhmm/
+	@echo "构建命令行应用程序..."
+	poetry run pyinstaller --onefile --name "zhmm_cmd" \
+		--osx-bundle-identifier "com.szgenle.zhmm" \
+		--icon=myicon.icns \
+		zhmm/cmd_main.py \
+		--paths zhmm/
+	@echo "所有应用程序构建完成！"
+
+# 清理构建缓存
+clean-build:
+	@echo "清理构建缓存..."
+	rm -rf build
+	rm -rf *.spec
+
+# 清理分发文件
+clean-dist:
+	@echo "清理分发文件..."
+	rm -rf dist
+
+# 清理所有构建文件
+clean: clean-build clean-dist
+	@echo "清理Python缓存文件..."
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	find . -type f -name "*.pyo" -delete 2>/dev/null || true
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	@echo "清理完成！"
+
+# 显示Poetry虚拟环境信息
+env-info:
+	@echo "Poetry虚拟环境信息："
+	poetry env info
+
+# 格式化代码
+format:
+	@echo "格式化代码..."
+	poetry run isort zhmm/
+	@echo "代码格式化完成！"
+
+# 代码检查
+lint:
+	@echo "运行代码检查..."
+	poetry run flake8 zhmm/
+	@echo "代码检查完成！"
+
+# 运行pre-commit检查
+pre-commit:
+	@echo "运行pre-commit检查..."
+	poetry run pre-commit run --all-files
+	@echo "pre-commit检查完成！"
