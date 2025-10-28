@@ -1,4 +1,6 @@
-from PyQt6.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog, QMessageBox
+
+from zhmm.data_exporter import DataExporter
 
 
 class UiDataExporter:
@@ -13,4 +15,17 @@ class UiDataExporter:
             "GL Files (*.xlsx);;All Files (*)",  # 文件过滤器
         )
         if file_path:
-            return DataExporter.export_xlsx(file_path, data)
+            result = DataExporter.export_xlsx(file_path, data)
+            if result:
+                QMessageBox.information(
+                    None,
+                    "导出成功",
+                    f"已成功导出 {len(data)} 条数据到:\n{file_path}"
+                )
+            else:
+                QMessageBox.warning(
+                    None,
+                    "导出失败",
+                    "数据导出失败,请检查文件路径和权限"
+                )
+            return result
