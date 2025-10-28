@@ -241,6 +241,11 @@ class PasswordWindow(QWidget):
         self.reset_roles_option()
         self.role_filter_combo.currentIndexChanged.connect(self.filter_role)
 
+        # 设置下拉框最小宽度
+        self.role_filter_combo.setMinimumWidth(150)
+        # 设置下拉列表视图的宽度自适应内容
+        self.role_filter_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+
         search_layout.addWidget(role_filter_label)
         search_layout.addWidget(self.role_filter_combo)
         pass
