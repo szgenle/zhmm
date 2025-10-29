@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 
-from PyQt6.QtWidgets import QMessageBox
+from zhmm.utils.log import logger
 
 
 class FileLocal:
@@ -38,7 +38,7 @@ class FileLocal:
             print(f"文件已成功写入: {full_path}")
             return True  # 写入成功返回True
         except Exception as e:
-            QMessageBox.critical(None, "错误", f"文件写入失败: {str(e)}")
+            logger.error("文件写入失败: %s", str(e))
             return False  # 写入失败返回False
 
     def load_json(self, path, default_value=None):
@@ -55,7 +55,7 @@ class FileLocal:
             with open(full_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            QMessageBox.critical(None, "错误", f"保存数据失败: {str(e)}")
+            logger.error("保存JSON失败: %s", str(e))
 
     def rm_file(self, path):
         full_path = self.get_full_path(path)

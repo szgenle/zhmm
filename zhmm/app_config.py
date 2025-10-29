@@ -132,7 +132,9 @@ class AppConfig:
         elif platform == "oss":
             from zhmm.cloud.cloud_oss import CloudOss
 
-            self.cloud = CloudOss(self.config)
+            cloud = CloudOss()
+            if cloud.init(self.config):
+                self.cloud = cloud
 
     def save_config(self):
         cfg_Path = file_util.get_full_path(self.cfg_file_name)

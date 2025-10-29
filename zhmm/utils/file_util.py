@@ -7,7 +7,8 @@ from importlib.resources import files
 from pathlib import Path
 
 from PyQt6.QtCore import QStandardPaths
-from PyQt6.QtWidgets import QMessageBox
+import logging
+logger = logging.getLogger(__name__)
 
 
 def is_macos():
@@ -30,15 +31,23 @@ def get_file_content(file_path, default=None):
 
 
 def set_file_content(file_path, content):
-    with open(file_path, "w", encoding="utf-8") as file:
-        file.write(content)
-        return True
+    try:
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(content)
+            return True
+    except Exception as e:
+        logger.error("写入文本文件失败: %s", str(e))
+        return False
 
 
 def set_file_bytes(file_path, content):
-    with open(file_path, "wb") as file:
-        file.write(content)
-        return True
+    try:
+        with open(file_path, "wb") as file:
+            file.write(content)
+            return True
+    except Exception as e:
+        logger.error("写入二进制文件失败: %s", str(e))
+        return False
 
 
 def load_json(filepath: str, default=None):
@@ -58,8 +67,10 @@ def save_json(filepath: str, json_data):
     try:
         with open(str(filepath), "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=2)
+        return True
     except Exception as e:
-        QMessageBox.critical(None, "错误", f"保存数据失败: {str(e)}")
+        logger.error("保存JSON失败: %s", str(e))
+        return False
 
 
 def rm_file(filepath):
