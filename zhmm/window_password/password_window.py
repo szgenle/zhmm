@@ -113,8 +113,6 @@ class CustomProxyModel(QSortFilterProxyModel):
 class PasswordWindow(QWidget):
     """密码管理界面"""
 
-    return_requested = pyqtSignal()  # 然后首页的信号
-
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
         self.info = info
@@ -215,10 +213,6 @@ class PasswordWindow(QWidget):
         # 创建按钮区域
         button_layout = QHBoxLayout()
 
-        # 新增返回按钮
-        return_btn = QPushButton("返回首页")
-        return_btn.clicked.connect(self.return_requested.emit)
-
         # 新增删除按钮
         delete_button = QPushButton("删除")
         delete_button.setMaximumWidth(128)
@@ -228,9 +222,6 @@ class PasswordWindow(QWidget):
         add_button.setMaximumWidth(128)
         add_button.clicked.connect(self.add_password)
 
-        # 添加按钮顺序保持不变，但会被伸缩项推到右边
-        button_layout.addWidget(return_btn)
-        # 在布局开始处添加伸缩项
         button_layout.addStretch()
         button_layout.addWidget(delete_button)
         button_layout.addWidget(add_button)

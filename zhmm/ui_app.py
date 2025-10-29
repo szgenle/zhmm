@@ -79,11 +79,10 @@ class AppWindow(BaseWindow):
         # 创建数据管理界面
         self.main_widget = MainWindow(info)
         self.setCentralWidget(self.main_widget)
-        # 添加返回按钮信号连接
-        if self.main_widget.data_manager_widget:
-            self.main_widget.data_manager_widget.return_requested.connect(
-                lambda: self.show_welcome_ui(False)
-            )  # 新增
+        # 连接返回首页信号
+        self.main_widget.return_requested.connect(
+            lambda: self.show_welcome_ui(False)
+        )
         # 隐藏欢迎界面
         self.hide_welcome_ui()
 
