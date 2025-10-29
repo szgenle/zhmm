@@ -148,10 +148,9 @@ class FileListWidget(QWidget):
 
     def on_create_success(self, file_path: str, info: dict):
         import hashlib
-
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
-        password_md5 = hashlib.md5(info["password"].encode("utf-8")).hexdigest()
-        if config.init(file_name, password_md5) is False:
+        # 使用原始密码进行密钥派生（更安全）
+        if config.init(file_name, info["password"]) is False:
             QMessageBox.critical(self, "错误", "账号已存在，请输入正确的密码")
             return
         self.on_login_success(file_path, info)
@@ -161,12 +160,9 @@ class FileListWidget(QWidget):
         获取cloud配置,从cloud获取文件zhmm.ver和zhmm.gl。
         1. 对比版本号，如果服务端更新日期较新，先备份本地文件，然后直接下载覆盖。
         """
-        # 将openid处理成md5，把md5作为文件名
         import hashlib
-
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
-        password_md5 = hashlib.md5(info["password"].encode("utf-8")).hexdigest()
-        if config.init(file_name, password_md5) is False:
+        if config.init(file_name, info["password"]) is False:
             return
         config.sync_cloud_file(file_path)
 
@@ -177,6 +173,11 @@ class FileListWidget(QWidget):
             return
 
         """登录成功后的处理"""
+        # 构造文件信息字典，确保类型匹配
+        # 使用类型断言确保 sm_data 是 SmData 类型
+        from zhmm.sm_data import SmData
+        assert isinstance(sm_data, SmData)
+
         file_info: ZhmmFileInfo = {
             "file_path": file_path,
             "openid": info["openid"],

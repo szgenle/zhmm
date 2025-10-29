@@ -7,28 +7,36 @@ class AppSetting(QSettings):
         super().__init__("szgenle", "zhmm")
         pass
 
-    def get_app_encryption_key(self):
-        return "2kheiDwP6OY3pDljvyjQEpI__Og-pDE_s14HfEUK4SE="
-
     def generate_key(self):
         # 生成并打印符合要求的密钥（32字节 URL安全 Base64编码）
         key = Fernet.generate_key()  # 例如：b'abcdefgh-ijklmnop_qrstuvwxyz123456'
         print(key.decode())  # 保存这个字符串到配置中
 
+    # 新增：获取或生成加密盐（URL安全Base64存储）
+    def _get_or_create_encryption_salt(self) -> bytes:
+        import os, base64
+        salt_str = self.value("encryption_salt", "", type=str)
+        if not salt_str:
+            raw = os.urandom(16)
+            salt_str = base64.urlsafe_b64encode(raw).decode()
+            self.setValue("encryption_salt", salt_str)
+            self.sync()
+        return base64.urlsafe_b64decode(salt_str.encode())
+
+    # 新版密钥派生：PBKDF2-HMAC-SHA256 + 盐，返回Fernet要求的URL安全Base64字符串
     def generate_key_from_string(self, input_str: str):
-        """从任意字符串生成符合要求的32字节密钥"""
-        import base64
-
-        # 将输入字符串编码为字节
+        import base64, hashlib
         input_bytes = input_str.encode()
-        # 使用SHA-256生成固定长度的摘要（32字节）
-        from hashlib import sha256
+        salt = self._get_or_create_encryption_salt()
+        derived = hashlib.pbkdf2_hmac("sha256", input_bytes, salt, 200_000, dklen=32)
+        return base64.urlsafe_b64encode(derived).decode()
 
-        digest = sha256(input_bytes).digest()
-        # 转换为URL安全的base64编码（替换+/为-_）
-        key = base64.urlsafe_b64encode(digest)
-        # 返回完整的base64字符串（保留等号）
-        return key.decode()
+    # 旧版兼容：SHA256摘要 + URL安全Base64（保留等号）
+    def legacy_generate_key_from_string(self, input_str: str):
+        import base64
+        from hashlib import sha256
+        digest = sha256(input_str.encode()).digest()
+        return base64.urlsafe_b64encode(digest).decode()
 
     @property
     def remember_password(self):

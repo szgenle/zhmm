@@ -31,7 +31,14 @@ class CloudBase(ABC):
         content = self.get_file_content(path)
         if content is None:
             return default_value
-        return json.loads(content.decode("utf-8"))
+        try:
+            if isinstance(content, bytes):
+                content_str = content.decode("utf-8")
+            else:
+                content_str = str(content)
+            return json.loads(content_str)
+        except Exception:
+            return default_value
 
     def save_json(self, path, data):
         content = json.dumps(data, ensure_ascii=False, indent=4)
