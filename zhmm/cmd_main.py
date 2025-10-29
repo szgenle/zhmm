@@ -14,7 +14,7 @@ sys.path.append(project_root)  # 将项目根目录添加到模块搜索路径
 sys.path.append(current_dir)  # 将项目根目录添加到模块搜索路径
 
 from zhmm.cmd_ui import CmdUI
-
+from zhmm.utils.log import logger
 
 def main():
     parser = argparse.ArgumentParser(description="Process some integers.")
@@ -34,8 +34,8 @@ def main():
     gl_ui = CmdUI(user_input_args)
 
     if not user_input_args.openId:
-        print("openId 不能为空")
-        return
+        logger.error("参数错误: openId 不能为空")
+        sys.exit(2)
 
     file_path = "zhmm.gl"
     if user_input_args.input:
@@ -43,25 +43,30 @@ def main():
     else:
         user_input_args.input = file_path
 
-    if user_input_args.pwd:
-        gl_ui.run(file_path, user_input_args.openId, user_input_args.pwd)
-    else:
-        # 提示用户输入密码
-        try:
-            password = getpass.getpass("请输入密码: ")
-        except getpass.GetPassWarning:
-            print("警告: 在当前环境中无法隐藏密码输入，密码可能会显示在屏幕上")
-            password = input("请输入密码: ")
-        except KeyboardInterrupt:
-            sys.exit(0)
-        if len(password) > 0:
-            gl_ui.run(file_path, user_input_args.openId, password)
+    try:
+        if user_input_args.pwd:
+            logger.info("开始执行命令行任务（已提供密码）")
+            gl_ui.run(file_path, user_input_args.openId, user_input_args.pwd)
+        else:
+            # 提示用户输入密码
+            try:
+                password = getpass.getpass("请输入密码: ")
+            except KeyboardInterrupt:
+                logger.warning("用户取消输入密码")
+                sys.exit(130)  # Ctrl-C
+            except Exception:
+                logger.warning("当前环境无法隐藏密码输入，将使用明文输入")
+                password = input("请输入密码: ")
+            if len(password) > 0:
+                logger.info("开始执行命令行任务（用户输入密码）")
+                gl_ui.run(file_path, user_input_args.openId, password)
+            else:
+                logger.error("密码不能为空")
+                sys.exit(3)
+    except Exception as e:
+        logger.exception("命令行任务执行失败: ")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        print("\n再见\n")
-    finally:
-        sys.exit(0)
+    main()
