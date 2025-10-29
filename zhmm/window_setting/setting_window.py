@@ -70,7 +70,7 @@ class SettingWindow(QWidget):
         self.change_openid_button.setMaximumWidth(200)
 
         # 导入xlsx文件
-        self.import_xlsx_button = QPushButton("导入xlsx文件(暂未实现)")
+        self.import_xlsx_button = QPushButton("导入xlsx文件")
         self.import_xlsx_button.clicked.connect(self.import_xlsx)
         self.import_xlsx_button.setMaximumWidth(200)
 
@@ -102,7 +102,7 @@ class SettingWindow(QWidget):
 
     def import_xlsx(self):
         """导入xlsx文件"""
-        from PyQt6.QtWidgets import QFileDialog
+        from PyQt6.QtWidgets import QFileDialog, QMessageBox
 
         from zhmm.data_exporter import DataImporter
 
@@ -110,22 +110,54 @@ class SettingWindow(QWidget):
             self, "选择xlsx文件", "", "Excel文件 (*.xlsx)"
         )
 
-        if file_path:
-            try:
-                imported_data = DataImporter.import_from_file(file_path)
-                if not imported_data:
-                    return False
-                sm_data = self.info["sm_data"]
-                if sm_data:
-                    """讲导入的数据合并到sm_data中"""
-                    append_times, update_times = sm_data.merge(imported_data)  # type: ignore
-                    if append_times is None:
-                        return False
-                    self.imported_xlsx.emit()
-            except Exception as e:
-                print(f"导入xlsx文件失败: {e}")
+        if not file_path:
+            return
 
-        return False
+        try:
+            imported_data = DataImporter.import_from_file(file_path)
+            if not imported_data:
+                QMessageBox.warning(
+                    self,
+                    "导入失败",
+                    "无法读取xlsx文件，请检查文件格式是否正确。\n\n" +
+                    "文件应包含以下列：\nID、类别、账号、密码、手机、邮箱、网站、备注、更新时间"
+                )
+                return
+
+            sm_data = self.info["sm_data"]
+            if not sm_data:
+                QMessageBox.warning(self, "导入失败", "数据管理器未初始化")
+                return
+
+            # 合并导入的数据
+            append_times, update_times = sm_data.merge(imported_data)  # type: ignore
+
+            # 显示导入结果
+            if append_times == 0 and update_times == 0:
+                QMessageBox.information(
+                    self,
+                    "导入完成",
+                    "导入完成，但没有新增或更新任何数据。\n\n" +
+                    "可能所有数据都已存在且一致。"
+                )
+            else:
+                QMessageBox.information(
+                    self,
+                    "导入成功",
+                    f"成功导入数据！\n\n" +
+                    f"新增: {append_times} 条\n" +
+                    f"更新: {update_times} 条\n\n" +
+                    f"总计处理: {append_times + update_times} 条数据"
+                )
+                # 发送信号通知界面刷新
+                self.imported_xlsx.emit()
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "导入失败",
+                f"导入xlsx文件时发生错误：\n\n{str(e)}"
+            )
 
     def init_sync_work_dir(self, main_layout: QVBoxLayout):
         # 添加数据存储设置标签

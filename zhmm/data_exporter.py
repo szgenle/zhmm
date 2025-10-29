@@ -53,7 +53,15 @@ class DataImporter:
                         value = value[:-2]
                     # 还原特殊字符
                     value = value.replace("[r]", "\r").replace("[n]", "\n")
-                    item[en_heads[i]] = value
+
+                    # 转换ID和更新时间为整数
+                    if en_heads[i] in ["id", "utime"]:
+                        try:
+                            item[en_heads[i]] = int(float(value)) if value else None  # type: ignore
+                        except (ValueError, TypeError):
+                            item[en_heads[i]] = None  # type: ignore
+                    else:
+                        item[en_heads[i]] = value
                 data.append(item)  # type: ignore
 
             print(f"成功从 {xlsx_file_path} 导入 {len(data)} 条数据")
