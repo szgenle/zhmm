@@ -14,10 +14,10 @@ class AppConfig:
     cfg_file_name: str = "save"
     my_encryption_key: str
 
-    cloud: CloudBase
+    cloud: CloudBase | None
 
     def __init__(self):
-        pass
+        self.cloud = None
 
     def init(self, file_name, password):
         self.cfg_file_name = file_name

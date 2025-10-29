@@ -154,11 +154,18 @@ class SettingWindow(QWidget):
                 self.imported_xlsx.emit()
 
         except Exception as e:
+            import traceback
+            error_detail = traceback.format_exc()
             QMessageBox.critical(
                 self,
                 "导入失败",
-                f"导入xlsx文件时发生错误：\n\n{str(e)}"
+                f"导入xlsx文件时发生错误：\n\n{str(e)}\n\n" +
+                f"请检查：\n" +
+                f"1. 是否安装了 openpyxl 库\n" +
+                f"2. 文件格式是否正确\n" +
+                f"3. 文件是否被其他程序占用"
             )
+            print(error_detail)
 
     def download_xlsx_template(self):
         """下载xlsx模版文件"""

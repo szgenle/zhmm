@@ -30,7 +30,7 @@ class DataImporter:
         try:
             # 指定列数据类型，确保手机号列读取为字符串
             dtype: DtypeArg = {"手机": str}
-            df = pd.read_excel(xlsx_file_path, dtype=dtype)
+            df = pd.read_excel(xlsx_file_path, dtype=dtype, engine="openpyxl")
 
             # 检查列名是否匹配
             if not all(col in df.columns for col in cn_heads):
@@ -67,8 +67,16 @@ class DataImporter:
             print(f"成功从 {xlsx_file_path} 导入 {len(data)} 条数据")
             return data
 
+        except FileNotFoundError:
+            print(f"文件不存在: {xlsx_file_path}")
+            return None
+        except ImportError as e:
+            print(f"缺少必要的库，请安装 openpyxl: {str(e)}")
+            return None
         except Exception as e:
+            import traceback
             print(f"导入Excel文件失败: {str(e)}")
+            print(traceback.format_exc())
             return None
 
 
