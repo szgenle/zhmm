@@ -141,7 +141,7 @@ class PasswordWindow(QWidget):
         QTimer.singleShot(0, self.search_input.setFocus)  # 延迟聚焦到密码输入框
 
         # 在搜索区域添加复选框
-        self.show_all_checkbox = QCheckBox("隐藏非搜索数据")
+        self.show_all_checkbox = QCheckBox("仅显示搜索结果")
         self.show_all_checkbox.setChecked(True)
         self.show_all_checkbox.toggled.connect(self.toggle_show_all)
 
