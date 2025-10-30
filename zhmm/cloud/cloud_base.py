@@ -16,8 +16,8 @@ class CloudBase(ABC):
         pass
 
     @abstractmethod
-    def get_file_content(self, path):
-        pass
+    def get_file_content(self, path) -> str | None:
+        return None
 
     @abstractmethod
     def set_file_content(self, path, content):
