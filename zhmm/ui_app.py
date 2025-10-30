@@ -5,11 +5,8 @@
 import sys
 from datetime import datetime, timedelta
 
-from PyQt6.QtCore import QCoreApplication, QTimer
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMessageBox
-
-QCoreApplication.setApplicationName("zhmm")
-QCoreApplication.setOrganizationName("szgenle")  # 替换为您的组织名称
 
 from zhmm import config
 from zhmm.qt_components.base_window import BaseWindow

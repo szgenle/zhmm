@@ -5,13 +5,8 @@
 # import os
 # import sys
 
-from PyQt6.QtCore import QCoreApplication
-
 from zhmm import ui_app
 from zhmm.utils.log import logger
-
-QCoreApplication.setApplicationName("zhmm")
-QCoreApplication.setOrganizationName("szgenle")  # 替换为您的组织名称
 
 # 获取当前脚本的绝对路径，并推导出项目根目录（假设项目根目录是包含 `project` 的目录）
 # current_dir = os.path.dirname(os.path.abspath(__file__))
