@@ -89,6 +89,6 @@ if __name__ == "__main__":
 
     # 异常记录
     try:
-        1 / 0
+        1 / 0  # pyright: ignore[reportUnusedExpression]
     except Exception as e:
         logger.exception("发生异常: ")
