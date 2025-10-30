@@ -143,6 +143,7 @@ class PasswordWindow(QWidget):
         # 在搜索区域添加复选框
         self.show_all_checkbox = QCheckBox("仅显示搜索结果")
         self.show_all_checkbox.setChecked(True)
+        self.show_all_checkbox.setToolTip("勾选：仅显示匹配关键字的数据；未填写关键字时不显示任何数据。取消勾选：显示全部数据（仍受类别筛选影响）。")
         self.show_all_checkbox.toggled.connect(self.toggle_show_all)
 
         search_layout.addWidget(search_label)
@@ -209,6 +210,9 @@ class PasswordWindow(QWidget):
         self.status_label.setStyleSheet("color: #666; font-size: 12px;")
         main_layout.addWidget(self.status_label)
 
+        # 初始化一次状态提示
+        self.filter_passwords()
+
     def setup_ui_button(self, main_layout):
         # 创建按钮区域
         button_layout = QHBoxLayout()
@@ -271,6 +275,17 @@ class PasswordWindow(QWidget):
 
         # 设置通配符过滤
         self.proxy_model.setFilterFixedString(search_text)
+
+        # 状态提示：根据复选框与关键字内容更新
+        if self.show_all_checkbox.isChecked():
+            # 仅显示搜索结果
+            if not self.proxy_model._has_filter:
+                self.status_label.setText("请输入关键字以显示结果")
+            else:
+                self.status_label.setText(f"已按“{search_text}”筛选")
+        else:
+            # 显示全部数据（仍受类别筛选影响）
+            self.status_label.setText("显示全部数据")
 
     def toggle_show_all(self, checked):
         """复选框状态切换处理"""
