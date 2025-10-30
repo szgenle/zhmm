@@ -280,7 +280,53 @@ class SettingWindow(QWidget):
         config.reset_sync_cloud(platform)
 
     def sync_data(self, cloud_type: str):
-        pass
+        from PyQt6.QtWidgets import QMessageBox
+
+        # 检查云配置是否有效
+        if not config.cloud:
+            QMessageBox.warning(self, "同步失败", "云存储未配置，请先点击“编辑”填写凭证并保存。")
+            return
+
+        # 同步方式选择
+        msg = QMessageBox(self)
+        msg.setWindowTitle("选择同步方式")
+        msg.setText("请选择同步方向：")
+        pull_btn = msg.addButton("从云拉取覆盖本地", QMessageBox.ButtonRole.ActionRole)
+        push_btn = msg.addButton("推送本地到云端", QMessageBox.ButtonRole.ActionRole)
+        cancel_btn = msg.addButton("推送本地到云端", QMessageBox.StandardButton.Cancel)
+        msg.exec()
+
+        if msg.clickedButton() == cancel_btn:
+            return
+
+        file_path = self.info["file_path"]
+
+        if msg.clickedButton() == pull_btn:
+            # 拉取前备份本地
+            local_data = file_util.get_file_content(file_path)
+            if local_data is not None:
+                from datetime import datetime
+                backup_path = f"{file_path}.bak_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                file_util.set_file_content(backup_path, local_data)
+
+            cloud = config.cloud
+            cloud_ver = cloud.get_file_content(f"zhmm/{config.cfg_file_name}.ver")
+            cloud_data = cloud.get_file_content(f"zhmm/{config.cfg_file_name}.gl")
+
+            if cloud_data:
+                file_util.set_file_content(file_path, cloud_data)
+                if cloud_ver:
+                    config.set("zhmm_ver", cloud_ver)
+                    config.save_config()
+                QMessageBox.information(self, "同步完成", "已从云端拉取并覆盖本地文件。")
+            else:
+                QMessageBox.warning(self, "同步失败", "云端未找到数据或读取失败。")
+
+        elif msg.clickedButton() == push_btn:
+            if config.upload_cloud(file_path):
+                QMessageBox.information(self, "同步完成", "已推送本地数据到云端。")
+            else:
+                QMessageBox.warning(self, "同步失败", "推送失败，请检查云存储配置。")
 
     def open_log_dir(self):
         """打开日志目录"""
