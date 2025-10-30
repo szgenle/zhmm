@@ -167,6 +167,8 @@ class PasswordWindow(QWidget):
         self.proxy_model.setFilterKeyColumn(-1)  # -1 表示搜索所有列
 
         self.table_view.setModel(self.proxy_model)
+        # 默认隐藏密码列（索引3）
+        self.table_view.setColumnHidden(3, False)
 
         # 新增单元格点击事件处理
         self.table_view.clicked.connect(self.copy_cell_to_clipboard)
@@ -457,6 +459,8 @@ class PasswordWindow(QWidget):
             QApplication.clipboard().setText(str(text))  # type: ignore
             # 更新状态标签
             self.status_label.setText("已复制到剪贴板")
+            # 定时清空剪贴板，避免残留敏感信息
+            QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
             QTimer.singleShot(2000, lambda: self.status_label.setText(""))
 
     def save(self):
