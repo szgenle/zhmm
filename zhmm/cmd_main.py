@@ -4,19 +4,15 @@
 # @LastEditTime: 2024-07-02
 import argparse
 import getpass
-import os
 import sys
 
-# 获取当前脚本的绝对路径，并推导出项目根目录（假设项目根目录是包含 `project` 的目录）
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(current_dir)  # 向上回退两级到项目根目录
-sys.path.append(project_root)  # 将项目根目录添加到模块搜索路径
-sys.path.append(current_dir)  # 将项目根目录添加到模块搜索路径
-
 from zhmm.cmd_ui import CmdUI
-from zhmm.utils.log import logger
+from zhmm.utils.log import logger, setup_logging
 
 def main():
+    # 初始化日志系统
+    setup_logging()
+
     parser = argparse.ArgumentParser(description="Process some integers.")
     parser.add_argument("--input", "-i", type=str, help="要加载的加密文件路径")
     parser.add_argument("--out", "-o", type=str, help="输出的文件路径")

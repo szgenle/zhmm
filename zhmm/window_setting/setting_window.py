@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (QButtonGroup, QCheckBox, QGroupBox, QHBoxLayout,
                              QLabel, QPushButton, QRadioButton, QSpinBox,
                              QVBoxLayout, QWidget)
 
-from zhmm import config
+import zhmm
 from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.window_setting.credentials_input_dialog_cos import \
@@ -31,8 +31,8 @@ class SettingWindow(QWidget):
         self.lock_time_label = QLabel("自动锁定时间（分钟）:")
         self.lock_time_spinbox = QSpinBox()
         self.lock_time_spinbox.setRange(1, 60)
-        self.lock_time_spinbox.setValue(config.get_lock_time())
-        self.lock_time_spinbox.valueChanged.connect(config.save_lock_time)
+        self.lock_time_spinbox.setValue(zhmm.config.get_lock_time())
+        self.lock_time_spinbox.valueChanged.connect(zhmm.config.save_lock_time)
         self.lock_time_spinbox.setMaximumWidth(200)
 
         # 主题设置
@@ -55,7 +55,7 @@ class SettingWindow(QWidget):
         theme_group.setMaximumWidth(300)
 
         # 从配置加载当前主题
-        current_theme = config.get_theme()
+        current_theme = zhmm.config.get_theme()
         if current_theme == 'dark':
             self.dark_theme_radio.setChecked(True)
         elif current_theme == 'auto':
@@ -240,7 +240,7 @@ class SettingWindow(QWidget):
             work_dir_container.addWidget(group_box)
 
         # # 从配置加载上次选择
-        cloud_platform = config.get("cloud_platform", "")
+        cloud_platform = zhmm.config.get("cloud_platform", "")
         self.cos_radio.setChecked(cloud_platform == "cos")
 
         main_layout.addLayout(work_dir_container)
@@ -256,13 +256,13 @@ class SettingWindow(QWidget):
             platform = "cos"
         else:
             platform = ""
-        config.reset_sync_cloud(platform)
+        zhmm.config.reset_sync_cloud(platform)
 
     def sync_data(self, cloud_type: str):
         from PyQt6.QtWidgets import QMessageBox
 
         # 检查云配置是否有效
-        if not config.cloud:
+        if not zhmm.config.cloud:
             QMessageBox.warning(self, "同步失败", "云存储未配置，请先点击“编辑”填写凭证并保存。")
             return
 
@@ -288,21 +288,21 @@ class SettingWindow(QWidget):
                 backup_path = f"{file_path}.bak_{datetime.now().strftime('%Y%m%d%H%M%S')}"
                 file_util.set_file_content(backup_path, local_data)
 
-            cloud = config.cloud
-            cloud_ver = cloud.get_file_content(f"zhmm/{config.cfg_file_name}.ver")
-            cloud_data = cloud.get_file_content(f"zhmm/{config.cfg_file_name}.gl")
+            cloud = zhmm.config.cloud
+            cloud_ver = cloud.get_file_content(f"zhmm/{zhmm.config.cfg_file_name}.ver")
+            cloud_data = cloud.get_file_content(f"zhmm/{zhmm.config.cfg_file_name}.gl")
 
             if cloud_data:
                 file_util.set_file_content(file_path, cloud_data)
                 if cloud_ver:
-                    config.set("zhmm_ver", cloud_ver)
-                    config.save_config()
+                    zhmm.config.set("zhmm_ver", cloud_ver)
+                    zhmm.config.save_config()
                 QMessageBox.information(self, "同步完成", "已从云端拉取并覆盖本地文件。")
             else:
                 QMessageBox.warning(self, "同步失败", "云端未找到数据或读取失败。")
 
         elif msg.clickedButton() == push_btn:
-            if config.upload_cloud(file_path):
+            if zhmm.config.upload_cloud(file_path):
                 QMessageBox.information(self, "同步完成", "已推送本地数据到云端。")
             else:
                 QMessageBox.warning(self, "同步失败", "推送失败，请检查云存储配置。")
@@ -328,7 +328,7 @@ class SettingWindow(QWidget):
             return
 
         # 保存主题设置
-        config.save_theme(theme)
+        zhmm.config.save_theme(theme)
 
         # 应用主题
         app_instance = QApplication.instance()

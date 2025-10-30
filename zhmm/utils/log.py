@@ -3,21 +3,48 @@
 # @Date: 2025-03-27
 # @LastEditTime: 2025-03-27
 import logging
+import logging.handlers
 from datetime import datetime
 
 from zhmm.utils import file_util
 
-# 配置日志
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)  # 设置总日志级别为最低
+# 获取命名 logger，不配置全局 root logger
+logger = logging.getLogger("zhmm")
 
 # 模块级别的配置标志，防止重复配置
 _logger_configured = False
 
-# 防重复:若已配置过则直接返回
-if _logger_configured:
-    pass
-else:
+
+class ColorFormatter(logging.Formatter):
+    """彩色控制台日志格式化器"""
+    COLOR_CODES = {
+        logging.DEBUG: "\033[94m",
+        logging.INFO: "\033[92m",
+        logging.WARNING: "\033[93m",
+        logging.ERROR: "\033[91m",
+        logging.CRITICAL: "\033[91;1m",
+    }
+    RESET_CODE = "\033[0m"
+
+    def format(self, record):
+        color = self.COLOR_CODES.get(record.levelno, "")
+        formatter = logging.Formatter(
+            f"{color}%(asctime)s - %(levelname)s - %(message)s{self.RESET_CODE}"
+        )
+        return formatter.format(record)
+
+
+def setup_logging():
+    """配置日志系统（应在应用入口调用）"""
+    global _logger_configured
+
+    # 防重复配置
+    if _logger_configured:
+        return logger
+
+    # 设置日志级别
+    logger.setLevel(logging.DEBUG)
+
     # 创建不同级别的文件路径
     info_path = file_util.get_full_path(
         f".log/{datetime.now().strftime('%Y%m%d')}_info.log"
@@ -32,7 +59,6 @@ else:
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
     # 使用按日轮转的文件处理器（保留最近7天）
-    import logging.handlers
     info_handler = logging.handlers.TimedRotatingFileHandler(
         info_path.as_posix(), when="midnight", backupCount=7, encoding="utf-8"
     )
@@ -46,23 +72,6 @@ else:
     error_handler.setFormatter(formatter)
 
     # 控制台处理器（彩色）
-    class ColorFormatter(logging.Formatter):
-        COLOR_CODES = {
-            logging.DEBUG: "\033[94m",
-            logging.INFO: "\033[92m",
-            logging.WARNING: "\033[93m",
-            logging.ERROR: "\033[91m",
-            logging.CRITICAL: "\033[91;1m",
-        }
-        RESET_CODE = "\033[0m"
-
-        def format(self, record):
-            color = self.COLOR_CODES.get(record.levelno, "")
-            formatter = logging.Formatter(
-                f"{color}%(asctime)s - %(levelname)s - %(message)s{self.RESET_CODE}"
-            )
-            return formatter.format(record)
-
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(ColorFormatter())
@@ -75,9 +84,13 @@ else:
     # 标记已配置，避免重复添加
     _logger_configured = True
 
+    return logger
+
 
 if __name__ == "__main__":
     # 使用示例
+    setup_logging()  # 初始化日志配置
+
     logger.debug("调试信息")  # 仅当设置DEBUG级别时可见
     logger.info("常规信息")  # 会写入info.log和控制台
     logger.warning("警告信息")  # 会写入info.log（因为INFO处理器接受WARNING）

@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QMenu,
                              QMessageBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QVBoxLayout, QWidget)
 
-from zhmm import config
+import zhmm
 from zhmm.ui_decrypt_data import UIDecryptData
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.utils import file_util
@@ -150,7 +150,7 @@ class FileListWidget(QWidget):
         import hashlib
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
         # 使用原始密码进行密钥派生（更安全）
-        if config.init(file_name, info["password"]) is False:
+        if zhmm.config.init(file_name, info["password"]) is False:
             QMessageBox.critical(self, "错误", "账号已存在，请输入正确的密码")
             return
         self.on_login_success(file_path, info)
@@ -162,9 +162,9 @@ class FileListWidget(QWidget):
         """
         import hashlib
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
-        if config.init(file_name, info["password"]) is False:
+        if zhmm.config.init(file_name, info["password"]) is False:
             return
-        config.sync_cloud_file(file_path)
+        zhmm.config.sync_cloud_file(file_path)
 
         decryptor = UIDecryptData()
         sm_data = decryptor.decrypt_file(file_path, info["openid"], info["password"])

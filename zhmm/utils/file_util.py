@@ -102,6 +102,7 @@ def get_writable_dir():
         # 删除原有的手动拼接 'zhmm' 操作
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
+    print("数据目录:", data_dir)
     return data_dir
 
 

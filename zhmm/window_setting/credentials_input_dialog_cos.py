@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLineEdit,
                              QVBoxLayout)
 
-from zhmm import config
+import zhmm
 
 
 class CredentialsDialogCos(QDialog):
@@ -16,16 +16,16 @@ class CredentialsDialogCos(QDialog):
         # 云存储凭证表单
         form_layout = QFormLayout()
 
-        self.secret_id_edit = QLineEdit(config.get("qcloud.secret_id", ""))
+        self.secret_id_edit = QLineEdit(zhmm.config.get("qcloud.secret_id", ""))
         form_layout.addRow("Secret ID:", self.secret_id_edit)
 
-        self.secret_key_edit = QLineEdit(config.get("qcloud.secret_key", ""))
+        self.secret_key_edit = QLineEdit(zhmm.config.get("qcloud.secret_key", ""))
         form_layout.addRow("Secret Key:", self.secret_key_edit)
 
-        self.region_edit = QLineEdit(config.get("qcloud.region", ""))
+        self.region_edit = QLineEdit(zhmm.config.get("qcloud.region", ""))
         form_layout.addRow("Region:", self.region_edit)
 
-        self.bucket_edit = QLineEdit(config.get("qcloud.bucket", ""))
+        self.bucket_edit = QLineEdit(zhmm.config.get("qcloud.bucket", ""))
         form_layout.addRow("Bucket:", self.bucket_edit)
 
         main_layout.addLayout(form_layout)
@@ -40,9 +40,9 @@ class CredentialsDialogCos(QDialog):
 
     def save_credentials(self):
         """保存云存储凭证并关闭对话框"""
-        config.set("qcloud.secret_id", self.secret_id_edit.text())
-        config.set("qcloud.secret_key", self.secret_key_edit.text())
-        config.set("qcloud.region", self.region_edit.text())
-        config.set("qcloud.bucket", self.bucket_edit.text())
-        config.save_config()
+        zhmm.config.set("qcloud.secret_id", self.secret_id_edit.text())
+        zhmm.config.set("qcloud.secret_key", self.secret_key_edit.text())
+        zhmm.config.set("qcloud.region", self.region_edit.text())
+        zhmm.config.set("qcloud.bucket", self.bucket_edit.text())
+        zhmm.config.save_config()
         self.accept()

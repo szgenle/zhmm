@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
-from zhmm import config
+import zhmm
 from zhmm.qt_components.base_window import BaseWindow
 from zhmm.ui.welcome_widget import WelcomeWidget
 from zhmm.ui_defined import ZhmmFileInfo
@@ -32,7 +32,7 @@ class AppWindow(BaseWindow):
         # 创建定时器，使用配置的锁屏时间检查非活动时间
         self.inactivity_timer = QTimer(self)
         self.inactivity_timer.timeout.connect(self.check_inactivity)
-        self.inactivity_timer.start(config.get_lock_time() * 60000)
+        self.inactivity_timer.start(zhmm.config.get_lock_time() * 60000)
 
         # 首次启动时显示欢迎窗口
         QTimer.singleShot(500, self.show_welcome_ui)
@@ -104,7 +104,7 @@ class AppWindow(BaseWindow):
 
         # 使用配置的锁屏时间检查非活动时间
         if inactive_duration > timedelta(
-            minutes=config.get_lock_time()
+            minutes=zhmm.config.get_lock_time()
         ) and not isinstance(self.centralWidget(), WelcomeWidget):
             logger.info(f"检测到非活动时间: {inactive_duration}，显示登录窗口")
             self.show_welcome_ui()
@@ -130,12 +130,13 @@ class AppWindow(BaseWindow):
 
 def main():
     """主函数"""
+
     app = QApplication(sys.argv)
 
     # 根据保存的主题设置应用样式
     from zhmm.theme_manager import ThemeManager
 
-    current_theme = config.get_theme()
+    current_theme = zhmm.config.get_theme()
     stylesheet = ThemeManager.get_theme_stylesheet(current_theme)
     app.setStyleSheet(stylesheet)
 

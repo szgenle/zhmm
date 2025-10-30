@@ -7,7 +7,7 @@ import json
 import os.path
 import time
 
-import sm_util
+from zhmm import sm_util
 
 from zhmm.data_exporter import DataExporter
 from zhmm.sm_data import SmData, ZhmmDict

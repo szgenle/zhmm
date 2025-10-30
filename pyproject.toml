@@ -27,6 +27,10 @@ dependencies = [
     "xlsxwriter (>=3.2.9,<4.0.0)"
 ]
 
+[project.scripts]
+zhmm = "zhmm.main:main"
+zhmm-cli = "zhmm.cmd_main:main"
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

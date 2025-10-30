@@ -2,23 +2,21 @@
 # coding=utf-8
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
-# import os
-# import sys
 
 from zhmm import ui_app
-from zhmm.utils.log import logger
-
-# 获取当前脚本的绝对路径，并推导出项目根目录（假设项目根目录是包含 `project` 的目录）
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# project_root = os.path.dirname(current_dir)  # 向上回退两级到项目根目录
-# sys.path.append(project_root)  # 将项目根目录添加到模块搜索路径
-# sys.path.append(current_dir)  # 将项目根目录添加到模块搜索路径
+import zhmm
+from zhmm.utils.log import setup_logging
 
 
 def main():
-    # cmd_main.main()
+    # 初始化应用配置
+    zhmm.init_app()
+
+    # 初始化日志系统
+    setup_logging()
+
+    # 启动 UI 应用
     ui_app.main()
-    pass
 
 
 if __name__ == "__main__":

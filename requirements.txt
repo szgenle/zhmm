@@ -1,13 +1,27 @@
+# 本文件由 pyproject.toml 生成，请勿手动编辑
+# 如需更新依赖，请修改 pyproject.toml 后重新生成
+# 生成命令：pip list --format=freeze > requirements.txt
+
+# 核心依赖
 gmssl==3.2.2
 numpy==2.2.5
 pandas==2.2.3
 pycryptodomex==3.22.0
 PyQt6==6.9.0
 PyQt6-Qt6==6.9.0
-PyQt6_sip==13.10.0
+PyQt6-sip==13.10.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
 six==1.17.0
 tzdata==2025.2
-openpyxl>=3.0.0
-xlsxwriter>=3.0.0
+
+# 云存储
+cos-python-sdk-v5>=1.9.37,<2.0.0
+
+# 加密与安全
+cryptography>=45.0.4,<46.0.0
+bcrypt>=4.3.0,<5.0.0
+
+# Excel 处理
+openpyxl>=3.1.5,<4.0.0
+xlsxwriter>=3.2.9,<4.0.0

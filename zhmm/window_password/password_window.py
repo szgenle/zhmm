@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QHBoxLayout,
                              QHeaderView, QLabel, QLineEdit, QMessageBox,
                              QPushButton, QTableView, QVBoxLayout, QWidget)
 
-from zhmm import config
+import zhmm
 from zhmm.sm_data import SmData
 from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
@@ -465,5 +465,5 @@ class PasswordWindow(QWidget):
 
     def save(self):
         if self.gl_data.save():
-            return config.upload_cloud(self.gl_data.file_path)
+            return zhmm.config.upload_cloud(self.gl_data.file_path)
         return False
