@@ -293,7 +293,7 @@ class SettingWindow(QWidget):
         msg.setText("请选择同步方向：")
         pull_btn = msg.addButton("从云拉取覆盖本地", QMessageBox.ButtonRole.ActionRole)
         push_btn = msg.addButton("推送本地到云端", QMessageBox.ButtonRole.ActionRole)
-        cancel_btn = msg.addButton("推送本地到云端", QMessageBox.StandardButton.Cancel)
+        cancel_btn = msg.addButton(QMessageBox.StandardButton.Cancel)
         msg.exec()
 
         if msg.clickedButton() == cancel_btn:
