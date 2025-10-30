@@ -10,6 +10,7 @@ from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.window_setting.credentials_input_dialog_cos import \
     CredentialsDialogCos
+from zhmm.utils import file_util
 
 
 class SettingWindow(QWidget):
@@ -90,6 +91,11 @@ class SettingWindow(QWidget):
         layout.addWidget(self.import_xlsx_button)
         layout.addWidget(self.download_xlsx_button)
         layout.addWidget(export_button)
+        # 打开日志目录按钮
+        open_log_button = QPushButton("打开日志目录")
+        open_log_button.clicked.connect(self.open_log_dir)
+        open_log_button.setMaximumWidth(200)
+        layout.addWidget(open_log_button)
 
         self.init_sync_work_dir(layout)
 
@@ -275,6 +281,11 @@ class SettingWindow(QWidget):
 
     def sync_data(self, cloud_type: str):
         pass
+
+    def open_log_dir(self):
+        """打开日志目录"""
+        path = file_util.get_full_path(".log").as_posix()
+        file_util.open_directory(path)
 
     def on_theme_changed(self, button):
         """主题切换事件处理"""
