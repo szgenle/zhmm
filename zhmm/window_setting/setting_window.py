@@ -174,52 +174,31 @@ class SettingWindow(QWidget):
             print(error_detail)
 
     def download_xlsx_template(self):
-        """下载xlsx模版文件"""
+        """下载xlsx模版文件（动态生成）"""
         from PyQt6.QtWidgets import QFileDialog, QMessageBox
-        import shutil
-        import os
+        from openpyxl import Workbook
 
-        # 获取模版文件路径
-        template_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "resources",
-            "zhmm模版.xlsx"
-        )
-
-        # 检查模版文件是否存在
-        if not os.path.exists(template_path):
-            QMessageBox.warning(
-                self,
-                "下载失败",
-                "模版文件不存在，请联系管理员。"
-            )
-            return
-
-        # 打开保存对话框
         save_path, _ = QFileDialog.getSaveFileName(
             self,
             "保存xlsx模版",
             "zhmm模版.xlsx",
             "Excel文件 (*.xlsx)"
         )
-
         if not save_path:
             return
 
         try:
-            # 复制模版文件到用户选择的位置
-            shutil.copy2(template_path, save_path)
-            QMessageBox.information(
-                self,
-                "下载成功",
-                f"模版文件已成功保存到：\n{save_path}"
-            )
+            wb = Workbook()
+            ws = wb.active
+            if ws is None:
+                raise ValueError("工作表不存在")
+            ws.title = "密码模版"
+            headers = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
+            ws.append(headers)
+            wb.save(save_path)
+            QMessageBox.information(self, "下载成功", f"模版文件已成功保存到：\n{save_path}")
         except Exception as e:
-            QMessageBox.critical(
-                self,
-                "下载失败",
-                f"保存模版文件时发生错误：\n\n{str(e)}"
-            )
+            QMessageBox.critical(self, "下载失败", f"保存模版文件时发生错误：\n\n{str(e)}")
 
     def init_sync_work_dir(self, main_layout: QVBoxLayout):
         # 添加数据存储设置标签
