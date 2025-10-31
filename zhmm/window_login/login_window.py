@@ -16,7 +16,7 @@ class LoginWindow(Dialog):
     """登录对话框"""
 
     login_success = pyqtSignal(dict)  # 保持信号声明不变
-    hashpw: str = None
+    hashpw: str | None = None
 
     def __init__(
         self, openid: str | None = None, hashpw: str | None = None, parent=None
