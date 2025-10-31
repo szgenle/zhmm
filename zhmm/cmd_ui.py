@@ -119,7 +119,17 @@ class CmdUI:
             self.args.delete = True
         return 0
 
-    def get_decrypt_data(self, file_path, open_id, password):
+    def get_decrypt_data(self, file_path, open_id, password) -> str | None:
+        """获取并解密数据
+
+        Args:
+            file_path: 文件路径
+            open_id: 用户ID
+            password: 密码
+
+        Returns:
+            解密后的字符串，失败返回None
+        """
         pwd_suffix = password + "woie*#jk20kH2^D@U28)"
         pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix))
         self.sm_data.init(open_id, pwd)
@@ -127,13 +137,13 @@ class CmdUI:
         data = file_util.get_file_content(file_path)
         if not data:
             print("账号文件打开失败")
-            return
+            return None
 
         decrypt_result = self.sm_data.decrypt(data)
 
-        if not decrypt_result or not decrypt_result["res"]:
+        if not decrypt_result:
             print("密码不对")
-            return
+            return None
         return decrypt_result
 
     def run(self, file_path, open_id, password):
@@ -141,7 +151,9 @@ class CmdUI:
         if not decrypt_result:
             return
 
-        user_mm_data = json.loads(decrypt_result["res"])
+        # decrypt_result 已经是解密后的字符串，直接使用
+        assert isinstance(decrypt_result, str)  # 类型断言帮助类型检查器
+        user_mm_data = json.loads(decrypt_result)
         self.sm_data.set_mm(user_mm_data)
         self.fix_id_is_None()
 

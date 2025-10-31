@@ -57,11 +57,11 @@ class UIDecryptData:
             else:
                 decrypt_result = smdata.decrypt(content)
 
-                if not decrypt_result or not decrypt_result["res"]:
+                if not decrypt_result:
                     logger.error(f"解密失败")
                     return None
 
-                user_mm_data = json.loads(decrypt_result["res"])
+                user_mm_data = json.loads(decrypt_result)
                 smdata.set_mm(user_mm_data)
             return smdata
 
