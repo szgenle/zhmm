@@ -2,6 +2,7 @@
 # coding=utf-8
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
+import os
 from typing import List, Union
 
 from gmssl import func, sm3, sm4
@@ -14,9 +15,11 @@ IPAD = bytearray([0x36] * BLOCK_LEN)  # 内部填充
 OPAD = bytearray([0x5C] * BLOCK_LEN)  # 外部填充
 
 # SM4 加密相关常量
-IV = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x27\x00\x00\x00\x00\x03"  # CBC 模式初始化向量
+LEGACY_IV = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x27\x00\x00\x00\x00\x03"  # 旧版固定 IV（仅用于解密旧数据）
 SM4_KEY_LENGTH = 32  # SM4 密钥长度（十六进制字符数，对应128位）
+SM4_IV_LENGTH = 16  # SM4 IV 长度（字节数）
 DEFAULT_HMAC_KEY = "9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1"  # 默认 HMAC 密钥
+ENCRYPT_VERSION_PREFIX = "v2:"  # 新版加密数据版本标识
 
 
 def _validate_sm4_key(key: str) -> None:
@@ -74,6 +77,11 @@ def decrypt_by_sm4(encrypt_value: str, key: str) -> bytes:
     """
     使用 SM4 算法解密数据（CBC 模式）
 
+    支持两种格式：
+    1. 新格式：十六进制字符串中包含 'v2:' 前缀（对应二进制 b'v2:' = 763a32）
+       格式：763a32 + IV(32位十六进制) + 密文
+    2. 旧格式：直接是密文（使用固定 IV 解密）
+
     Args:
         encrypt_value: 十六进制字符串形式的加密数据
         key: 十六进制字符串形式的密钥（SM4要求128位，即32个十六进制字符）
@@ -84,56 +92,84 @@ def decrypt_by_sm4(encrypt_value: str, key: str) -> bytes:
     Raises:
         ValueError: 当密钥长度不正确或数据无效时
     """
-    # 校验密钥长度
     _validate_sm4_key(key)
 
     if not encrypt_value:
         raise ValueError("加密数据不能为空")
 
-    # 将十六进制字符串转换为字节数组
     try:
         encrypt_bytes = data_conversion.hex_to_array(encrypt_value)
-        key_bytes = data_conversion.hex_to_array(key)
     except ValueError as e:
         raise ValueError(f"十六进制字符串转换失败: {e}") from e
 
-    # 初始化 SM4 解密器
+    # 检测是否为新版本格式（检查字节数组前3个字节是否为 b'v2:'）
+    version_marker = ENCRYPT_VERSION_PREFIX.encode('ascii')
+    is_v2 = (len(encrypt_bytes) > len(version_marker) and
+             bytes(encrypt_bytes[:len(version_marker)]) == version_marker)
+
+    if is_v2:
+        print("检测到 新 版本加密数据格式")
+        # 新格式：提取 IV 和密文
+        offset = len(version_marker)
+        iv_end = offset + SM4_IV_LENGTH
+
+        if len(encrypt_bytes) < iv_end:
+            raise ValueError("加密数据格式错误：IV 数据不完整")
+
+        iv = bytes(encrypt_bytes[offset:iv_end])
+        cipher_bytes = encrypt_bytes[iv_end:]
+    else:
+        print("检测到 旧 版本加密数据格式")
+        # 旧格式：使用固定 IV
+        iv = LEGACY_IV
+        cipher_bytes = encrypt_bytes
+
+    try:
+        key_bytes = data_conversion.hex_to_array(key)
+    except ValueError as e:
+        raise ValueError(f"密钥十六进制字符串转换失败: {e}") from e
+
     crypt_sm4 = sm4.CryptSM4()
     crypt_sm4.set_key(key_bytes, sm4.SM4_DECRYPT)
 
-    # 解密数据（CBC 模式）
-    return crypt_sm4.crypt_cbc(IV, encrypt_bytes)
+    return crypt_sm4.crypt_cbc(iv, cipher_bytes)
 
 
 def encrypt_by_sm4(encrypt_bytes: bytes, key: str) -> bytes:
     """
     使用 SM4 算法加密数据（CBC 模式）
 
+    新版本：使用随机 IV，将 IV 附加在密文前面
+    返回格式：版本标记(3字节 'v2:') + IV(16字节) + 密文(N字节)
+
     Args:
         encrypt_bytes: 要加密的字节数据
         key: 十六进制字符串形式的密钥（SM4要求128位，即32个十六进制字符）
 
     Returns:
-        加密后的字节数据
+        加密后的字节数据（版本标记 + IV + 密文）
 
     Raises:
         ValueError: 当密钥长度不正确或数据无效时
     """
-    # 校验密钥长度
     _validate_sm4_key(key)
 
     if not encrypt_bytes:
         raise ValueError("加密数据不能为空")
 
-    # 将密钥转换为字节数组
+    # 生成随机 IV（16字节）
+    iv = os.urandom(SM4_IV_LENGTH)
+
     try:
         key_bytes = data_conversion.hex_to_array(key)
     except ValueError as e:
         raise ValueError(f"密钥十六进制字符串转换失败: {e}") from e
 
-    # 初始化 SM4 加密器
     crypt_sm4 = sm4.CryptSM4()
     crypt_sm4.set_key(key_bytes, sm4.SM4_ENCRYPT)
 
-    # 加密数据（CBC 模式）
-    return crypt_sm4.crypt_cbc(IV, encrypt_bytes)
+    cipher_bytes = crypt_sm4.crypt_cbc(iv, encrypt_bytes)
+
+    # 返回格式：版本标记(ASCII) + IV(二进制) + 密文(二进制)
+    version_bytes = ENCRYPT_VERSION_PREFIX.encode('ascii')
+    return version_bytes + iv + cipher_bytes
