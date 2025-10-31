@@ -44,6 +44,14 @@ class SmData:
     keys = ["id", "role", "userID", "pwd", "phone", "email", "url", "desc", "utime"]
     heads = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
 
+    # 加密相关常量
+    HASH_SUFFIX_LENGTH = 64  # 验证哈希长度（字符数）
+    HASH_KEY_ENCRYPT_LENGTH = 32  # 加密哈希密钥长度
+    HASH_KEY_SUFFIX_LENGTH = 32  # 验证哈希密钥长度
+
+    # 搜索字段
+    SEARCHABLE_FIELDS = ["url", "desc", "userID", "phone", "email"]
+
     def __init__(self):
         # 实例属性，避免实例间共享状态
         self.pwd = ""
@@ -84,8 +92,10 @@ class SmData:
         self.pwdHash = sm_util.hash_by_sm3(
             data_conversion.chars_to_bytes(self.pwd), self.openId
         )
-        self.encryptHash = self.pwdHash[0:32]  # 前32位用于加密
-        self.suffixHash = self.pwdHash[32:64]  # 后32位用于验证
+        self.encryptHash = self.pwdHash[0:self.HASH_KEY_ENCRYPT_LENGTH]  # 前32位用于加密
+        self.suffixHash = self.pwdHash[
+            self.HASH_KEY_ENCRYPT_LENGTH : self.HASH_KEY_ENCRYPT_LENGTH + self.HASH_KEY_SUFFIX_LENGTH
+        ]  # 后32位用于验证
 
     def get_encrypt_mmdata(self, mm_data: str) -> str | None:
         """
@@ -101,13 +111,12 @@ class SmData:
             return None
 
         mm_data_len = len(mm_data)
-        if mm_data_len <= 64:
+        if mm_data_len <= self.HASH_SUFFIX_LENGTH:
             return None
 
         # 分离数据和验证哈希
-        end_index = mm_data_len - 64
-        suffix = mm_data[end_index:mm_data_len]  # 后64位是验证哈希
-        data_part = mm_data[0:end_index]  # 前面部分是实际数据
+        suffix = mm_data[-self.HASH_SUFFIX_LENGTH:]  # 后64位是验证哈希
+        data_part = mm_data[: -self.HASH_SUFFIX_LENGTH]  # 前面部分是实际数据
 
         # 验证数据完整性
         hash_en_data = sm_util.hash_by_sm3(
@@ -308,6 +317,7 @@ class SmData:
 
         append_times = 0
         update_times = 0
+
         for item in other:
             if "id" not in item:
                 continue
@@ -318,31 +328,30 @@ class SmData:
             )
 
             if not existing_item:
+                # 新增项
                 self.mm["data"].append(item)
-                self.mm["utime"] = date_util.timestamp_int()
                 append_times += 1
             elif not dict_util.is_equal(existing_item, item):  # type: ignore
-                """ "比较utime, 使用utime相对比较大的数据"""
-                if (
-                    "utime" not in item
-                    or not item["utime"]
-                    or "utime" not in existing_item
-                    or not existing_item["utime"]
-                ):
-                    self.mm["data"].append(item)
-                    self.mm["utime"] = date_util.timestamp_int()
-                    append_times += 1
-                elif item["utime"] > existing_item["utime"]:
-                    print("existing_item", existing_item)
-                    print("other_item", item)
+                # 比较 utime，使用 utime 相对比较大的数据
+                item_utime = item.get("utime", 0) or 0
+                existing_utime = existing_item.get("utime", 0) or 0
+
+                if item_utime > existing_utime:
+                    # 更新现有项
                     existing_item.update(item)
-                    self.mm["utime"] = date_util.timestamp_int()
                     update_times += 1
+                elif item_utime == 0 or existing_utime == 0:
+                    # 如果时间戳不存在，添加为新项（保持向后兼容）
+                    self.mm["data"].append(item)
+                    append_times += 1
 
-        print(f"合并完成, 新增{append_times}条, 更新{update_times}条")
+        # 更新总时间戳
+        if append_times + update_times > 0:
+            self.mm["utime"] = date_util.timestamp_int()
+            print(f"合并完成, 新增{append_times}条, 更新{update_times}条")
 
-        if auto_save and (append_times + update_times > 0):
-            self.save()
+            if auto_save:
+                self.save()
 
         return append_times, update_times
 
