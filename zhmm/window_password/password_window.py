@@ -464,6 +464,7 @@ class PasswordWindow(QWidget):
             QTimer.singleShot(2000, lambda: self.status_label.setText(""))
 
     def save(self):
-        if self.gl_data.save():
-            return zhmm.config.upload_cloud(self.gl_data.file_path)
-        return False
+        ret: bool = self.gl_data.save()
+        # 存储云数据是可选的
+        zhmm.config.upload_cloud(self.gl_data.file_path)
+        return ret
