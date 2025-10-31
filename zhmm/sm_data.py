@@ -60,12 +60,23 @@ class SmData:
 
     def init(self, open_id: str, pwd: str):
         """
-        初始化数据管理器
+        初始化数据管理器（设置加密密钥）
 
         Args:
             open_id: 用户标识
             pwd: 密码
+
+        Raises:
+            ValueError: 当open_id或pwd为空时
+
+        Note:
+            该方法必须在使用encrypt/decrypt方法之前调用
         """
+        if not open_id:
+            raise ValueError("用户标识不能为空")
+        if not pwd:
+            raise ValueError("密码不能为空")
+
         self.openId = open_id
         self.pwd = pwd
 
@@ -140,21 +151,30 @@ class SmData:
             data: 要加密的数据字符串
 
         Returns:
-            加密后的数据字符串
+            加密后的数据字符串（包含数据+64位验证哈希）
+
+        Raises:
+            ValueError: 当数据为空或加密失败时
         """
-        # 加密数据
-        encrypt_data = sm_util.encrypt_by_sm4(data.encode("utf-8"), self.encryptHash)
+        if not data:
+            raise ValueError("加密数据不能为空")
 
-        # 将加密后的字节数据转换为十六进制字符串
-        hex_data = data_conversion.to_hex_string(encrypt_data)
+        try:
+            # 加密数据
+            encrypt_data = sm_util.encrypt_by_sm4(data.encode("utf-8"), self.encryptHash)
 
-        # 计算验证哈希
-        suffix = sm_util.hash_by_sm3(
-            data_conversion.chars_to_bytes(hex_data), self.suffixHash
-        )
+            # 将加密后的字节数据转换为十六进制字符串
+            hex_data = data_conversion.to_hex_string(encrypt_data)
 
-        # 返回加密数据和验证哈希的组合
-        return hex_data + suffix
+            # 计算验证哈希
+            suffix = sm_util.hash_by_sm3(
+                data_conversion.chars_to_bytes(hex_data), self.suffixHash
+            )
+
+            # 返回加密数据和验证哈希的组合
+            return hex_data + suffix
+        except Exception as e:
+            raise ValueError(f"加密失败: {e}")
 
     def set_mm(self, user_mm_data: ZhmmDataDict):
         self.mm = user_mm_data
@@ -327,6 +347,24 @@ class SmData:
         return append_times, update_times
 
     def add_with_dict(self, info: dict):
+        """
+        从字典添加新的密码数据项（便利方法）
+
+        Args:
+            info: 包含密码信息的字典，支持的字段：
+                - id: 数据id，可选
+                - role: 类别，可选，默认"个人"
+                - userID: 账号，必须
+                - pwd: 密码，必须
+                - phone: 手机，可选
+                - email: 邮箱，可选
+                - url: 网站，可选
+                - desc: 备注，可选
+                - utime: 更新时间，可选
+
+        Note:
+            该方法会自动补全缺失的字段
+        """
         self.add(
             {
                 "id": info.get("id", date_util.timestamp_int()),
