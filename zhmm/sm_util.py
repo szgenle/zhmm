@@ -51,14 +51,27 @@ def decrypt_by_sm4(encrypt_value: str, key: str) -> bytes:
 
     Args:
         encrypt_value: 十六进制字符串形式的加密数据
-        key: 十六进制字符串形式的密钥
+        key: 十六进制字符串形式的密钥（SM4要求128位，即32个十六进制字符）
 
     Returns:
         解密后的字节数据
+
+    Raises:
+        ValueError: 当密钥长度不正确或数据无效时
     """
+    # 校验密钥长度（SM4要求128位 = 32个hex字符）
+    if len(key) != 32:
+        raise ValueError(f"密钥长度必须为32个十六进制字符，当前为{len(key)}")
+
+    if not encrypt_value:
+        raise ValueError("加密数据不能为空")
+
     # 将十六进制字符串转换为字节数组
-    encrypt_bytes = data_conversion.hex_to_array(encrypt_value)
-    key_bytes = data_conversion.hex_to_array(key)
+    try:
+        encrypt_bytes = data_conversion.hex_to_array(encrypt_value)
+        key_bytes = data_conversion.hex_to_array(key)
+    except Exception as e:
+        raise ValueError(f"十六进制字符串转换失败: {e}")
 
     # 初始化SM4加密器
     crypt_sm4 = sm4.CryptSM4()
@@ -74,13 +87,26 @@ def encrypt_by_sm4(encrypt_bytes: bytes, key: str) -> bytes:
 
     Args:
         encrypt_bytes: 要加密的字节数据
-        key: 十六进制字符串形式的密钥
+        key: 十六进制字符串形式的密钥（SM4要求128位，即32个十六进制字符）
 
     Returns:
         加密后的字节数据
+
+    Raises:
+        ValueError: 当密钥长度不正确或数据无效时
     """
+    # 校验密钥长度（SM4要求128位 = 32个hex字符）
+    if len(key) != 32:
+        raise ValueError(f"密钥长度必须为32个十六进制字符，当前为{len(key)}")
+
+    if not encrypt_bytes:
+        raise ValueError("加密数据不能为空")
+
     # 将密钥转换为字节数组
-    key_bytes = data_conversion.hex_to_array(key)
+    try:
+        key_bytes = data_conversion.hex_to_array(key)
+    except Exception as e:
+        raise ValueError(f"密钥十六进制字符串转换失败: {e}")
 
     # 初始化SM4加密器
     crypt_sm4 = sm4.CryptSM4()

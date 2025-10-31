@@ -321,6 +321,53 @@ class SmData:
             }
         )
 
+    def load(self, file_path: str | None = None) -> bool:
+        """
+        从文件加载并解密数据
+
+        Args:
+            file_path: 文件路径，如为None则使用self.file_path
+
+        Returns:
+            成功返回True，失败返回False
+        """
+        if file_path is None:
+            file_path = self.file_path
+
+        if not file_path:
+            print("[错误] 文件路径为空，无法加载")
+            return False
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as file:
+                encrypted_data = file.read()
+
+            if not encrypted_data:
+                print(f"[错误] 文件为空: {file_path}")
+                return False
+
+            # 解密数据
+            decrypted_str = self.decrypt(encrypted_data)
+            if not decrypted_str:
+                print(f"[错误] 解密失败: {file_path}")
+                return False
+
+            # 解析JSON
+            user_mm_data = json.loads(decrypted_str)  # type: ignore
+            self.set_mm(user_mm_data)
+            self.file_path = file_path
+            return True
+
+        except FileNotFoundError:
+            print(f"[错误] 文件不存在: {file_path}")
+            return False
+        except json.JSONDecodeError as e:
+            print(f"[错误] JSON解析失败: {file_path}, 原因: {e}")
+            return False
+        except Exception as e:
+            print(f"[错误] 加载文件失败: {file_path}, 原因: {e}")
+            return False
+
     def save(self, file_path: str | None = None) -> bool:
         """
         保存加密数据到文件
