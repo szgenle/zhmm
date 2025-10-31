@@ -131,7 +131,7 @@ class CmdUI:
             解密后的字符串，失败返回None
         """
         pwd_suffix = password + "woie*#jk20kH2^D@U28)"
-        pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix))
+        pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix), "9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1")
         self.sm_data.init(open_id, pwd)
 
         data = file_util.get_file_content(file_path)

@@ -41,7 +41,7 @@ class UIDecryptData:
         try:
             # 处理密码，与cmd_ui.py中相同的逻辑
             pwd_suffix = password + "woie*#jk20kH2^D@U28)"
-            pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix))
+            pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix), "9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1")
 
             smdata = sm_data.SmData()
             smdata.init(openid, pwd)

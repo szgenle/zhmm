@@ -15,10 +15,8 @@ IPAD = bytearray([0x36] * BLOCK_LEN)  # 内部填充
 OPAD = bytearray([0x5C] * BLOCK_LEN)  # 外部填充
 
 # SM4 加密相关常量
-LEGACY_IV = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x27\x00\x00\x00\x00\x03"  # 旧版固定 IV（仅用于解密旧数据）
 SM4_KEY_LENGTH = 32  # SM4 密钥长度（十六进制字符数，对应128位）
 SM4_IV_LENGTH = 16  # SM4 IV 长度（字节数）
-DEFAULT_HMAC_KEY = "9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1"  # 默认 HMAC 密钥
 ENCRYPT_VERSION_PREFIX = "v2:"  # 新版加密数据版本标识
 
 
@@ -39,14 +37,14 @@ def _validate_sm4_key(key: str) -> None:
 
 
 def hash_by_sm3(
-    input_bytes: Union[List[int], bytes, bytearray], key: str = DEFAULT_HMAC_KEY
+    input_bytes: Union[List[int], bytes, bytearray], key: str
 ) -> str:
     """
     使用 SM3 算法计算 HMAC 哈希值
 
     Args:
         input_bytes: 输入字节数据（整数列表、bytes 或 bytearray）
-        key: HMAC 密钥字符串，默认使用预设密钥
+        key: HMAC 密钥字符串（必填）
 
     Returns:
         64位十六进制哈希字符串
@@ -119,10 +117,7 @@ def decrypt_by_sm4(encrypt_value: str, key: str) -> bytes:
         iv = bytes(encrypt_bytes[offset:iv_end])
         cipher_bytes = encrypt_bytes[iv_end:]
     else:
-        print("检测到 旧 版本加密数据格式")
-        # 旧格式：使用固定 IV
-        iv = LEGACY_IV
-        cipher_bytes = encrypt_bytes
+        raise ValueError("检测到 旧 版本加密数据格式")
 
     try:
         key_bytes = data_conversion.hex_to_array(key)
