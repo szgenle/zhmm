@@ -107,7 +107,7 @@ class SmData:
 
         return None
 
-    def decrypt(self, encrypt_data: str) -> dict | None:
+    def decrypt(self, encrypt_data: str) -> str | None:
         """
         解密数据
 
@@ -115,18 +115,22 @@ class SmData:
             encrypt_data: 加密的数据字符串
 
         Returns:
-            解密后的数据字典，解密失败则返回None
+            解密后的字符串，解密失败则返回None
         """
         # 验证并获取加密数据
         encrypt_mmdata = self.get_encrypt_mmdata(encrypt_data)
         if not encrypt_mmdata:
             return None
 
-        # 解密数据
-        decrypt_data = sm_util.decrypt_by_sm4(
-            encrypt_mmdata, self.encryptHash
-        )  # 解密，cbc 模式
-        return {"res": decrypt_data.decode()}
+        try:
+            # 解密数据
+            decrypt_data = sm_util.decrypt_by_sm4(
+                encrypt_mmdata, self.encryptHash
+            )  # 解密，cbc 模式
+            return decrypt_data.decode("utf-8")
+        except Exception as e:
+            print(f"[错误] 解密失败: {e}")
+            return None
 
     def encrypt(self, data: str) -> str:
         """
@@ -231,13 +235,29 @@ class SmData:
         return list(find_data_dict.values()) if find_data_dict else None
 
     def delete(self, id: int) -> bool:
+        """
+        删除指定id的数据项
+
+        Args:
+            id: 要删除的数据项id
+
+        Returns:
+            成功返回True，失败返回False
+        """
         if not self.mm or not self.mm["data"]:
             return False
-        for data in self.mm["data"]:
-            if "id" in data and data["id"] == id:
-                self.mm["data"].remove(data)
-                self.mm["utime"] = date_util.timestamp_int()
-                return True
+
+        # 使用列表推导式安全删除
+        original_len = len(self.mm["data"])
+        self.mm["data"] = [
+            data for data in self.mm["data"]
+            if not ("id" in data and data["id"] == id)
+        ]
+
+        # 检查是否真的删除了
+        if len(self.mm["data"]) < original_len:
+            self.mm["utime"] = date_util.timestamp_int()
+            return True
         return False
 
     def add(self, info: ZhmmDict):
