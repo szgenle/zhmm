@@ -437,14 +437,20 @@ class SmData:
 
     def save(self, file_path: str | None = None) -> bool:
         """
-        保存加密数据到文件
+        保存加密数据到文件（原子性操作）
 
         Args:
             file_path: 文件路径，如为None则使用self.file_path
 
         Returns:
             成功返回True，失败返回False
+
+        Note:
+            使用临时文件+原子性重命名确保数据安全，避免写入失败导致数据丢失
         """
+        import os
+        import tempfile
+
         if file_path is None:
             file_path = self.file_path
 
@@ -452,12 +458,43 @@ class SmData:
             print("[错误] 文件路径为空，无法保存")
             return False
 
+        tmp_path = None
         try:
-            data = self.encrypt(json.dumps(self.mm))
-            data_size = len(data)
-            with open(file_path, "w", encoding="utf-8") as file:
-                write_size = file.write(data)
-                return data_size == write_size
+            # 加密数据
+            encrypted_data = self.encrypt(json.dumps(self.mm))
+
+            # 获取目标文件的目录和文件名
+            file_dir = os.path.dirname(file_path) or "."
+            file_name = os.path.basename(file_path)
+
+            # 写入临时文件
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=file_dir,
+                prefix=f".{file_name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as tmp_file:
+                tmp_path = tmp_file.name
+                write_size = tmp_file.write(encrypted_data)
+
+            # 验证写入完整性
+            if write_size != len(encrypted_data):
+                os.unlink(tmp_path)
+                print(f"[错误] 写入数据不完整: {file_path}")
+                return False
+
+            # 原子性重命名（替换目标文件）
+            os.replace(tmp_path, file_path)
+            return True
+
         except Exception as e:
             print(f"[错误] 保存文件失败: {file_path}, 原因: {e}")
+            # 清理可能残留的临时文件
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except:
+                    pass
             return False
