@@ -28,6 +28,7 @@ class ZhmmDataDict(TypedDict):
 
 
 class SmData:
+    # 类级别常量（只读，不可变）
     field_mapping = {
         "id": "ID",
         "role": "类别",
@@ -43,23 +44,19 @@ class SmData:
     keys = ["id", "role", "userID", "pwd", "phone", "email", "url", "desc", "utime"]
     heads = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
 
-    pwd = ""
-    openId = ""
-
-    pwdHash = ""
-    encryptHash = ""
-    suffixHash = ""
-
-    mm: ZhmmDataDict = {
-        "data": [],
-        "roles": ["个人", "工作", "其它"],
-        "utime": 0,
-    }
-
-    file_path = ""
-
     def __init__(self):
-        return
+        # 实例属性，避免实例间共享状态
+        self.pwd = ""
+        self.openId = ""
+        self.pwdHash = ""
+        self.encryptHash = ""
+        self.suffixHash = ""
+        self.mm: ZhmmDataDict = {
+            "data": [],
+            "roles": ["个人", "工作", "其它"],
+            "utime": 0,
+        }
+        self.file_path = ""
 
     def init(self, open_id: str, pwd: str):
         """
@@ -170,43 +167,68 @@ class SmData:
     def fix_id_is_None(self) -> bool:
         """
         处理历史遗留的字段值问题
-        查找所有数据，把id不是数字的设置为时间戳（秒），
-        如果utime不是数字的也设置为时间戳（秒）。
-        每秒改动一项，防止重复。
+        查找所有数据，把id不是数字的设置为时间戳+偏移量，
+        如果utime不是数字的也设置为时间戳。
+        使用偏移量保证id唯一性。
+
+        Returns:
+            True 表示所有项均已修复，False 表示还有项需要修复
         """
         if not self.mm or not self.mm["data"]:
             return True
-        finished = True
+
+        base_timestamp = date_util.timestamp_int()
+        offset = 0
+        all_fixed = True
+
         for data in self.mm["data"]:
             if "id" not in data or not isinstance(data["id"], int):
-                data["id"] = date_util.timestamp_int()
-                finished = False
+                data["id"] = base_timestamp + offset
+                offset += 1
+                all_fixed = False
             if "utime" not in data or not isinstance(data["utime"], int):
-                data["utime"] = date_util.timestamp_int()
-                finished = False
-            if not finished:
-                break
-        return finished
+                data["utime"] = base_timestamp
+                all_fixed = False
+
+        return all_fixed
 
     def search(self, words: str) -> list[ZhmmDict] | None:
+        """
+        搜索包含关键词的数据项
+
+        Args:
+            words: 关键词，用空格分隔
+
+        Returns:
+            匹配的数据列表，无结果返回None
+        """
         if not self.mm or not self.mm["data"]:
             return None
 
-        find_data: list[ZhmmDict] = []
+        find_data_dict: dict[int, ZhmmDict] = {}  # 用字典去重，基于id
         arr_words = words.split()
+
         for word in arr_words:
+            word_lower = word.lower()  # 忽略大小写
             for data in self.mm["data"]:
-                if "url" in data and word in data["url"]:
-                    find_data.append(data)
-                elif "desc" in data and word in data["desc"]:
-                    find_data.append(data)
-                elif "userID" in data and word in data["userID"]:
-                    find_data.append(data)
-                elif "phone" in data and data["phone"] and word in data["phone"]:
-                    find_data.append(data)
-                elif "email" in data and data["email"] and word in data["email"]:
-                    find_data.append(data)
-        return find_data
+                if "id" not in data or not data["id"]:
+                    continue
+
+                # 如果已经在结果中，跳过
+                if data["id"] in find_data_dict:
+                    continue
+
+                # 在各字段中搜索（忽略大小写）
+                if (
+                    ("url" in data and data["url"] and word_lower in data["url"].lower())
+                    or ("desc" in data and data["desc"] and word_lower in data["desc"].lower())
+                    or ("userID" in data and data["userID"] and word_lower in data["userID"].lower())
+                    or ("phone" in data and data["phone"] and word_lower in data["phone"].lower())
+                    or ("email" in data and data["email"] and word_lower in data["email"].lower())
+                ):
+                    find_data_dict[data["id"]] = data
+
+        return list(find_data_dict.values()) if find_data_dict else None
 
     def delete(self, id: int) -> bool:
         if not self.mm or not self.mm["data"]:
@@ -228,14 +250,21 @@ class SmData:
         self.mm["data"].append(info)
         self.mm["utime"] = date_util.timestamp_int()
 
-    def merge(self, other: list[ZhmmDict]):
+    def merge(self, other: list[ZhmmDict], auto_save: bool = True) -> tuple[int, int]:
         """
         将other的每一项数据合并到mm['data']中
         如果这一项中有一项不存在相同id的项中，就合并
         如果这一项中在mm['data']相同id的项中是完全一样的，就不合并
+
+        Args:
+            other: 要合并的数据列表
+            auto_save: 是否自动保存，默认True（保持向后兼容）
+
+        Returns:
+            (append_times, update_times) 新增数量和更新数量
         """
         if not other:
-            return
+            return 0, 0
 
         append_times = 0
         update_times = 0
@@ -269,9 +298,12 @@ class SmData:
                     existing_item.update(item)
                     self.mm["utime"] = date_util.timestamp_int()
                     update_times += 1
+
         print(f"合并完成, 新增{append_times}条, 更新{update_times}条")
-        if append_times + update_times > 0:
+
+        if auto_save and (append_times + update_times > 0):
             self.save()
+
         return append_times, update_times
 
     def add_with_dict(self, info: dict):
@@ -290,10 +322,28 @@ class SmData:
         )
 
     def save(self, file_path: str | None = None) -> bool:
+        """
+        保存加密数据到文件
+
+        Args:
+            file_path: 文件路径，如为None则使用self.file_path
+
+        Returns:
+            成功返回True，失败返回False
+        """
         if file_path is None:
             file_path = self.file_path
-        data = self.encrypt(json.dumps(self.mm))
-        data_size = len(data)
-        with open(file_path, "w") as file:
-            write_size = file.write(data)
-            return data_size == write_size
+
+        if not file_path:
+            print("[错误] 文件路径为空，无法保存")
+            return False
+
+        try:
+            data = self.encrypt(json.dumps(self.mm))
+            data_size = len(data)
+            with open(file_path, "w", encoding="utf-8") as file:
+                write_size = file.write(data)
+                return data_size == write_size
+        except Exception as e:
+            print(f"[错误] 保存文件失败: {file_path}, 原因: {e}")
+            return False
