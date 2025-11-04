@@ -67,6 +67,16 @@ class PasswordWindow(QWidget):
 
         main_layout.addLayout(search_layout)
 
+        status_layout = QHBoxLayout()
+        # 添加状态标签（在表格下方）
+        self.status_label = QLabel()
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.status_label.setStyleSheet("color: #666; font-size: 12px;")
+        status_layout.addWidget(self.status_label)
+
+        self.setup_ui_button(status_layout)
+        main_layout.addLayout(status_layout)
+
         # 创建表格视图
         self.table_view = QTableView()
         self.table_model = PasswordTableModel(self.gl_data.mm["data"])
@@ -119,13 +129,6 @@ class PasswordWindow(QWidget):
             header.resizeSection(8, calculate_column_width("8888888888"))
 
         main_layout.addWidget(self.table_view)
-        self.setup_ui_button(main_layout)
-
-        # 添加状态标签（在表格下方）
-        self.status_label = QLabel()
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_label.setStyleSheet("color: #666; font-size: 12px;")
-        main_layout.addWidget(self.status_label)
 
         # 初始化一次状态提示
         self.filter_passwords()
