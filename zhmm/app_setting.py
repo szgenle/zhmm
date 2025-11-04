@@ -69,3 +69,30 @@ class AppSetting(QSettings):
         """
         self.setValue("theme", theme)
         self.sync()
+
+    def get_auto_backup_enabled(self):
+        """获取自动备份是否启用"""
+        return self.value("auto_backup_enabled", True, type=bool)
+
+    def save_auto_backup_enabled(self, enabled):
+        """保存自动备份启用状态"""
+        self.setValue("auto_backup_enabled", enabled)
+        self.sync()
+
+    def get_backup_interval(self):
+        """获取备份间隔（分钟），默认30分钟"""
+        return self.value("backup_interval", 30, type=int)
+
+    def save_backup_interval(self, minutes):
+        """保存备份间隔"""
+        self.setValue("backup_interval", minutes)
+        self.sync()
+
+    def get_backup_keep_count(self):
+        """获取备份保留数量，默认10个"""
+        return self.value("backup_keep_count", 10, type=int)
+
+    def save_backup_keep_count(self, count):
+        """保存备份保留数量"""
+        self.setValue("backup_keep_count", count)
+        self.sync()

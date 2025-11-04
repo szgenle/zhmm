@@ -44,6 +44,30 @@ class AppConfig:
         """保存主题设置"""
         self.setting.save_theme(theme)
 
+    def get_auto_backup_enabled(self):
+        """获取自动备份启用状态"""
+        return self.setting.get_auto_backup_enabled()
+
+    def save_auto_backup_enabled(self, enabled):
+        """保存自动备份启用状态"""
+        self.setting.save_auto_backup_enabled(enabled)
+
+    def get_backup_interval(self):
+        """获取备份间隔（分钟）"""
+        return self.setting.get_backup_interval()
+
+    def save_backup_interval(self, minutes):
+        """保存备份间隔"""
+        self.setting.save_backup_interval(minutes)
+
+    def get_backup_keep_count(self):
+        """获取备份保留数量"""
+        return self.setting.get_backup_keep_count()
+
+    def save_backup_keep_count(self, count):
+        """保存备份保留数量"""
+        self.setting.save_backup_keep_count(count)
+
     def get(self, key, default_value=None):
         return self.config.get(key, default_value)
 
