@@ -10,6 +10,7 @@ from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.window_setting.credentials_input_dialog_cos import \
     CredentialsDialogCos
+from zhmm.window_setting.change_openid_dialog import ChangeOpenIdDialog
 from zhmm.utils import file_util
 
 
@@ -67,7 +68,8 @@ class SettingWindow(QWidget):
         self.theme_button_group.buttonClicked.connect(self.on_theme_changed)
 
         # 更改OpenID
-        self.change_openid_button = QPushButton("更改OpenID(暂未实现)")
+        self.change_openid_button = QPushButton("更改OpenID")
+        self.change_openid_button.clicked.connect(self.change_openid)
         self.change_openid_button.setMaximumWidth(200)
 
         # 导入xlsx文件
@@ -311,6 +313,39 @@ class SettingWindow(QWidget):
         """打开日志目录"""
         path = file_util.get_full_path(".log").as_posix()
         file_util.open_directory(path)
+
+    def change_openid(self):
+        """更改OpenID"""
+        from PyQt6.QtWidgets import QMessageBox
+        from zhmm.utils import file_util
+
+        current_openid = self.info.get("openid", "")
+        dialog = ChangeOpenIdDialog(current_openid, self)
+
+        if dialog.exec():
+            new_openid = dialog.get_new_openid()
+            if new_openid:
+                # 更新内存中的OpenID
+                self.info["openid"] = new_openid
+
+                # 更新保存的文件信息
+                file_path = self.info.get("file_path")
+                if file_path:
+                    storage_path = file_util.get_full_path(".zhmm_files.json").as_posix()
+                    saved_files = file_util.load_json(storage_path) or {}
+
+                    if file_path in saved_files:
+                        saved_files[file_path]["openid"] = new_openid
+                        from datetime import datetime
+                        saved_files[file_path]["last_access_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        file_util.save_json(storage_path, saved_files)
+
+                QMessageBox.information(
+                    self,
+                    "更改成功",
+                    f"OpenID已成功更改为：{new_openid}\n\n"
+                    "注意：如需在微信小程序中使用，请确保与小程序中显示的OpenID一致。"
+                )
 
     def on_theme_changed(self, button):
         """主题切换事件处理"""
