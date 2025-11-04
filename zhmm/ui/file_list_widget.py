@@ -175,7 +175,7 @@ class FileListWidget(QWidget):
         """登录成功后的处理"""
         # 构造文件信息字典，确保类型匹配
         # 使用类型断言确保 sm_data 是 SmData 类型
-        from zhmm.sm_data import SmData
+        from zhmm.data.sm_data_manager import SmData
         assert isinstance(sm_data, SmData)
 
         file_info: ZhmmFileInfo = {

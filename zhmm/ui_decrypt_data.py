@@ -1,7 +1,8 @@
 import json
 from typing import Optional
 
-from zhmm import sm_data, sm_util
+from zhmm import sm_util
+from zhmm.data import sm_data_manager as sm_data
 from zhmm.utils import data_conversion, file_util
 from zhmm.utils.log import logger
 

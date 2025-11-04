@@ -1,7 +1,7 @@
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 
-from zhmm.sm_data import ZhmmDict
+from zhmm.data.sm_data_types import ZhmmDict
 
 
 class DataImporter:

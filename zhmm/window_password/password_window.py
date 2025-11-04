@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QHBoxLayout,
                              QPushButton, QTableView, QVBoxLayout, QWidget)
 
 import zhmm
-from zhmm.sm_data import SmData
+from zhmm.data.sm_data_manager import SmData
 from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.utils import date_util
