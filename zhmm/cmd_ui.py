@@ -5,6 +5,7 @@
 # @LastEditTime: 2024-07-02
 import json
 import os.path
+import sys
 import time
 
 from zhmm import sm_util
@@ -24,8 +25,12 @@ class CmdUI:
         pass
 
     def user_find(self):
-        print("您好，请输入您想查找的信息(可用空格间隔多个关键字)")
+        print("您好，请输入您想查找的信息(可用空格间隔多个关键字，按ESC退出)")
         info = input("请输入:").strip()
+        # 检查ESC键退出
+        if info == "\x1b":
+            print("\n再见\n")
+            sys.exit(0)
         self.user_search(info)
 
     def user_search(self, search_word):
@@ -55,6 +60,10 @@ class CmdUI:
 
         for i in range(4):
             info = input(f"请输入{cn_names[i]}:").strip()
+            # 检查ESC键退出
+            if info == "\x1b":
+                print("\n取消操作\n")
+                return {}, {}
             if " " in info:
                 self.process_multi_value_input(
                     i, info, en_names, cn_names, en_infos, cn_infos
@@ -90,8 +99,16 @@ class CmdUI:
 
     def confirm_and_save(self, en_infos, cn_infos):
         """确认并保存账号信息"""
+        # 如果信息为空则取消操作
+        if not en_infos or not cn_infos:
+            return
         print("新增账号信息：", cn_infos)
-        if input("确认增加[y/n]？: ").strip().upper() == "Y":
+        confirm = input("确认增加[y/n]？: ").strip().upper()
+        # 检查ESC键退出
+        if confirm == "\x1b":
+            print("\n取消操作\n")
+            return
+        if confirm == "Y":
             dict_info: ZhmmDict = self.build_zhmm_dict(en_infos)
             self.sm_data.add(dict_info)
             self.save()
@@ -105,9 +122,10 @@ class CmdUI:
     def user_option(self):
         time.sleep(0.3)
 
-        op = input("新增[n/N]查找[f/F]导出[e/E]删除[d/D]退出[q/Q]:").strip().lower()
+        op = input("新增[n/N]查找[f/F]导出[e/E]删除[d/D]退出[q/Q/ESC]:").strip().lower()
 
-        if op is None or op == "q":
+        # 检查ESC键 (ASCII码27，或转义序列)
+        if op == "\x1b" or op is None or op == "q":
             return -1
         if op == "n":
             self.args.new = True
@@ -192,6 +210,10 @@ class CmdUI:
 
     def user_export(self):
         file_path = input("请输入导出的路径:").strip()
+        # 检查ESC键退出
+        if file_path == "\x1b":
+            print("\n取消操作\n")
+            return
         if file_path and os.path.exists(file_path):
             file_path = os.path.join(file_path, "zhmm.xlsx")
             DataExporter.export_xlsx(file_path, self.sm_data.mm["data"])
@@ -199,6 +221,10 @@ class CmdUI:
     def user_delete(self):
         try:
             ids = input("请输入要删除的ID(多个ID用空格隔开):").strip()
+            # 检查ESC键退出
+            if ids == "\x1b":
+                print("\n取消操作\n")
+                return
             # 分割多个ID并转换为整数
             id_list = [int(id_str) for id_str in ids.split()]
             # 逐个删除
