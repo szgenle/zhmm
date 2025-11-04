@@ -3,7 +3,7 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 
-from PyQt6.QtCore import (QAbstractTableModel, QSortFilterProxyModel, Qt,
+from PyQt6.QtCore import (QSortFilterProxyModel, Qt,
                           QTimer, pyqtSignal)
 from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QHBoxLayout,
                              QHeaderView, QLabel, QLineEdit, QMessageBox,
@@ -16,98 +16,9 @@ from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.utils import date_util
 from zhmm.utils.log import logger
 from zhmm.window_password.add_password_dialog import AddPasswordDialog
+from zhmm.window_password.password_table_models import PasswordTableModel, CustomProxyModel
+from zhmm.window_password.password_operations import PasswordOperations
 
-
-class PasswordTableModel(QAbstractTableModel):
-    """密码表格数据模型"""
-
-    def __init__(self, data=None):
-        super().__init__()
-        self.headers = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
-        self.keys = [
-            "id",
-            "role",
-            "userID",
-            "pwd",
-            "phone",
-            "email",
-            "url",
-            "desc",
-            "utime",
-        ]
-        self._data = data if data else []
-
-    def rowCount(self, parent=None):
-        return len(self._data)
-
-    def columnCount(self, parent=None):
-        return len(self.headers)
-
-    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        if not index.isValid():
-            return None
-
-        if role == Qt.ItemDataRole.DisplayRole:
-            row = index.row()
-            col = index.column()
-            item = self._data[row]
-            key = self.keys[col]
-
-            # 返回对应的数据，如果不存在则返回空字符串
-            return str(item.get(key, ""))
-
-        return None
-
-    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
-        if (
-            role == Qt.ItemDataRole.DisplayRole
-            and orientation == Qt.Orientation.Horizontal
-        ):
-            return self.headers[section]
-        return None
-
-    def setZhData(self, data):
-        self.beginResetModel()
-        self._data = data
-        self.endResetModel()
-
-
-class CustomProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.show_all_data = False  # 控制是否显示所有数据
-        self.filter_role = ""  # 角色过滤值
-        self.use_role_filter = False  # 是否使用角色过滤
-        self._has_filter = False
-
-    def setFilterRegularExpression(self, pattern):  # type: ignore
-        self._has_filter = bool(pattern and pattern.strip())
-        super().setFilterRegularExpression(pattern)
-
-    def setFilterFixedString(self, text):  # type: ignore
-        self._has_filter = bool(text and text.strip())
-        super().setFilterFixedString(text)
-
-    def filterAcceptsRow(self, source_row: int, source_parent) -> bool:
-        """根据复选框状态和角色过滤调整过滤逻辑"""
-        # 首先检查是否需要角色过滤
-        if self.use_role_filter and self.filter_role:
-            model = self.sourceModel()
-            if model is None:
-                return False
-            role_index = model.index(source_row, 1)  # 1是角色列
-            role_value = model.data(role_index, Qt.ItemDataRole.DisplayRole)
-            if role_value != self.filter_role:
-                return False
-
-        if self.show_all_data:
-            # 正常过滤
-            return super().filterAcceptsRow(source_row, source_parent)
-        else:
-            if not self._has_filter:
-                return False
-            # 当没有过滤条件时，隐藏所有数据
-            return super().filterAcceptsRow(source_row, source_parent)
 
 
 class PasswordWindow(QWidget):
@@ -121,6 +32,10 @@ class PasswordWindow(QWidget):
         else:
             self.gl_data = info["sm_data"]
         self.gl_data.file_path = info["file_path"]
+
+        # 创建操作管理器
+        self.operations = PasswordOperations(self.gl_data)
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -304,36 +219,24 @@ class PasswordWindow(QWidget):
         dialog.exec()
 
     def add_role(self, new_role):
-        if "roles" not in self.gl_data.mm or self.gl_data.mm["roles"] is None:
-            self.gl_data.mm["roles"] = []
-        self.gl_data.mm["roles"].append(new_role)
-        self.save()
-        self.reset_roles_option()
-        pass
+        """添加新角色"""
+        if self.operations.add_role(new_role):
+            self.reset_roles_option()
 
     def confirm_add_password(self, dialog):
         """确认添加密码"""
         password_data = dialog.get_password_data()
 
-        # 验证必填字段
-        if not password_data["userID"]:
-            QMessageBox.warning(dialog, "警告", "账号不能为空")
-            return
+        # 使用操作管理器添加
+        success, message = self.operations.add_password(password_data)
 
-        # 添加到数据模型
-        try:
-            # 使用gl_data添加数据
-            self.gl_data.add(password_data)
-            if self.save():
-                # 更新表格模型
-                self.table_model.setZhData(self.gl_data.mm["data"])
-                QMessageBox.information(dialog, "成功", "账号密码添加成功")
-                dialog.accept()
-            else:
-                QMessageBox.critical(dialog, "错误", "添加失败，无法保存数据")
-        except Exception as e:
-            logger.error(f"添加密码出错: {str(e)}")
-            QMessageBox.critical(dialog, "错误", f"添加出错: {str(e)}")
+        if success:
+            # 更新表格模型
+            self.table_model.setZhData(self.gl_data.mm["data"])
+            QMessageBox.information(dialog, "成功", message)
+            dialog.accept()
+        else:
+            QMessageBox.warning(dialog, "警告" if "不能为空" in message else "错误", message)
 
     def export_passwords(self):
         """导出密码列表"""
@@ -355,26 +258,20 @@ class PasswordWindow(QWidget):
         source_index = self.proxy_model.mapToSource(proxy_index)
         row = source_index.row()
 
-        try:
-            # 确认删除
-            reply = QMessageBox.question(
-                self,
-                "确认删除",
-                "确定要删除该账号记录吗？此操作不可恢复！",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            )
-            if reply == QMessageBox.StandardButton.Yes:
-                # 从数据源中删除
-                deleted_item = self.gl_data.mm["data"].pop(row)
+        # 确认删除
+        reply = QMessageBox.question(
+            self,
+            "确认删除",
+            "确定要删除该账号记录吗？此操作不可恢复！",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            success, message = self.operations.delete_password(row)
+            if success:
                 # 更新表格
                 self.table_model.setZhData(self.gl_data.mm["data"])
-                # 保存更改
-                if not self.save():
-                    self.gl_data.mm["data"].insert(row, deleted_item)  # 回滚
-                    QMessageBox.critical(self, "错误", "删除失败，数据保存错误")
-        except Exception as e:
-            logger.error(f"删除账号出错: {str(e)}")
-            QMessageBox.critical(self, "错误", f"删除失败: {str(e)}")
+            else:
+                QMessageBox.critical(self, "错误", message)
 
     def edit_selected_password(self):
         """编辑选中的密码项"""
@@ -404,29 +301,15 @@ class PasswordWindow(QWidget):
         """处理编辑结果"""
         new_data = dialog.get_password_data()
 
-        # 保留原始ID和创建时间
-        new_data["id"] = self.gl_data.mm["data"][original_row]["id"]
-        new_data["ctime"] = self.gl_data.mm["data"][original_row].get(
-            "ctime", date_util.timestamp_int()
-        )
+        # 使用操作管理器更新
+        success, message = self.operations.update_password(original_row, new_data)
 
-        # 验证必填字段
-        if not new_data["userID"]:
-            QMessageBox.warning(dialog, "警告", "账号不能为空")
-            return
-
-        try:
-            # 更新数据
-            self.gl_data.mm["data"][original_row] = new_data
-            if self.save():
-                self.table_model.setZhData(self.gl_data.mm["data"])
-                QMessageBox.information(dialog, "成功", "修改成功")
-                dialog.accept()
-            else:
-                QMessageBox.critical(dialog, "错误", "修改失败，无法保存数据")
-        except Exception as e:
-            logger.error(f"编辑账号出错: {str(e)}")
-            QMessageBox.critical(dialog, "错误", f"修改失败: {str(e)}")
+        if success:
+            self.table_model.setZhData(self.gl_data.mm["data"])
+            QMessageBox.information(dialog, "成功", message)
+            dialog.accept()
+        else:
+            QMessageBox.warning(dialog, "警告" if "不能为空" in message else "错误", message)
 
     def confirm_modify_password(self, dialog):
         """确认添加密码"""
@@ -464,7 +347,5 @@ class PasswordWindow(QWidget):
             QTimer.singleShot(2000, lambda: self.status_label.setText(""))
 
     def save(self):
-        ret: bool = self.gl_data.save()
-        # 存储云数据是可选的
-        zhmm.config.upload_cloud(self.gl_data.file_path)
-        return ret
+        """保存数据"""
+        return self.operations.save()
