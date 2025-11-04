@@ -10,8 +10,6 @@ readme = "README.md"
 requires-python = ">=3.10.17"
 dependencies = [
     "gmssl (==3.2.2)",
-    "numpy (==2.2.5)",
-    "pandas (==2.2.3)",
     "pycryptodomex (==3.22.0)",
     "pyqt6 (==6.9.0)",
     "pyqt6-qt6 (==6.9.0)",
@@ -23,8 +21,7 @@ dependencies = [
     "cos-python-sdk-v5 (>=1.9.37,<2.0.0)",
     "cryptography (>=45.0.4,<46.0.0)",
     "bcrypt (>=4.3.0,<5.0.0)",
-    "openpyxl (>=3.1.5,<4.0.0)",
-    "xlsxwriter (>=3.2.9,<4.0.0)"
+    "openpyxl (>=3.1.5,<4.0.0)"
 ]
 
 [project.scripts]

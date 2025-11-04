@@ -1,5 +1,5 @@
-import pandas as pd  # 添加pandas库导入
-from pandas._typing import DtypeArg
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils import get_column_letter
 
 from zhmm.sm_data import ZhmmDict
 
@@ -28,29 +28,46 @@ class DataImporter:
         ]
 
         try:
-            # 指定列数据类型，确保手机号列读取为字符串
-            dtype: DtypeArg = {"手机": str}
-            df = pd.read_excel(xlsx_file_path, dtype=dtype, engine="openpyxl")
+            # 使用 openpyxl 读取 Excel
+            wb = load_workbook(xlsx_file_path, data_only=True)
+            ws = wb.active
+
+            if ws is None:
+                print("无法读取工作表")
+                return None
+
+            # 获取表头（第一行）
+            headers = [cell.value for cell in ws[1]]
 
             # 检查列名是否匹配
-            if not all(col in df.columns for col in cn_heads):
+            if not all(col in headers for col in cn_heads):
                 print("Excel文件列名不匹配")
                 return None
 
+            # 创建列索引映射
+            col_index_map = {header: idx for idx, header in enumerate(headers)}
+
             data: list[ZhmmDict] = []
-            for _, row in df.iterrows():
+            # 从第二行开始读取数据
+            for row in ws.iter_rows(min_row=2, values_only=True):
                 item = {}
                 for i, cn_col in enumerate(cn_heads):
-                    cell_value = row[cn_col]
-                    if isinstance(cell_value, pd.Series):
-                        value = (
-                            "" if cell_value.isna().all() else str(cell_value.iloc[0])
-                        )
+                    col_idx = col_index_map.get(cn_col, -1)
+                    if col_idx == -1:
+                        continue
+
+                    cell_value = row[col_idx] if col_idx < len(row) else None
+
+                    # 处理空值和转换为字符串
+                    if cell_value is None:
+                        value = ""
                     else:
-                        value = "" if pd.isna(cell_value) else str(cell_value)
-                    # 特殊处理手机号列
+                        value = str(cell_value)
+
+                    # 特殊处理手机号列（去除浮点数后缀）
                     if cn_col == "手机" and value.endswith(".0"):
                         value = value[:-2]
+
                     # 还原特殊字符
                     value = value.replace("[r]", "\r").replace("[n]", "\n")
 
@@ -64,6 +81,7 @@ class DataImporter:
                         item[en_heads[i]] = value
                 data.append(item)  # type: ignore
 
+            wb.close()
             print(f"成功从 {xlsx_file_path} 导入 {len(data)} 条数据")
             return data
 
@@ -99,24 +117,51 @@ class DataExporter:
             "utime",
         ]
 
-        df = pd.DataFrame(data=None, columns=pd.Index(cn_heads))
         try:
-            for item in data:
-                row_data = {}
-                for i, key in enumerate(en_heads):
-                    value = str(item[key]) if key in item else ""
-                    value = value.replace("\r", "[r]").replace("\n", "[n]")
-                    row_data[cn_heads[i]] = value
-                df = pd.concat([df, pd.DataFrame([row_data])], ignore_index=True)
+            # 创建工作簿和工作表
+            wb = Workbook()
+            ws = wb.active
 
-            df.to_excel(file_path, index=False, engine="xlsxwriter")
+            if ws is None:
+                print("无法创建工作表")
+                return False
+
+            ws.title = "密码数据"
+
+            # 写入表头
+            ws.append(cn_heads)
+
+            # 写入数据行
+            for item in data:
+                row_data = []
+                for key in en_heads:
+                    value = str(item[key]) if key in item else ""
+                    # 转义特殊字符
+                    value = value.replace("\r", "[r]").replace("\n", "[n]")
+                    row_data.append(value)
+                ws.append(row_data)
+
+            # 保存文件
+            wb.save(file_path)
+            wb.close()
             print(f"数据已成功导出到: {file_path}")
             return True
         except Exception as e:
             print(f"导出Excel文件失败: {str(e)}")
+            # 降级到 CSV 导出
             try:
+                import csv
                 csv_path = file_path.replace(".xlsx", ".csv")
-                df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+                with open(csv_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(cn_heads)
+                    for item in data:
+                        row_data = []
+                        for key in en_heads:
+                            value = str(item[key]) if key in item else ""
+                            value = value.replace("\r", "[r]").replace("\n", "[n]")
+                            row_data.append(value)
+                        writer.writerow(row_data)
                 print(f"已改为CSV格式导出到: {csv_path}")
                 return True
             except Exception as csv_e:
