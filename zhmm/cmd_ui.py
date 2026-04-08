@@ -35,6 +35,9 @@ class CmdUI:
         self.user_search(info)
 
     def user_search(self, search_word):
+        if not search_word:
+            print("搜索关键字不能为空")
+            return
         infos: list[ZhmmDict] | None = self.sm_data.search(search_word)
         if infos and len(infos) > 0:
             print("您好，查找到[%s]的相关信息：" % search_word)
@@ -186,12 +189,17 @@ class CmdUI:
     def user_input_ui(self):
         """响应用户的输入操作"""
         while True:
-            if self.args.simple:
+            if self.args.search:
+                search_word = self.args.search
+                self.args.search = None
+                self.user_search(search_word)
+                if self.args.once:
+                    break
+                if self.args.simple:
+                    continue
+            elif self.args.simple:
                 self.user_find()
                 continue
-            elif self.args.search:
-                self.args.search = None
-                self.user_search(self.args.search)
             elif self.args.find:
                 self.args.find = False
                 self.user_find()
