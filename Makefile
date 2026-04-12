@@ -46,9 +46,11 @@ debug:
 build-app: clean-build
 	@echo "构建GUI应用程序..."
 	poetry add pyinstaller --group dev
+	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
 	poetry run pyinstaller --onefile --windowed --name "zhmm" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
+		--collect-all certifi \
 		zhmm/main.py \
 		--paths zhmm/
 	@echo "GUI应用程序构建完成！"
@@ -57,9 +59,11 @@ build-app: clean-build
 build-cmd: clean-build
 	@echo "构建命令行应用程序..."
 	poetry add pyinstaller --group dev
+	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
 	poetry run pyinstaller --onefile --name "zhmm_cmd" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
+		--collect-all certifi \
 		zhmm/cmd_main.py \
 		--paths zhmm/
 	@echo "命令行应用程序构建完成！"
@@ -68,16 +72,19 @@ build-cmd: clean-build
 build-all: clean-build
 	@echo "构建所有应用程序..."
 	poetry add pyinstaller --group dev
+	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
 	@echo "构建GUI应用程序..."
 	poetry run pyinstaller --onefile --windowed --name "zhmm" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
+		--collect-all certifi \
 		zhmm/main.py \
 		--paths zhmm/
 	@echo "构建命令行应用程序..."
 	poetry run pyinstaller --onefile --name "zhmm_cmd" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
+		--collect-all certifi \
 		zhmm/cmd_main.py \
 		--paths zhmm/
 	@echo "所有应用程序构建完成！"
