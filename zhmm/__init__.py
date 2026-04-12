@@ -1,6 +1,6 @@
 """zhmm - 账号密码管理工具"""
 
-__version__ = "0.1.0"
+__version__ = "0.1.3"
 
 # 延迟导入，避免导入时副作用
 from zhmm.app_setting import AppSetting

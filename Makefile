@@ -42,8 +42,13 @@ debug:
 	@echo "使用调试模式启动应用程序..."
 	poetry run python -m pdb -m zhmm.main
 
+# 更新版本号
+update-version:
+	@echo "更新版本号..."
+	poetry run python scripts/update_version.py
+
 # 构建GUI应用程序
-build-app: clean-build
+build-app: clean-build update-version
 	@echo "构建GUI应用程序..."
 	poetry add pyinstaller --group dev
 	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
@@ -56,7 +61,7 @@ build-app: clean-build
 	@echo "GUI应用程序构建完成！"
 
 # 构建命令行应用程序
-build-cmd: clean-build
+build-cmd: clean-build update-version
 	@echo "构建命令行应用程序..."
 	poetry add pyinstaller --group dev
 	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
@@ -69,7 +74,7 @@ build-cmd: clean-build
 	@echo "命令行应用程序构建完成！"
 
 # 构建所有应用程序
-build-all: clean-build
+build-all: clean-build update-version
 	@echo "构建所有应用程序..."
 	poetry add pyinstaller --group dev
 	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
