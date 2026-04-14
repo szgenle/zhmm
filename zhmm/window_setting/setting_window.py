@@ -122,12 +122,6 @@ class SettingWindow(QWidget):
         # 云同步设置
         self.cloud_sync_handlers.setup_cloud_sync_ui(layout)
 
-        # 版本号显示
-        from zhmm import __version__
-        version_label = QLabel(f"版本号: {__version__}")
-        version_label.setStyleSheet("color: gray; font-size: 12px;")
-        layout.addWidget(version_label)
-
         layout.addStretch()
 
     def export_passwords(self):

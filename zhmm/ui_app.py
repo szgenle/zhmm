@@ -6,6 +6,7 @@ import sys
 from datetime import datetime, timedelta
 
 from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 import zhmm
@@ -25,6 +26,9 @@ class AppWindow(BaseWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("账号管理器")
+
+        # 创建菜单栏
+        self.create_menu_bar()
 
         # 记录最后活动时间
         self.last_active_time = datetime.now()
@@ -126,6 +130,31 @@ class AppWindow(BaseWindow):
     #
     #         # 更新最后活动时间
     #         self.last_active_time = current_time
+
+    def create_menu_bar(self):
+        """创建菜单栏"""
+        menubar = self.menuBar()
+
+        # 帮助菜单
+        help_menu = menubar.addMenu("帮助")
+
+        # 关于动作
+        about_action = QAction("关于", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
+
+    def show_about_dialog(self):
+        """显示关于对话框"""
+        from zhmm import __version__
+
+        about_text = f"""
+        <h2>账号管理器</h2>
+        <p>版本: {__version__}</p>
+        <p>一个用于管理网站、App 账号密码及相关信息的工具。</p>
+        <p>支持数据加密存储、自动备份、云同步等功能。</p>
+        """
+
+        QMessageBox.about(self, "关于", about_text)
 
 
 def main():

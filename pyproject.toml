@@ -1,6 +1,6 @@
 [project]
 name = "zhmm"
-version = "0.1.3"
+version = "0.1.4"
 description = "网站App的账号码及其它相关信息的管理"
 authors = [
     {name = "Lioesquieu",email = "2056387427@qq.com"}
