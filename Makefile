@@ -1,4 +1,9 @@
-.PHONY: help install run run-gui run-cmd debug build-app build-cmd build-all clean clean-build clean-dist env-info format lint pre-commit
+.PHONY: help install run run-gui run-cmd debug build-app build-cmd build-all clean clean-build clean-dist env-info format lint test pre-commit
+
+# 可选的 pip 镜像源。默认为空（使用官方 PyPI）。
+# 指定方式: make build-app PIP_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple/
+PIP_INDEX ?=
+PIP_INDEX_ARG = $(if $(PIP_INDEX),-i $(PIP_INDEX),)
 
 # 默认目标：显示帮助信息
 help:
@@ -17,7 +22,11 @@ help:
 	@echo "  make env-info      - 显示Poetry虚拟环境信息"
 	@echo "  make format        - 格式化代码（使用isort）"
 	@echo "  make lint          - 代码检查（使用flake8）"
+	@echo "  make test          - 运行 pytest 单元测试"
 	@echo "  make pre-commit    - 运行pre-commit检查"
+	@echo ""
+	@echo "可选变量："
+	@echo "  PIP_INDEX=<url>    - pip 镜像源（默认使用官方 PyPI）"
 
 # 安装依赖
 install:
@@ -51,7 +60,7 @@ update-version:
 build-app: clean-build update-version
 	@echo "构建GUI应用程序..."
 	poetry add pyinstaller --group dev
-	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
+	poetry run pip install certifi $(PIP_INDEX_ARG)
 	poetry run pyinstaller --onefile --windowed --name "zhmm" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
@@ -64,7 +73,7 @@ build-app: clean-build update-version
 build-cmd: clean-build update-version
 	@echo "构建命令行应用程序..."
 	poetry add pyinstaller --group dev
-	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
+	poetry run pip install certifi $(PIP_INDEX_ARG)
 	poetry run pyinstaller --onefile --name "zhmm_cmd" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
@@ -77,7 +86,7 @@ build-cmd: clean-build update-version
 build-all: clean-build update-version
 	@echo "构建所有应用程序..."
 	poetry add pyinstaller --group dev
-	poetry run pip install certifi -i https://pypi.tuna.tsinghua.edu.cn/simple/
+	poetry run pip install certifi $(PIP_INDEX_ARG)
 	@echo "构建GUI应用程序..."
 	poetry run pyinstaller --onefile --windowed --name "zhmm" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
@@ -128,8 +137,14 @@ format:
 # 代码检查
 lint:
 	@echo "运行代码检查..."
-	poetry run flake8 zhmm/
+	poetry run flake8 zhmm/ --max-line-length=120 --extend-ignore=E203,W503
 	@echo "代码检查完成！"
+
+# 运行测试
+test:
+	@echo "运行单元测试..."
+	poetry run pytest
+	@echo "测试完成！"
 
 # 运行pre-commit检查
 pre-commit:
