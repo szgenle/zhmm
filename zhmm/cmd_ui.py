@@ -6,10 +6,9 @@ import sys
 import time
 
 from zhmm import sm_util
-
-from zhmm.data_exporter import DataExporter
 from zhmm.data.sm_data_manager import SmData
 from zhmm.data.sm_data_types import ZhmmDict
+from zhmm.data_exporter import DataExporter
 from zhmm.utils import data_conversion, date_util, file_util
 from zhmm.utils.table_printer import TablePrinter
 

@@ -3,8 +3,8 @@
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 
-from zhmm import ui_app
 import zhmm
+from zhmm import ui_app
 from zhmm.utils.log import setup_logging
 
 

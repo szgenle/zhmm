@@ -9,6 +9,7 @@ import sys
 from zhmm.cmd_ui import CmdUI
 from zhmm.utils.log import logger, setup_logging
 
+
 def main():
     # 初始化日志系统
     setup_logging()

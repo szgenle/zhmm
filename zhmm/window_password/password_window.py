@@ -3,11 +3,21 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 
-from PyQt6.QtCore import (QSortFilterProxyModel, Qt,
-                          QTimer, pyqtSignal)
-from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QHBoxLayout,
-                             QHeaderView, QLabel, QLineEdit, QMessageBox,
-                             QPushButton, QTableView, QVBoxLayout, QWidget)
+from PyQt6.QtCore import QSortFilterProxyModel, Qt, QTimer, pyqtSignal
+from PyQt6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
+)
 
 import zhmm
 from zhmm.data.sm_data_manager import SmData
@@ -16,9 +26,8 @@ from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.utils import date_util
 from zhmm.utils.log import logger
 from zhmm.window_password.add_password_dialog import AddPasswordDialog
-from zhmm.window_password.password_table_models import PasswordTableModel, CustomProxyModel
 from zhmm.window_password.password_operations import PasswordOperations
-
+from zhmm.window_password.password_table_models import CustomProxyModel, PasswordTableModel
 
 
 class PasswordWindow(QWidget):

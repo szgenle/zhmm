@@ -7,7 +7,7 @@
 import json
 
 from zhmm.data.sm_crypto import SmCrypto
-from zhmm.data.sm_data_types import ZhmmDict, ZhmmDataDict, SmDataConstants
+from zhmm.data.sm_data_types import SmDataConstants, ZhmmDataDict, ZhmmDict
 from zhmm.utils import date_util, dict_util
 
 

@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 # coding=utf-8
 """云同步功能处理器"""
-from PyQt6.QtWidgets import (QButtonGroup, QGroupBox, QHBoxLayout, QMessageBox,
-                             QPushButton, QRadioButton, QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (
+    QButtonGroup,
+    QGroupBox,
+    QHBoxLayout,
+    QMessageBox,
+    QPushButton,
+    QRadioButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 import zhmm
 from zhmm.ui_defined import ZhmmFileInfo
-from zhmm.window_setting.credentials_input_dialog_cos import CredentialsDialogCos
 from zhmm.utils import file_util
+from zhmm.window_setting.credentials_input_dialog_cos import CredentialsDialogCos
 
 
 class CloudSyncHandlers:

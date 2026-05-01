@@ -1,11 +1,21 @@
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (QComboBox, QDialog, QFormLayout, QHBoxLayout,
-                             QInputDialog, QLabel, QLineEdit, QPushButton,
-                             QTextEdit, QVBoxLayout)
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+)
 
 from zhmm.utils import date_util
 from zhmm.window_password.random_password_dialog import RandomPasswordDialog
+
 
 class AddPasswordDialog(QDialog):
     """添加密码对话框"""

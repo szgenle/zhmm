@@ -2,8 +2,17 @@
 # coding=utf-8
 """备份设置管理模块"""
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import (QCheckBox, QGroupBox, QHBoxLayout, QLabel,
-                             QPushButton, QSpinBox, QVBoxLayout, QWidget, QMessageBox)
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 
 import zhmm
 from zhmm.ui_defined import ZhmmFileInfo
@@ -76,9 +85,10 @@ class BackupSettings(QWidget):
 
     def manual_backup(self):
         """手动备份"""
+        from pathlib import Path
+
         from zhmm.backup_manager import BackupManager
         from zhmm.utils import file_util
-        from pathlib import Path
 
         file_path = self.info.get("file_path")
         if not file_path:

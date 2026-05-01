@@ -15,7 +15,8 @@ class AppSetting(QSettings):
 
     # 新增：获取或生成加密盐（URL安全Base64存储）
     def _get_or_create_encryption_salt(self) -> bytes:
-        import os, base64
+        import base64
+        import os
         salt_str = self.value("encryption_salt", "", type=str)
         if not salt_str:
             raw = os.urandom(16)
@@ -26,7 +27,8 @@ class AppSetting(QSettings):
 
     # 新版密钥派生：PBKDF2-HMAC-SHA256 + 盐，返回Fernet要求的URL安全Base64字符串
     def generate_key_from_string(self, input_str: str):
-        import base64, hashlib
+        import base64
+        import hashlib
         input_bytes = input_str.encode()
         salt = self._get_or_create_encryption_salt()
         derived = hashlib.pbkdf2_hmac("sha256", input_bytes, salt, 200_000, dklen=32)

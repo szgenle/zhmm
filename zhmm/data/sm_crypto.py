@@ -3,8 +3,8 @@
 """加密解密模块"""
 
 from zhmm import sm_util
-from zhmm.utils import data_conversion
 from zhmm.data.sm_data_types import SmDataConstants
+from zhmm.utils import data_conversion
 
 
 class SmCrypto:

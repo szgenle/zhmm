@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # coding=utf-8
-from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLabel,
-                             QLineEdit, QMessageBox, QVBoxLayout)
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QFormLayout, QLabel, QLineEdit, QMessageBox, QVBoxLayout
 
 
 class ChangeOpenIdDialog(QDialog):

@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 # coding=utf-8
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import (QButtonGroup, QGroupBox,
-                             QLabel, QPushButton, QRadioButton, QSpinBox,
-                             QVBoxLayout, QWidget, QMessageBox)
+from PyQt6.QtWidgets import (
+    QButtonGroup,
+    QGroupBox,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QRadioButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 
 import zhmm
 from zhmm.ui_defined import ZhmmFileInfo
-from zhmm.window_setting.change_openid_dialog import ChangeOpenIdDialog
-from zhmm.window_setting.import_export_handlers import ImportExportHandlers
-from zhmm.window_setting.backup_settings import BackupSettings
-from zhmm.window_setting.cloud_sync_handlers import CloudSyncHandlers
 from zhmm.utils import file_util
+from zhmm.window_setting.backup_settings import BackupSettings
+from zhmm.window_setting.change_openid_dialog import ChangeOpenIdDialog
+from zhmm.window_setting.cloud_sync_handlers import CloudSyncHandlers
+from zhmm.window_setting.import_export_handlers import ImportExportHandlers
 
 
 class SettingWindow(QWidget):
@@ -179,6 +187,7 @@ class SettingWindow(QWidget):
     def on_theme_changed(self, button):
         """主题切换事件处理"""
         from PyQt6.QtWidgets import QApplication
+
         from zhmm.theme_manager import ThemeManager
 
         # 确定选择的主题

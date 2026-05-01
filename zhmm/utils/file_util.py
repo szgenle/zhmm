@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import platform
 import subprocess
@@ -7,7 +8,7 @@ from importlib.resources import files
 from pathlib import Path
 
 from PyQt6.QtCore import QStandardPaths
-import logging
+
 logger = logging.getLogger(__name__)
 
 

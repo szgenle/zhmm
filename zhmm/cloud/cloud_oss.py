@@ -4,6 +4,7 @@ from pathlib import Path
 from zhmm.cloud.cloud_base import CloudBase
 from zhmm.utils import file_util
 
+
 class CloudOss(CloudBase):
     bucket: str | None = None
 
