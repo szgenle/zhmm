@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔐 安全漏洞 / Security vulnerability
+    url: https://github.com/Lioesquieu/zhmm/security/advisories/new
+    about: 请私下披露，不要创建公开 Issue / Please report privately, do NOT open a public issue.
+  - name: 💬 讨论 / Discussions
+    url: https://github.com/Lioesquieu/zhmm/discussions
+    about: 使用方式、设计讨论、求助问题等 / Questions, design discussions, and general help.
