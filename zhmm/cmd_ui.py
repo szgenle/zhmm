@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-# coding=utf-8
-import json
+"""命令行交互 UI。"""
+
+from __future__ import annotations
+
 import os.path
 import sys
 import time
 
-from zhmm import sm_util
+from zhmm.core.export_service import ExportService
+from zhmm.core.models import PasswordEntry
 from zhmm.data.sm_data_manager import SmData
 from zhmm.data.sm_data_types import ZhmmDict
-from zhmm.data_exporter import DataExporter
-from zhmm.utils import data_conversion, date_util, file_util
+from zhmm.utils import date_util
 from zhmm.utils.table_printer import TablePrinter
 
 
@@ -19,12 +21,13 @@ class CmdUI:
 
     def __init__(self, args):
         self.args = args
-        pass
 
+    # ------------------------------------------------------------------
+    # 查询
+    # ------------------------------------------------------------------
     def user_find(self):
         print("您好，请输入您想查找的信息(可用空格间隔多个关键字，按ESC退出)")
         info = input("请输入:").strip()
-        # 检查ESC键退出
         if info == "\x1b":
             print("\n再见\n")
             sys.exit(0)
@@ -35,18 +38,22 @@ class CmdUI:
             print("搜索关键字不能为空")
             return
         infos: list[ZhmmDict] | None = self.sm_data.search(search_word)
-        if infos and len(infos) > 0:
+        if infos:
             print("您好，查找到[%s]的相关信息：" % search_word)
-            # 将 ZhmmDict 转换为标准字典类型
             TablePrinter.print_info(
-                [dict(info) for info in infos], SmData.keys, SmData.heads  # 添加类型转换
+                [dict(info) for info in infos], SmData.keys, SmData.heads
             )
         else:
             print("您好，没有查找到[%s]的相关信息：" % search_word)
 
+    # ------------------------------------------------------------------
+    # 新增
+    # ------------------------------------------------------------------
     def user_new(self):
-        """处理新增账号流程"""
-        print("您好，请输入您要添加的账号密码(输入用空格间隔的一组会自动分成['账号', '密码', '网站', '备注'])")
+        print(
+            "您好，请输入您要添加的账号密码"
+            "(输入用空格间隔的一组会自动分成['账号', '密码', '网站', '备注'])"
+        )
         en_names = ["userID", "pwd", "url", "desc"]
         cn_names = [SmData.field_mapping[field] for field in en_names]
 
@@ -54,13 +61,10 @@ class CmdUI:
         self.confirm_and_save(en_infos, cn_infos)
 
     def collect_account_info(self, en_names, cn_names):
-        """收集用户输入的账号信息"""
-        en_infos = {}
-        cn_infos = {}
-
+        en_infos: dict = {}
+        cn_infos: dict = {}
         for i in range(4):
             info = input(f"请输入{cn_names[i]}:").strip()
-            # 检查ESC键退出
             if info == "\x1b":
                 print("\n取消操作\n")
                 return {}, {}
@@ -76,15 +80,13 @@ class CmdUI:
     def process_multi_value_input(
         self, start_idx, input_str, en_names, cn_names, en_infos, cn_infos
     ):
-        """处理包含空格的组合输入"""
         infos = input_str.split()
         for j in range(min(4 - start_idx, len(infos))):
-            current_idx = start_idx + j
-            en_infos[en_names[current_idx]] = infos[j]
-            cn_infos[cn_names[current_idx]] = infos[j]
+            idx = start_idx + j
+            en_infos[en_names[idx]] = infos[j]
+            cn_infos[cn_names[idx]] = infos[j]
 
     def build_zhmm_dict(self, en_infos) -> ZhmmDict:
-        """构建要存储的字典对象"""
         return {
             "id": date_util.timestamp_int(),
             "role": "个人",
@@ -98,13 +100,10 @@ class CmdUI:
         }
 
     def confirm_and_save(self, en_infos, cn_infos):
-        """确认并保存账号信息"""
-        # 如果信息为空则取消操作
         if not en_infos or not cn_infos:
             return
         print("新增账号信息：", cn_infos)
         confirm = input("确认增加[y/n]？: ").strip().upper()
-        # 检查ESC键退出
         if confirm == "\x1b":
             print("\n取消操作\n")
             return
@@ -113,18 +112,17 @@ class CmdUI:
             self.sm_data.add(dict_info)
             self.save()
 
+    # ------------------------------------------------------------------
+    # 主流程
+    # ------------------------------------------------------------------
     def save(self):
-        """保存数据到文件"""
         file_path = self.args.out if self.args.out else self.args.input
         if self.sm_data.save(file_path):
-            print("添加成功!")
+            print("操作成功!")
 
     def user_option(self):
         time.sleep(0.3)
-
         op = input("新增[n/N]查找[f/F]导出[e/E]删除[d/D]退出[q/Q/ESC]:").strip().lower()
-
-        # 检查ESC键 (ASCII码27，或转义序列)
         if op == "\x1b" or op is None or op == "q":
             return -1
         if op == "n":
@@ -137,44 +135,13 @@ class CmdUI:
             self.args.delete = True
         return 0
 
-    def get_decrypt_data(self, file_path, open_id, password) -> str | None:
-        """获取并解密数据
-
-        Args:
-            file_path: 文件路径
-            open_id: 用户ID
-            password: 密码
-
-        Returns:
-            解密后的字符串，失败返回None
-        """
-        pwd_suffix = password + "woie*#jk20kH2^D@U28)"
-        pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix), "9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1")
-        self.sm_data.init(open_id, pwd)
-
-        data = file_util.get_file_content(file_path)
-        if not data:
-            print("账号文件打开失败")
-            return None
-
-        decrypt_result = self.sm_data.decrypt(data)
-
-        if not decrypt_result:
-            print("密码不对")
-            return None
-        return decrypt_result
-
-    def run(self, file_path, open_id, password):
-        decrypt_result = self.get_decrypt_data(file_path, open_id, password)
-        if not decrypt_result:
+    def run(self, file_path: str, open_id: str, password: str) -> None:
+        """加载文件并进入交互循环。"""
+        self.sm_data.init(open_id, password)
+        if not self.sm_data.load(file_path):
+            print("账号文件打开失败或密码不对")
             return
-
-        # decrypt_result 已经是解密后的字符串，直接使用
-        assert isinstance(decrypt_result, str)  # 类型断言帮助类型检查器
-        user_mm_data = json.loads(decrypt_result)
-        self.sm_data.set_mm(user_mm_data)
         self.fix_id_is_None()
-
         try:
             self.user_input_ui()
         except KeyboardInterrupt:
@@ -183,7 +150,6 @@ class CmdUI:
             print("\n再见\n")
 
     def user_input_ui(self):
-        """响应用户的输入操作"""
         while True:
             if self.args.search:
                 search_word = self.args.search
@@ -215,24 +181,27 @@ class CmdUI:
 
     def user_export(self):
         file_path = input("请输入导出的路径:").strip()
-        # 检查ESC键退出
         if file_path == "\x1b":
             print("\n取消操作\n")
             return
         if file_path and os.path.exists(file_path):
             file_path = os.path.join(file_path, "zhmm.xlsx")
-            DataExporter.export_xlsx(file_path, self.sm_data.mm["data"])
+            entries = [
+                PasswordEntry.from_dict(item) for item in self.sm_data.mm["data"]
+            ]
+            try:
+                ExportService.export_xlsx(file_path, entries)
+                print(f"已导出到 {file_path}")
+            except Exception as e:
+                print(f"导出失败: {e}")
 
     def user_delete(self):
         try:
             ids = input("请输入要删除的ID(多个ID用空格隔开):").strip()
-            # 检查ESC键退出
             if ids == "\x1b":
                 print("\n取消操作\n")
                 return
-            # 分割多个ID并转换为整数
             id_list = [int(id_str) for id_str in ids.split()]
-            # 逐个删除
             deled = False
             for zh_id in id_list:
                 if isinstance(zh_id, int) and zh_id > 0:
@@ -241,22 +210,17 @@ class CmdUI:
                 else:
                     print(f"忽略无效ID: {zh_id}")
             if deled:
-                self.save()  # 所有删除完成后保存一次
+                self.save()
         except ValueError:
             print("错误：请输入有效的数字ID（多个ID用空格分隔）")
 
     def fix_id_is_None(self):
-        """
-        修复数据中的id字段为None的情况
-        """
         if not self.sm_data.fix_id_is_None():
             self.fixed_id_is_None = True
-            # 使用threading.Timer替代PyQt的QTimer
             import threading
 
             timer = threading.Timer(1.0, self.fix_id_is_None)
-            timer.daemon = True  # 设置为守护线程防止程序无法退出
+            timer.daemon = True
             timer.start()
-        else:
-            if self.fixed_id_is_None:
-                self.save()
+        elif self.fixed_id_is_None:
+            self.save()

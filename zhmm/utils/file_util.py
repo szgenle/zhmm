@@ -19,7 +19,7 @@ def is_macos():
 def get_files_content(file_paths):
     content = ""
     for file_path in file_paths:
-        with open(file_path, "r", encoding="utf-8") as file:
+        with open(file_path, encoding="utf-8") as file:
             content += "\n" + file.read()
     return content
 
@@ -27,7 +27,7 @@ def get_files_content(file_paths):
 def get_file_content(file_path, default=None):
     if not os.path.exists(file_path):
         return default
-    with open(file_path, "r") as file:
+    with open(file_path) as file:
         return file.read()
 
 
@@ -58,7 +58,7 @@ def load_json(filepath: str, default=None):
         return default
     json_data = default
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             json_data = json.load(f)
     finally:
         return json_data

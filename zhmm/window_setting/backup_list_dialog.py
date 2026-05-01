@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 """
 备份列表管理对话框
 显示所有备份文件，支持恢复和删除操作
@@ -19,8 +18,10 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
-from zhmm.backup_manager import BackupManager
+from zhmm.core.backup_service import BackupService
+from zhmm.core.errors import StorageError
 from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.utils import file_util
 
 
 class BackupListDialog(QDialog):
@@ -29,7 +30,7 @@ class BackupListDialog(QDialog):
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
         self.info = info
-        self.backup_manager = BackupManager()
+        self.backup_manager = BackupService(file_util.get_full_path(".backups"))
         self.setWindowTitle("备份管理")
         self.setMinimumSize(700, 500)
         self.setup_ui()
@@ -89,8 +90,8 @@ class BackupListDialog(QDialog):
         self.backup_list.clear()
 
         # 获取所有备份（自动备份和手动备份）
-        auto_backups = self.backup_manager.get_backup_list("backup")
-        manual_backups = self.backup_manager.get_backup_list("manual")
+        auto_backups = self.backup_manager.list("backup")
+        manual_backups = self.backup_manager.list("manual")
         all_backups = auto_backups + manual_backups
 
         # 按时间排序
@@ -104,9 +105,9 @@ class BackupListDialog(QDialog):
             self.backup_list.addItem(item)
 
         # 更新统计信息
-        total_size = self.backup_manager.get_backup_size()
+        total_size = self.backup_manager.total_size()
         self.stats_label.setText(
-            f"共 {len(all_backups)} 个备份，总大小：{self.backup_manager.format_size(total_size)}"
+            f"共 {len(all_backups)} 个备份，总大小：{BackupService.format_size(total_size)}"
         )
 
     def format_backup_info(self, backup_path: Path) -> str:
@@ -122,7 +123,7 @@ class BackupListDialog(QDialog):
         try:
             # 获取文件信息
             stat = backup_path.stat()
-            size = self.backup_manager.format_size(stat.st_size)
+            size = BackupService.format_size(stat.st_size)
             mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
 
             # 判断备份类型
@@ -165,19 +166,25 @@ class BackupListDialog(QDialog):
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            if self.backup_manager.restore_backup(backup_path, target_path, restore_config=True):
-                QMessageBox.information(
-                    self,
-                    "恢复成功",
-                    "备份已成功恢复！\n\n请重新打开文件以加载恢复的数据。"
+            target = Path(target_path)
+            config_target = str(file_util.get_full_path(target.stem))
+            try:
+                self.backup_manager.restore(
+                    backup_path, target_path, config_target=config_target
                 )
-                self.accept()  # 关闭对话框
-            else:
+            except StorageError as e:
                 QMessageBox.critical(
                     self,
                     "恢复失败",
-                    "备份恢复失败，请查看日志了解详情。"
+                    f"备份恢复失败：{e}",
                 )
+                return
+            QMessageBox.information(
+                self,
+                "恢复成功",
+                "备份已成功恢复！\n\n请重新打开文件以加载恢复的数据。"
+            )
+            self.accept()  # 关闭对话框
 
     def delete_backup(self):
         """删除选中的备份"""

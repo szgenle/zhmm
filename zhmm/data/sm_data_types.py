@@ -1,30 +1,29 @@
 #!/usr/bin/env python3
-# coding=utf-8
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 """数据类型定义模块"""
 
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 
 class ZhmmDict(TypedDict):
     """单条密码数据的类型定义"""
-    id: Optional[int]
-    role: Optional[str]
+    id: int | None
+    role: str | None
     userID: str
     pwd: str
-    phone: Optional[str]
-    email: Optional[str]
+    phone: str | None
+    email: str | None
     url: str
     desc: str
-    utime: Optional[int]
+    utime: int | None
 
 
 class ZhmmDataDict(TypedDict):
     """密码数据集合的类型定义"""
     data: list[ZhmmDict]
-    roles: Optional[list[str]]
-    utime: Optional[int]
+    roles: list[str] | None
+    utime: int | None
 
 
 class SmDataConstants:

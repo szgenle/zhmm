@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 """主题管理器 - 管理应用的主题样式"""
 
 import platform

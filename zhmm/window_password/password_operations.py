@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-# coding=utf-8
 """密码数据操作逻辑"""
 
-from PyQt6.QtWidgets import QMessageBox
 
 from zhmm.data.sm_data_manager import SmData
 from zhmm.data.sm_data_types import ZhmmDict
-from zhmm.utils import date_util
 from zhmm.utils.log import logger
 
 
@@ -116,15 +113,9 @@ class PasswordOperations:
         return True
 
     def save(self) -> bool:
-        """
-        保存数据（包括云端上传）
+        """保存数据到本地文件。
 
         Returns:
             成功标志
         """
-        import zhmm
-
-        ret: bool = self.gl_data.save()
-        # 存储云数据是可选的
-        zhmm.config.upload_cloud(self.gl_data.file_path)
-        return ret
+        return self.gl_data.save()

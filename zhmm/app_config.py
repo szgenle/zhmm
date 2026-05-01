@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import hashlib
 import json
 
-from cryptography.fernet import Fernet  # 新增加密库导入
+from cryptography.fernet import Fernet
 
 from zhmm.app_setting import AppSetting
-from zhmm.cloud.cloud_cos import CloudBase
-from zhmm.utils import date_util, file_util
+from zhmm.utils import file_util
 
 
 class AppConfig:
@@ -16,11 +14,9 @@ class AppConfig:
     my_encryption_key: str
     _password_input: str | None
 
-    cloud: CloudBase | None
     setting: AppSetting
 
     def __init__(self, setting: AppSetting):
-        self.cloud = None
         self.setting = setting
         self._password_input = None
 
@@ -104,7 +100,6 @@ class AppConfig:
                     decrypted_data = legacy_cipher.decrypt(encrypted_data).decode()
                     print("配置解密方式: 旧算法(md5(密码)→SHA256)成功，已迁移到新算法")
                     self.config = json.loads(decrypted_data)
-                    self.init_cloud()
                     # 用新算法重写保存
                     self.save_config()
                     return True
@@ -116,7 +111,6 @@ class AppConfig:
                         decrypted_data = legacy_cipher2.decrypt(encrypted_data).decode()
                         print("配置解密方式: 旧算法(原始密码→SHA256)成功，已迁移到新算法")
                         self.config = json.loads(decrypted_data)
-                        self.init_cloud()
                         # 用新算法重写保存
                         self.save_config()
                         return True
@@ -126,7 +120,6 @@ class AppConfig:
                             decrypted_text = encrypted_data.decode("utf-8")
                             self.config = json.loads(decrypted_text)
                             print("配置解析方式: 纯文本JSON成功，已迁移到新算法")
-                            self.init_cloud()
                             # 用新算法重写保存
                             self.save_config()
                             return True
@@ -134,7 +127,6 @@ class AppConfig:
                             # 放宽兜底：使用空配置继续，避免阻塞
                             print("配置解密失败，采用空配置并重写为新算法")
                             self.config = {}
-                            self.init_cloud()
                             self.save_config()
                             return True
 
@@ -143,23 +135,7 @@ class AppConfig:
 
         # 解析解密后的JSON
         self.config = json.loads(decrypted_data)
-        self.init_cloud()
         return True
-
-    def init_cloud(self):
-        platform = self.get("cloud_platform", "")
-        if platform == "cos":
-            from zhmm.cloud.cloud_cos import CloudCos
-
-            cloud = CloudCos()
-            if cloud.init(self.config):
-                self.cloud = cloud
-        elif platform == "oss":
-            from zhmm.cloud.cloud_oss import CloudOss
-
-            cloud = CloudOss()
-            if cloud.init(self.config):
-                self.cloud = cloud
 
     def save_config(self):
         cfg_Path = file_util.get_full_path(self.cfg_file_name)
@@ -175,41 +151,3 @@ class AppConfig:
         else:
             encrypted_data = json.dumps(self.config)
             file_util.set_file_content(str(cfg_Path), encrypted_data)
-
-    def reset_sync_cloud(self, cloud_type: str):
-        print("重置同步云盘", cloud_type)
-        self.set("cloud_platform", cloud_type)
-        self.save_config()
-        self.init_cloud()
-
-    def sync_cloud_file(self, file_path):
-        if not self.cloud:
-            return False
-        cloud_ver = self.cloud.get_file_content(f'zhmm/{self.cfg_file_name}.ver')
-        local_ver = self.get('zhmm_ver')
-        if local_ver and file_util.get_file_content(file_path) is None:
-            local_ver = None
-            self.set('zhmm_ver', local_ver)
-        if cloud_ver:
-            if not local_ver or (cloud_ver > local_ver):
-                data = self.cloud.get_file_content(f'zhmm/{self.cfg_file_name}.gl')
-                if data:
-                    file_util.set_file_content(file_path, data)
-                    self.set('zhmm_ver', cloud_ver)
-                    return True
-        return False
-
-    def upload_cloud(self, file_path):
-        if not self.cloud:
-            return False
-        data = file_util.get_file_content(file_path)
-        if not data:
-            return False
-        if self.cloud.set_file_content(f'zhmm/{self.cfg_file_name}.gl', data) is None:
-            return False
-        cloud_ver = date_util.time_now()
-        if self.cloud.set_file_content(f'zhmm/{self.cfg_file_name}.ver', cloud_ver):
-            self.set('zhmm_ver', cloud_ver)
-            self.save_config()
-            return True
-        pass

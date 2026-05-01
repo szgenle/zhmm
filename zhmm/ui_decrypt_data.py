@@ -1,71 +1,48 @@
-import json
-from typing import Optional
+"""UI 层文件解密适配器。
 
-from zhmm import sm_util
-from zhmm.data import sm_data_manager as sm_data
-from zhmm.utils import data_conversion, file_util
+对外提供 `decrypt_file(path, openid, password)`：
+- 文件不存在或为空：当作新建库，返回含一条示例记录的 SmData。
+- 文件非空：调用 SmData.load 解密并填充数据。
+
+`openid` 仅用于签名兼容与示例记录的用户名，不再参与密钥派生（新加密格式
+使用随机盐 + PBKDF2 派生密钥）。
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from zhmm.data.sm_data_manager import SmData
 from zhmm.utils.log import logger
 
 
 class UIDecryptData:
-    def __init__(self) -> None:
-        pass
+    """UI 侧解密工具类。"""
 
-    def decrypt_file(self, file_path: str, openid: str, password: str) -> Optional[sm_data.SmData]:
-        """解密文件
-
-        Args:
-            file_path: 文件路径
-            openid: 用户ID
-            password: 密码
-
-        Returns:
-            解密成功返回SmData对象，失败返回None
-        """
-        content = file_util.get_file_content(file_path)
-        if content is None:
-            content = ""
-        return self.decrypt(content, openid, password)
-
-    def decrypt(self, content: str, openid: str, password: str) -> Optional[sm_data.SmData]:
-        """解密内容
-
-        Args:
-            content: 加密内容
-            openid: 用户ID
-            password: 密码
-
-        Returns:
-            解密成功返回SmData对象，失败返回None
-        """
-        # 验证逻辑，使用现有的gl_data验证方法
+    def decrypt_file(
+        self, file_path: str, openid: str, password: str
+    ) -> SmData | None:
+        """读取并解密文件；文件为空或不存在时返回新建库。"""
         try:
-            # 处理密码，与cmd_ui.py中相同的逻辑
-            pwd_suffix = password + "woie*#jk20kH2^D@U28)"
-            pwd = sm_util.hash_by_sm3(data_conversion.chars_to_bytes(pwd_suffix), "9gx^1-z:ixYWe(@JAJKFu1*k@913^ka1")
+            smdata = SmData()
+            smdata.init(openid, password)
 
-            smdata = sm_data.SmData()
-            smdata.init(openid, pwd)
+            p = Path(file_path)
+            if not p.exists() or p.stat().st_size == 0:
+                smdata.file_path = file_path
+                smdata.add_with_dict(
+                    {
+                        "userID": openid,
+                        "pwd": password,
+                        "url": "szgenle",
+                        "desc": "务必记住当前的账号和密码",
+                    }
+                )
+                return smdata
 
-            if content == "":
-                user_mm_data = {
-                    "userID": openid,
-                    "pwd": password,
-                    "url": "szgenle",
-                    "desc": "务必记住当前的userID和密码",
-                }
-                smdata.add_with_dict(user_mm_data)
-            else:
-                decrypt_result = smdata.decrypt(content)
-
-                if not decrypt_result:
-                    logger.error(f"解密失败")
-                    return None
-
-                user_mm_data = json.loads(decrypt_result)
-                smdata.set_mm(user_mm_data)
+            if not smdata.load(file_path):
+                return None
             return smdata
-
         except Exception as e:
-            logger.error(f"解密失败出错: {str(e)}")
+            logger.error(f"解密失败: {e!s}")
             return None

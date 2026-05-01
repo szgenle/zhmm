@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 
@@ -46,9 +45,7 @@ def count_unicode_chars(s):
     count = 0
 
     for char in s:
-        if char in chinese_punctuation:
-            count += 1
-        elif (
+        if char in chinese_punctuation or (
             "\u4e00" <= char <= "\u9fff"
             or "\u3000" <= char <= "\u303f"
             or "\u3400" <= char <= "\u4dbf"

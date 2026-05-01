@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-# coding=utf-8
 """备份设置管理模块"""
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -87,7 +85,8 @@ class BackupSettings(QWidget):
         """手动备份"""
         from pathlib import Path
 
-        from zhmm.backup_manager import BackupManager
+        from zhmm.core.backup_service import BackupService
+        from zhmm.core.errors import StorageError
         from zhmm.utils import file_util
 
         file_path = self.info.get("file_path")
@@ -99,24 +98,26 @@ class BackupSettings(QWidget):
         data_file_name = Path(file_path).stem
         config_file_path = str(file_util.get_full_path(data_file_name))
 
-        backup_manager = BackupManager()
-        backup_path = backup_manager.create_backup(file_path, "manual", config_file_path)
+        backup_service = BackupService(file_util.get_full_path(".backups"))
+        try:
+            backup_path = backup_service.create(
+                file_path, "manual", config_file_path
+            )
+        except StorageError as e:
+            QMessageBox.critical(self, "备份失败", f"备份操作失败：{e}")
+            return
 
-        if backup_path:
-            # 清理旧备份
-            keep_count = zhmm.config.get_backup_keep_count()
-            deleted = backup_manager.cleanup_old_backups(keep_count, "manual")
+        # 清理旧备份
+        keep_count = zhmm.config.get_backup_keep_count()
+        deleted = backup_service.cleanup(keep_count, "manual")
 
-            msg = f"备份成功！\n\n数据文件：{backup_path}"
-            # 检查是否同时备份了配置文件
-            config_backup = Path(backup_path).parent / Path(backup_path).name.replace(".gl", ".config")
-            if config_backup.exists():
-                msg += f"\n配置文件：{config_backup}"
-            if deleted > 0:
-                msg += f"\n\n已清理 {deleted} 个旧备份"
-            QMessageBox.information(self, "备份成功", msg)
-        else:
-            QMessageBox.critical(self, "备份失败", "备份操作失败，请查看日志")
+        msg = f"备份成功！\n\n数据文件：{backup_path}"
+        config_backup = backup_path.with_suffix(".config")
+        if config_backup.exists():
+            msg += f"\n配置文件：{config_backup}"
+        if deleted > 0:
+            msg += f"\n\n已清理 {deleted} 个旧备份"
+        QMessageBox.information(self, "备份成功", msg)
 
     def view_backups(self):
         """查看和管理备份"""

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-# coding=utf-8
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 
-from typing import List, Union
 
 
-def to_hex_string(data: Union[List[int], bytes, bytearray]) -> str:
+def to_hex_string(data: list[int] | bytes | bytearray) -> str:
     """将整数列表、bytes或bytearray转换为十六进制字符串
 
     Args:
@@ -18,7 +16,7 @@ def to_hex_string(data: Union[List[int], bytes, bytearray]) -> str:
     return "".join([format(b, "02x") for b in data])
 
 
-def chars_to_bytes(chars: Union[str, List[str]]) -> List[int]:
+def chars_to_bytes(chars: str | list[str]) -> list[int]:
     """将字符串或字符列表转换为字节数组（整数列表）
 
     Args:
@@ -30,7 +28,7 @@ def chars_to_bytes(chars: Union[str, List[str]]) -> List[int]:
     return [ord(char) for char in chars]
 
 
-def hex_to_array(hex_str: str) -> List[int]:
+def hex_to_array(hex_str: str) -> list[int]:
     """将十六进制字符串转换为整数列表
 
     Args:

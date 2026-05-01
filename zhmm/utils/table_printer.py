@@ -9,7 +9,7 @@ class TablePrinter:
             cnt = string_util.count_unicode_chars(item)
             return len(str(item)) + cnt if cnt else len(str(item))
 
-        max_widths = [max(str_len(item) for item in col) for col in zip(*data)]
+        max_widths = [max(str_len(item) for item in col) for col in zip(*data, strict=False)]
 
         def item_width(item, width):
             cnt = string_util.count_unicode_chars(item)
@@ -20,14 +20,14 @@ class TablePrinter:
             return width
 
         # 打印表头
-        for item, width in zip(data[0], max_widths):
+        for item, width in zip(data[0], max_widths, strict=False):
             w = item_width(item, width)
             print(f"{item:^{w}}", end="|")
         print()
 
         # 打印表格内容
         for row in data[1:]:
-            for item, width in zip(row, max_widths):
+            for item, width in zip(row, max_widths, strict=False):
                 w = item_width(item, width)
                 print(f"{item:<{w}}", end="|")
             print()

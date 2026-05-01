@@ -1,7 +1,7 @@
-from typing import Any, Dict
+from typing import Any
 
 
-def is_equal(dict1: Dict[Any, Any], dict2: Dict[Any, Any]) -> bool:
+def is_equal(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> bool:
     """
     深度比较两个字典是否完全相同
 

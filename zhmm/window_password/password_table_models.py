@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 """密码表格数据模型"""
 
 from PyQt6.QtCore import QAbstractTableModel, QSortFilterProxyModel, Qt

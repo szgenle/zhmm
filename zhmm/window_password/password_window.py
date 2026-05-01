@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-# coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 
-from PyQt6.QtCore import QSortFilterProxyModel, Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -19,11 +18,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-import zhmm
 from zhmm.data.sm_data_manager import SmData
-from zhmm.ui_data_exporter import UiDataExporter
 from zhmm.ui_defined import ZhmmFileInfo
-from zhmm.utils import date_util
 from zhmm.utils.log import logger
 from zhmm.window_password.add_password_dialog import AddPasswordDialog
 from zhmm.window_password.password_operations import PasswordOperations
@@ -251,8 +247,13 @@ class PasswordWindow(QWidget):
             QMessageBox.warning(dialog, "警告" if "不能为空" in message else "错误", message)
 
     def export_passwords(self):
-        """导出密码列表"""
-        UiDataExporter.export_to_file(self.gl_data.mm["data"])
+        """导出密码列表（待给外部调用）。"""
+        from zhmm.window_setting.import_export_handlers import (
+            ImportExportHandlers,
+        )
+
+        handlers = ImportExportHandlers(self, self.info)
+        handlers.export_passwords()
 
     def refresh_data(self):
         """刷新数据"""

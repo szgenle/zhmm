@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 # @Date: 2024-06-30
 # @LastEditTime: 2024-07-02
 import argparse
@@ -17,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser(description="Process some integers.")
     parser.add_argument("--input", "-i", type=str, help="要加载的加密文件路径")
     parser.add_argument("--out", "-o", type=str, help="输出的文件路径")
-    parser.add_argument("--openId", type=str, help="微信小程序中显示的OpenId")
+    parser.add_argument("--openId", type=str, default="", help="（可选）用户标识，仅作为签名兼容参数")
     parser.add_argument("--pwd", type=str, help="密码，不设置将在随后提醒输入")
     parser.add_argument("--search", "-s", type=str, help="搜索")
     parser.add_argument("--find", "-f", action="store_true", help="查找")
@@ -30,10 +29,6 @@ def main():
 
     user_input_args = parser.parse_args()
     gl_ui = CmdUI(user_input_args)
-
-    if not user_input_args.openId:
-        logger.error("参数错误: openId 不能为空")
-        sys.exit(2)
 
     file_path = "zhmm.gl"
     if user_input_args.input:
@@ -61,7 +56,7 @@ def main():
             else:
                 logger.error("密码不能为空")
                 sys.exit(3)
-    except Exception as e:
+    except Exception:
         logger.exception("命令行任务执行失败: ")
         sys.exit(1)
 

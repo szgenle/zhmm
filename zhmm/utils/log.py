@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-# coding=utf-8
 # @Date: 2025-03-27
 # @LastEditTime: 2025-03-27
 import logging
@@ -103,5 +101,5 @@ if __name__ == "__main__":
     # 异常记录
     try:
         1 / 0  # pyright: ignore[reportUnusedExpression]
-    except Exception as e:
+    except Exception:
         logger.exception("发生异常: ")

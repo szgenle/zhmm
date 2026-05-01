@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-# coding=utf-8
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QGroupBox,
     QLabel,
-    QMessageBox,
     QPushButton,
     QRadioButton,
     QSpinBox,
@@ -17,8 +15,6 @@ import zhmm
 from zhmm.ui_defined import ZhmmFileInfo
 from zhmm.utils import file_util
 from zhmm.window_setting.backup_settings import BackupSettings
-from zhmm.window_setting.change_openid_dialog import ChangeOpenIdDialog
-from zhmm.window_setting.cloud_sync_handlers import CloudSyncHandlers
 from zhmm.window_setting.import_export_handlers import ImportExportHandlers
 
 
@@ -34,7 +30,6 @@ class SettingWindow(QWidget):
 
         # 初始化功能处理器
         self.import_export_handlers = ImportExportHandlers(self, info)
-        self.cloud_sync_handlers = CloudSyncHandlers(self, info)
 
         self.setup_ui()
 
@@ -82,9 +77,7 @@ class SettingWindow(QWidget):
         self.theme_button_group.buttonClicked.connect(self.on_theme_changed)
 
         # 更改OpenID
-        self.change_openid_button = QPushButton("更改OpenID")
-        self.change_openid_button.clicked.connect(self.change_openid)
-        self.change_openid_button.setMaximumWidth(200)
+        # 云同步功能已移除，OpenID 在新版本中仅作为账号标识符，不再提供修改入口
 
         # 导入xlsx文件
         self.import_xlsx_button = QPushButton("导入xlsx文件")
@@ -116,7 +109,6 @@ class SettingWindow(QWidget):
         layout.addWidget(backup_group)
 
         layout.addWidget(theme_group)
-        layout.addWidget(self.change_openid_button)
         layout.addWidget(self.import_xlsx_button)
         layout.addWidget(self.download_xlsx_button)
         layout.addWidget(export_button)
@@ -126,9 +118,6 @@ class SettingWindow(QWidget):
         open_log_button.clicked.connect(self.open_log_dir)
         open_log_button.setMaximumWidth(200)
         layout.addWidget(open_log_button)
-
-        # 云同步设置
-        self.cloud_sync_handlers.setup_cloud_sync_ui(layout)
 
         layout.addStretch()
 
@@ -152,37 +141,6 @@ class SettingWindow(QWidget):
         """打开日志目录"""
         path = file_util.get_full_path(".log").as_posix()
         file_util.open_directory(path)
-
-    def change_openid(self):
-        """更改OpenID"""
-        from datetime import datetime
-
-        current_openid = self.info.get("openid", "")
-        dialog = ChangeOpenIdDialog(current_openid, self)
-
-        if dialog.exec():
-            new_openid = dialog.get_new_openid()
-            if new_openid:
-                # 更新内存中的OpenID
-                self.info["openid"] = new_openid
-
-                # 更新保存的文件信息
-                file_path = self.info.get("file_path")
-                if file_path:
-                    storage_path = file_util.get_full_path(".zhmm_files.json").as_posix()
-                    saved_files = file_util.load_json(storage_path) or {}
-
-                    if file_path in saved_files:
-                        saved_files[file_path]["openid"] = new_openid
-                        saved_files[file_path]["last_access_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        file_util.save_json(storage_path, saved_files)
-
-                QMessageBox.information(
-                    self,
-                    "更改成功",
-                    f"OpenID已成功更改为：{new_openid}\n\n"
-                    "注意：如需在微信小程序中使用，请确保与小程序中显示的OpenID一致。"
-                )
 
     def on_theme_changed(self, button):
         """主题切换事件处理"""

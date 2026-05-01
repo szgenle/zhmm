@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 from datetime import datetime
@@ -165,15 +164,11 @@ class FileListWidget(QWidget):
         self.on_login_success(file_path, info)
 
     def on_login_success(self, file_path: str, info: dict):
-        """
-        获取cloud配置,从cloud获取文件zhmm.ver和zhmm.gl。
-        1. 对比版本号，如果服务端更新日期较新，先备份本地文件，然后直接下载覆盖。
-        """
+        """登录成功后解密并加载文件。"""
         import hashlib
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
         if zhmm.config.init(file_name, info["password"]) is False:
             return
-        zhmm.config.sync_cloud_file(file_path)
 
         decryptor = UIDecryptData()
         sm_data = decryptor.decrypt_file(file_path, info["openid"], info["password"])

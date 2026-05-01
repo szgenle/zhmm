@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-# coding=utf-8
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import QHBoxLayout, QPushButton, QTabWidget, QVBoxLayout, QWidget
 
 import zhmm
-from zhmm.backup_manager import BackupManager
+from zhmm.core.backup_service import BackupService
+from zhmm.core.errors import StorageError
 from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.utils import file_util
 from zhmm.utils.log import logger
 from zhmm.window_password.password_window import PasswordWindow
 from zhmm.window_setting.setting_window import SettingWindow
@@ -28,7 +29,7 @@ class MainWindow(QWidget):
         self.setting_widget.backup_settings_changed.connect(self.start_auto_backup_timer)
 
         # 自动备份定时器
-        self.backup_manager = BackupManager()
+        self.backup_manager = BackupService(file_util.get_full_path(".backups"))
         self.backup_timer = QTimer(self)
         self.backup_timer.timeout.connect(self.auto_backup)
 
@@ -76,16 +77,16 @@ class MainWindow(QWidget):
             logger.warning("自动备份失败：未找到数据文件")
             return
 
-        # 创建备份
-        backup_path = self.backup_manager.create_backup(file_path, "backup")
+        try:
+            backup_path = self.backup_manager.create(file_path, "backup")
+        except StorageError as e:
+            logger.error(f"自动备份失败：{e}")
+            return
 
-        if backup_path:
-            # 清理旧备份
-            keep_count = zhmm.config.get_backup_keep_count()
-            deleted = self.backup_manager.cleanup_old_backups(keep_count, "backup")
+        # 清理旧备份
+        keep_count = zhmm.config.get_backup_keep_count()
+        deleted = self.backup_manager.cleanup(keep_count, "backup")
 
-            logger.info(f"自动备份成功：{backup_path}")
-            if deleted > 0:
-                logger.info(f"已清理 {deleted} 个旧备份")
-        else:
-            logger.error("自动备份失败")
+        logger.info(f"自动备份成功：{backup_path}")
+        if deleted > 0:
+            logger.info(f"已清理 {deleted} 个旧备份")
