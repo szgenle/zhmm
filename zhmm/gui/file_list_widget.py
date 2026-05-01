@@ -19,10 +19,10 @@ from PyQt6.QtWidgets import (
 )
 
 import zhmm
-from zhmm.ui_decrypt_data import UIDecryptData
-from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.gui.decrypt_data_view import UIDecryptData
+from zhmm.config.constants import ZhmmFileInfo
 from zhmm.utils import file_util
-from zhmm.window_login.login_window import LoginWindow
+from zhmm.gui.login.login_window import LoginWindow
 
 
 class FileListWidget(QWidget):

@@ -2,10 +2,10 @@
 
 __version__ = "0.1.4"
 
-from zhmm.app_config import AppConfig
+from zhmm.config.app_config import AppConfig
 
 # 延迟导入，避免导入时副作用
-from zhmm.app_setting import AppSetting
+from zhmm.config.settings import AppSetting
 
 # 模块级变量，由 init_app 初始化
 setting = None

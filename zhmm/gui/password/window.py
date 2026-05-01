@@ -19,11 +19,11 @@ from PyQt6.QtWidgets import (
 )
 
 from zhmm.data.sm_data_manager import SmData
-from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.config.constants import ZhmmFileInfo
 from zhmm.utils.log import logger
-from zhmm.window_password.add_password_dialog import AddPasswordDialog
-from zhmm.window_password.password_operations import PasswordOperations
-from zhmm.window_password.password_table_models import CustomProxyModel, PasswordTableModel
+from zhmm.gui.password.add_dialog import AddPasswordDialog
+from zhmm.gui.password.operations import PasswordOperations
+from zhmm.gui.password.table_models import CustomProxyModel, PasswordTableModel
 
 
 class PasswordWindow(QWidget):
@@ -248,7 +248,7 @@ class PasswordWindow(QWidget):
 
     def export_passwords(self):
         """导出密码列表（待给外部调用）。"""
-        from zhmm.window_setting.import_export_handlers import (
+        from zhmm.gui.settings.import_export_handlers import (
             ImportExportHandlers,
         )
 

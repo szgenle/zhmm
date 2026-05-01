@@ -12,10 +12,10 @@ from PyQt6.QtWidgets import (
 )
 
 import zhmm
-from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.config.constants import ZhmmFileInfo
 from zhmm.utils import file_util
-from zhmm.window_setting.backup_settings import BackupSettings
-from zhmm.window_setting.import_export_handlers import ImportExportHandlers
+from zhmm.gui.settings.backup_settings import BackupSettings
+from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
 
 
 class SettingWindow(QWidget):
@@ -146,7 +146,7 @@ class SettingWindow(QWidget):
         """主题切换事件处理"""
         from PyQt6.QtWidgets import QApplication
 
-        from zhmm.theme_manager import ThemeManager
+        from zhmm.gui.theme import ThemeManager
 
         # 确定选择的主题
         if button == self.light_theme_radio:

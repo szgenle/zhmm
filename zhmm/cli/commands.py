@@ -5,7 +5,7 @@ import argparse
 import getpass
 import sys
 
-from zhmm.cmd_ui import CmdUI
+from zhmm.cli.interactive import CmdUI
 from zhmm.utils.log import logger, setup_logging
 
 

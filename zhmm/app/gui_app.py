@@ -9,10 +9,10 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 import zhmm
-from zhmm.qt_components.base_window import BaseWindow
-from zhmm.ui.welcome_widget import WelcomeWidget
-from zhmm.ui_defined import ZhmmFileInfo
-from zhmm.ui_main import MainWindow
+from zhmm.widgets.base_window import BaseWindow
+from zhmm.gui.welcome_widget import WelcomeWidget
+from zhmm.config.constants import ZhmmFileInfo
+from zhmm.gui.main_window import MainWindow
 from zhmm.utils.log import logger
 
 
@@ -162,7 +162,7 @@ def main():
     app = QApplication(sys.argv)
 
     # 根据保存的主题设置应用样式
-    from zhmm.theme_manager import ThemeManager
+    from zhmm.gui.theme import ThemeManager
 
     current_theme = zhmm.config.get_theme()
     stylesheet = ThemeManager.get_theme_stylesheet(current_theme)

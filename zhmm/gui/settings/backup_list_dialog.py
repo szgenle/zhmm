@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 
 from zhmm.core.backup_service import BackupService
 from zhmm.core.errors import StorageError
-from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.config.constants import ZhmmFileInfo
 from zhmm.utils import file_util
 
 

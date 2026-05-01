@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
 )
 
 import zhmm
-from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.config.constants import ZhmmFileInfo
 
 
 class BackupSettings(QWidget):
@@ -121,7 +121,7 @@ class BackupSettings(QWidget):
 
     def view_backups(self):
         """查看和管理备份"""
-        from zhmm.window_setting.backup_list_dialog import BackupListDialog
+        from zhmm.gui.settings.backup_list_dialog import BackupListDialog
 
         dialog = BackupListDialog(self.info, self)
         dialog.exec()

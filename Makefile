@@ -44,7 +44,7 @@ run-gui: run
 # 运行命令行应用程序
 run-cmd:
 	@echo "启动命令行应用程序..."
-	poetry run python -m zhmm.cmd_main
+	poetry run python -m zhmm cli
 
 # 调试模式运行
 debug:
@@ -65,7 +65,7 @@ build-app: clean-build update-version
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
-		zhmm/main.py \
+		zhmm/__main__.py \
 		--paths zhmm/
 	@echo "GUI应用程序构建完成！"
 
@@ -78,7 +78,7 @@ build-cmd: clean-build update-version
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
-		zhmm/cmd_main.py \
+		zhmm/cli/commands.py \
 		--paths zhmm/
 	@echo "命令行应用程序构建完成！"
 
@@ -92,14 +92,14 @@ build-all: clean-build update-version
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
-		zhmm/main.py \
+		zhmm/__main__.py \
 		--paths zhmm/
 	@echo "构建命令行应用程序..."
 	poetry run pyinstaller --onefile --name "zhmm_cmd" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
-		zhmm/cmd_main.py \
+		zhmm/cli/commands.py \
 		--paths zhmm/
 	@echo "所有应用程序构建完成！"
 
@@ -131,13 +131,14 @@ env-info:
 # 格式化代码
 format:
 	@echo "格式化代码..."
-	poetry run isort zhmm/
+	poetry run ruff format zhmm/ tests/
+	poetry run ruff check --fix zhmm/ tests/
 	@echo "代码格式化完成！"
 
 # 代码检查
 lint:
 	@echo "运行代码检查..."
-	poetry run flake8 zhmm/ --max-line-length=120 --extend-ignore=E203,W503
+	poetry run ruff check zhmm/ tests/
 	@echo "代码检查完成！"
 
 # 运行测试

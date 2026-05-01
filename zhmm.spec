@@ -9,7 +9,7 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['zhmm/main.py'],
+    ['zhmm/__main__.py'],
     pathex=['zhmm/'],
     binaries=binaries,
     datas=datas,

@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
-from zhmm.ui.file_list_widget import FileListWidget
+from zhmm.gui.file_list_widget import FileListWidget
 
 
 class WelcomeWidget(QWidget):

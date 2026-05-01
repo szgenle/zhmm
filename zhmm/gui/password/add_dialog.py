@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
 )
 
 from zhmm.utils import date_util
-from zhmm.window_password.random_password_dialog import RandomPasswordDialog
+from zhmm.gui.password.random_dialog import RandomPasswordDialog
 
 
 class AddPasswordDialog(QDialog):

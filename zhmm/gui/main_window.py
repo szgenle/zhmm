@@ -7,11 +7,11 @@ from PyQt6.QtWidgets import QHBoxLayout, QPushButton, QTabWidget, QVBoxLayout, Q
 import zhmm
 from zhmm.core.backup_service import BackupService
 from zhmm.core.errors import StorageError
-from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.config.constants import ZhmmFileInfo
 from zhmm.utils import file_util
 from zhmm.utils.log import logger
-from zhmm.window_password.password_window import PasswordWindow
-from zhmm.window_setting.setting_window import SettingWindow
+from zhmm.gui.password.window import PasswordWindow
+from zhmm.gui.settings.window import SettingWindow
 
 
 class MainWindow(QWidget):

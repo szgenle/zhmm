@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QFileDialog, QMessageBox, QWidget
 from zhmm.core.errors import StorageError, ValidationError
 from zhmm.core.export_service import ExportService
 from zhmm.core.models import PasswordEntry
-from zhmm.ui_defined import ZhmmFileInfo
+from zhmm.config.constants import ZhmmFileInfo
 
 
 class ImportExportHandlers:

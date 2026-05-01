@@ -5,7 +5,7 @@ import json
 
 from cryptography.fernet import Fernet
 
-from zhmm.app_setting import AppSetting
+from zhmm.config.settings import AppSetting
 from zhmm.utils import file_util
 
 
