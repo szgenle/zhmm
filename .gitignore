@@ -30,7 +30,10 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
+# NOTE: zhmm.spec 是项目打包需要用到的 PyInstaller 配置，已纳入版本管理；
+# 这里仅忽略其它自动生成的 spec 文件。
 *.spec
+!zhmm.spec
 
 # Installer logs
 pip-log.txt
@@ -139,3 +142,21 @@ cython_debug/
 .DS_Store
 myvenv/
 dist/
+
+# ===== zhmm application-specific =====
+# 用户加密数据文件（绝不能提交）
+*.gl
+# 本地运行时配置/缓存/日志
+.log/
+.zhmm_files.json
+zhmm.json
+save
+# 证书与私钥
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+# 本地用户数据目录
+user_data/
+.local/
