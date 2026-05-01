@@ -9,7 +9,8 @@ class AppSetting(QSettings):
 
     def generate_key(self):
         # 生成并打印符合要求的密钥（32字节 URL安全 Base64编码）
-        key = Fernet.generate_key()  # 例如：b'abcdefgh-ijklmnop_qrstuvwxyz123456'
+        # 生成 32 字节 URL-safe Base64 编码的密钥（Fernet 标准格式）
+        key = Fernet.generate_key()
         print(key.decode())  # 保存这个字符串到配置中
 
     # 新增：获取或生成加密盐（URL安全Base64存储）
