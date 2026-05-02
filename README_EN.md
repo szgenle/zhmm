@@ -1,8 +1,8 @@
 <h1 align="center">🔐 zhmm</h1>
 
 <p align="center">
-  A local-first password manager powered by <b>Chinese SM cryptography (SM2 / SM3 / SM4)</b>.<br/>
-  Ships both a PyQt6 GUI and a CLI, with optional encrypted cloud sync via Tencent COS.
+  A local-first password manager powered by <b>Chinese SM cryptography (SM3 / SM4)</b>.<br/>
+  Ships both a PyQt6 GUI and a CLI. Single-file vault, batteries included.
 </p>
 
 <p align="center">
@@ -18,13 +18,13 @@
 
 ## ✨ Features
 
-- 🔒 **Chinese SM crypto**: SM3 for key derivation, SM4 for data encryption. Master key never touches disk.
+- 🔒 **Chinese SM crypto**: PBKDF2-HMAC-SM3 key derivation (200 000 rounds) + SM4-CBC encryption + HMAC-SM3 integrity tag. Master key never touches disk.
 - 💻 **Dual form factor**: one core, two UIs — **PyQt6 GUI** and **CLI (argparse)**.
-- ☁️ **Local-first, optional cloud sync**: encrypted data stays local; sync to Tencent COS if you want.
-- 📦 **Single-file vault**: one `.gl` file *is* your vault — easy to back up and migrate.
+- 📦 **Single-file vault**: one `.gl` file *is* your vault (binary format with magic, version, auth tag) — easy to back up and migrate.
 - 📝 **Import / export**: full Excel (xlsx) round-tripping.
 - 🎨 **Themes**: built-in light / dark themes.
 - 🧰 **Batteries included**: PyInstaller recipes for macOS / Windows / Linux.
+- 🛡 **CI quality gates**: ruff lint / mypy type check / pytest must all pass before merge.
 
 ---
 
@@ -44,8 +44,8 @@ Grab the latest artifacts from [Releases](https://github.com/Lioesquieu/zhmm/rel
 git clone https://github.com/Lioesquieu/zhmm.git
 cd zhmm
 poetry install
-poetry run python -m zhmm.main           # launch GUI
-poetry run python -m zhmm.cmd_main ...   # launch CLI
+poetry run python -m zhmm                # launch GUI
+poetry run python -m zhmm cli ...        # launch CLI
 ```
 
 ### Option 3 — pip
@@ -63,7 +63,7 @@ pip install git+https://github.com/Lioesquieu/zhmm.git
 ### GUI
 
 ```bash
-poetry run python -m zhmm.main
+poetry run python -m zhmm
 # or, after building
 open /Applications/zhmm.app
 ```
@@ -72,7 +72,7 @@ On first launch:
 
 1. Enter your **OpenID** (any stable unique identifier: email, phone, etc.) and a **master password**.
 2. Add entries (site, account, password, notes) in the main window.
-3. Configure cloud sync and backup strategy in **Settings** (optional).
+3. Configure backup strategy in **Settings** (optional).
 
 ### CLI
 
@@ -106,19 +106,16 @@ zhmm-cli -i ~/zhmm.gl --openId you@example.com --simple -s github
 
 ```
 zhmm/
-├── cloud/          # cloud-sync abstraction (base / cos / oss / sync / local)
-├── data/           # crypto layer (sm_crypto / sm_data_manager / sm_data_types)
-├── qt_components/  # shared Qt widgets
-├── ui/             # UI widgets
-├── utils/          # utilities (logging, dates, network, tables, JSON, ...)
-├── window_login/   # login window
-├── window_password/# password main window
-├── window_setting/ # settings window
-├── main.py         # GUI entry point
-├── cmd_main.py     # CLI entry point
-├── app_config.py   # app config (Fernet + PBKDF2 at rest)
-├── app_setting.py  # QSettings wrapper
-└── backup_manager.py
+├── core/           # crypto engine, data models, business services (password/backup/export)
+├── config/         # app configuration, QSettings, constants
+├── cli/            # argparse sub-commands and interactive loop
+├── app/            # GUI / CLI entry assembly
+├── gui/            # PyQt6 views (login / password / settings / theme …)
+├── widgets/        # reusable Qt widgets (BaseWindow / Dialog / DragDropButton …)
+├── data/           # data management (SmData / SmDataTypes)
+├── utils/          # utilities (logging, dates, network, tables, JSON, …)
+├── __init__.py     # version and package metadata
+└── __main__.py     # python -m zhmm unified entry (dispatches GUI / CLI)
 ```
 
 **Core dependencies**
@@ -126,11 +123,30 @@ zhmm/
 | Area           | Library                                                  |
 |----------------|----------------------------------------------------------|
 | GUI            | `PyQt6`                                                  |
-| SM crypto      | `gmssl` (SM2/SM3/SM4)                                    |
-| General crypto | `cryptography` (Fernet/PBKDF2), `pycryptodomex`, `bcrypt`|
-| Cloud storage  | `cos-python-sdk-v5`                                      |
+| SM crypto      | `gmssl` (SM3/SM4)                                        |
+| Config crypto  | `cryptography` (Fernet/PBKDF2)                           |
 | Excel          | `openpyxl`                                               |
 | Packaging      | `PyInstaller`                                            |
+
+### 🔐 Encryption Design
+
+The `.gl` vault file is protected by a pure Chinese SM algorithm stack:
+
+| Stage | Algorithm | Details |
+|-------|-----------|--------|
+| Key derivation | **PBKDF2-HMAC-SM3** | 200 000 iterations, 16-byte random salt, derives 32-byte key |
+| Encryption | **SM4-CBC** | 16-byte random IV, PKCS7 padding |
+| Integrity | **HMAC-SM3** | Covers header + ciphertext, produces 32-byte auth tag |
+
+File layout:
+
+```
+magic(4B="ZHMM") | ver(1B=3) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
+```
+
+- **magic**: lets the `file` command identify the file type
+- **ver**: standalone version byte for future upgrades
+- **tag**: covers header + ciphertext, preventing downgrade attacks and tampering
 
 ---
 
@@ -138,10 +154,9 @@ zhmm/
 
 > This project handles password data. Please read before use.
 
-- **Key derivation**: the master password is hashed with SM3 to derive the encryption key. **The master password is never persisted.**
-- **Data encryption**: every password entry is SM4-encrypted inside the `.gl` file.
-- **Config encryption**: cloud credentials are encrypted at rest with `Fernet (PBKDF2-HMAC-SHA256 + random salt)`.
-- **Data in cloud**: only the **already-encrypted `.gl` file** is uploaded — the cloud provider cannot decrypt it.
+- **Key derivation**: the master password is processed through PBKDF2-HMAC-SM3 (200 000 rounds) to derive the encryption key. **The master password is never persisted.**
+- **Data encryption**: every password entry is SM4-CBC encrypted inside the `.gl` file, with an HMAC-SM3 integrity tag.
+- **Config encryption**: local application config is encrypted at rest with `Fernet (PBKDF2-HMAC-SHA256 + random salt)`.
 - **`.gl` file**: treat it like your vault; back it up in multiple places.
 - **Known limitations**: see [SECURITY.md](SECURITY.md).
 
@@ -158,8 +173,8 @@ make install        # install deps
 make run            # launch GUI
 make run-cmd        # launch CLI
 make debug          # pdb debug
-make format         # isort
-make lint           # flake8
+make format         # ruff format + ruff check --fix
+make lint           # ruff check
 make pre-commit     # run pre-commit hooks
 make build-app      # build GUI bundle
 make build-cmd      # build CLI bundle
@@ -185,7 +200,7 @@ Version strings are injected at build time by [`scripts/update_version.py`](scri
 Issues and PRs welcome! Before sending a PR:
 
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-2. Run `make format && make lint` to keep style consistent.
+2. Run `make format && make lint` to keep style consistent (powered by ruff).
 3. Add tests where applicable.
 
 ---

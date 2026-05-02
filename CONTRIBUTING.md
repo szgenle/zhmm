@@ -36,8 +36,8 @@ poetry run pre-commit install      # 首次必做
 1. Fork 本仓库，在你的 fork 上基于 `main` 切分支：`git checkout -b feat/my-change`
 2. 提交前本地自检：
    ```bash
-   make format       # isort
-   make lint         # flake8
+   make format       # ruff format + ruff check --fix
+   make lint         # ruff check
    poetry run pytest # 测试
    ```
 3. Commit 信息建议遵循 [Conventional Commits](https://www.conventionalcommits.org/)：
@@ -52,11 +52,27 @@ poetry run pre-commit install      # 首次必做
 
 ### 代码规范
 
-- 遵循 **PEP 8**，`isort` + `flake8` 已配置
+- 遵循 **PEP 8**，`ruff` 已配置为 lint + format 工具
 - 行宽 120，字符串优先使用双引号
-- 公共 API 加类型注解与 docstring
+- 公共 API 加类型注解与 docstring（`core/`、`config/`、`utils/`、`cli/` 模块要求 mypy --strict 通过）
 - 日志统一走 `zhmm.utils.log.logger`，不要 `print` 到 stdout
 - 涉及加密/安全逻辑的改动，请在 PR 描述中明确说明
+
+### 项目目录结构
+
+```
+zhmm/
+├── core/           # 加密引擎、数据模型、业务服务
+├── config/         # 应用配置、QSettings、常量
+├── cli/            # argparse 子命令与交互循环
+├── app/            # GUI / CLI 入口装配
+├── gui/            # PyQt6 界面（login / password / settings / theme）
+├── widgets/        # 通用 Qt 组件
+├── data/           # 数据管理
+├── utils/          # 工具函数
+├── __init__.py     # 版本号与包元信息
+└── __main__.py     # python -m zhmm 统一入口
+```
 
 ### 测试
 

@@ -1,8 +1,8 @@
 <h1 align="center">🔐 zhmm</h1>
 
 <p align="center">
-  基于 <b>国密算法（SM2 / SM3 / SM4）</b> 的本地优先账号密码管理器<br/>
-  支持 PyQt6 图形界面、命令行两种形态，并可对接腾讯云 COS 做加密备份同步。
+  基于 <b>国密算法（SM3 / SM4）</b> 的本地优先账号密码管理器<br/>
+  支持 PyQt6 图形界面与命令行两种形态，单文件密库，开箱即用。
 </p>
 
 <p align="center">
@@ -18,13 +18,13 @@
 
 ## ✨ 特性
 
-- 🔒 **国密加密**：使用 SM3 做密钥派生、SM4 做数据加密，密钥永不落盘
+- 🔒 **国密加密**：PBKDF2-HMAC-SM3 密钥派生（200 000 轮）+ SM4-CBC 数据加密 + HMAC-SM3 完整性校验，密钥永不落盘
 - 💻 **双形态**：同一套核心，提供 **GUI（PyQt6）** 与 **CLI（argparse）** 两种使用方式
-- ☁️ **本地优先 + 可选云同步**：数据加密后本地存储，可选择性地同步到腾讯云 COS
-- 📦 **单文件数据格式**：一个 `.gl` 文件即完整密库，便于备份、迁移
+- 📦 **单文件密库**：一个 `.gl` 文件即完整密库（二进制格式，含 magic / 版本号 / 认证标签），便于备份与迁移
 - 📝 **支持导入/导出**：支持 Excel（xlsx）导入导出
 - 🎨 **主题切换**：内置浅色/深色主题
 - 🧰 **开箱即用**：提供 PyInstaller 打包脚本，一键构建 macOS / Windows / Linux 发行版
+- 🛡 **CI 质量门禁**：ruff lint / mypy 类型检查 / pytest 全绿才可合并
 
 ---
 
@@ -44,8 +44,8 @@
 git clone https://github.com/Lioesquieu/zhmm.git
 cd zhmm
 poetry install
-poetry run python -m zhmm.main           # 启动 GUI
-poetry run python -m zhmm.cmd_main ...   # 启动 CLI
+poetry run python -m zhmm                # 启动 GUI
+poetry run python -m zhmm cli ...        # 启动 CLI
 ```
 
 ### 方式三：pip 安装
@@ -63,7 +63,7 @@ pip install git+https://github.com/Lioesquieu/zhmm.git
 ### GUI 模式
 
 ```bash
-poetry run python -m zhmm.main
+poetry run python -m zhmm
 # 或打包后
 open /Applications/zhmm.app
 ```
@@ -72,7 +72,7 @@ open /Applications/zhmm.app
 
 1. 在登录窗口输入 **OpenID**（任意稳定唯一标识均可，如邮箱、手机号）和 **主密码**
 2. 进入主界面后新增条目（站点名、账号、密码、备注）
-3. 可在「设置」中配置云同步凭据与备份策略
+3. 可在「设置」中配置备份策略
 
 ### CLI 模式
 
@@ -105,19 +105,16 @@ zhmm-cli -i ~/zhmm.gl --openId you@example.com --simple -s github
 
 ```
 zhmm/
-├── cloud/          # 云同步抽象（base / cos / oss / sync / local）
-├── data/           # 加密层（sm_crypto / sm_data_manager / sm_data_types）
-├── qt_components/  # 通用 Qt 组件
-├── ui/             # UI Widgets
-├── utils/          # 工具函数（日志/日期/网络/表格/JSON 等）
-├── window_login/   # 登录窗口
-├── window_password/# 密码主界面
-├── window_setting/ # 设置窗口
-├── main.py         # GUI 入口
-├── cmd_main.py     # CLI 入口
-├── app_config.py   # 应用配置（Fernet + PBKDF2 加密落盘）
-├── app_setting.py  # QSettings 封装
-└── backup_manager.py
+├── core/           # 加密引擎、数据模型、业务服务（密码/备份/导出）
+├── config/         # 应用配置、QSettings、常量
+├── cli/            # argparse 子命令与交互循环
+├── app/            # GUI/CLI 入口装配
+├── gui/            # PyQt6 界面（login / password / settings / theme …）
+├── widgets/        # 通用 Qt 组件（BaseWindow / Dialog / DragDropButton …）
+├── data/           # 数据管理（SmData / SmDataTypes）
+├── utils/          # 工具函数（日志/日期/网络/表格/JSON …）
+├── __init__.py     # 版本号与包元信息
+└── __main__.py     # python -m zhmm 统一入口（分发 GUI / CLI）
 ```
 
 **核心依赖**
@@ -125,11 +122,30 @@ zhmm/
 | 领域       | 库                                 |
 |----------|-----------------------------------|
 | GUI      | `PyQt6`                           |
-| 国密加密    | `gmssl` (SM2/SM3/SM4)              |
-| 通用加密    | `cryptography` (Fernet/PBKDF2), `pycryptodomex`, `bcrypt` |
-| 云存储     | `cos-python-sdk-v5`               |
+| 国密加密    | `gmssl` (SM3/SM4)                  |
+| 配置加密    | `cryptography` (Fernet/PBKDF2)     |
 | Excel    | `openpyxl`                        |
 | 打包      | `PyInstaller`                     |
+
+### 🔐 加密设计
+
+`zhmm` 的 `.gl` 密库文件使用纯国密算法栈保护：
+
+| 环节 | 算法 | 说明 |
+|------|------|------|
+| 密钥派生 | **PBKDF2-HMAC-SM3** | 200 000 轮迭代，16 字节随机盐，派生 32 字节密钥 |
+| 数据加密 | **SM4-CBC** | 16 字节随机 IV，PKCS7 填充 |
+| 完整性校验 | **HMAC-SM3** | 覆盖文件头 + 密文，生成 32 字节认证标签 |
+
+文件格式：
+
+```
+magic(4B="ZHMM") | ver(1B=3) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
+```
+
+- **magic**：让 `file` 命令可识别文件类型
+- **ver**：独立版本号，方便未来升级
+- **tag**：覆盖 header + ciphertext，防止降级攻击和篡改
 
 ---
 
@@ -137,10 +153,9 @@ zhmm/
 
 > 本项目处理用户密码数据，请在使用前仔细阅读。
 
-- **密钥派生**：用户主密码经 SM3 哈希派生成加密密钥，**主密码永不持久化**
-- **数据加密**：所有密码条目以 SM4 加密写入 `.gl` 文件
-- **配置加密**：云存储凭据经 `Fernet (PBKDF2-HMAC-SHA256 + 随机盐)` 加密本地落盘
-- **云上数据**：同步到云端的是**已加密的 `.gl` 文件**，云服务商无法解密
+- **密钥派生**：用户主密码经 PBKDF2-HMAC-SM3（200 000 轮）派生加密密钥，**主密码永不持久化**
+- **数据加密**：所有密码条目以 SM4-CBC 加密写入 `.gl` 文件，附带 HMAC-SM3 完整性标签
+- **配置加密**：本地应用配置经 `Fernet (PBKDF2-HMAC-SHA256 + 随机盐)` 加密落盘
 - **`.gl` 文件**：等同于密库，请妥善保管，建议多地备份
 - **已知限制**：详见 [SECURITY.md](SECURITY.md)
 
@@ -157,8 +172,8 @@ make install        # 安装依赖
 make run            # 启动 GUI
 make run-cmd        # 启动 CLI
 make debug          # pdb 调试
-make format         # isort 格式化
-make lint           # flake8 检查
+make format         # ruff format + ruff check --fix
+make lint           # ruff check
 make pre-commit     # 运行 pre-commit
 make build-app      # 打包 GUI
 make build-cmd      # 打包 CLI
@@ -184,7 +199,7 @@ poetry run pytest --cov=zhmm      # 带覆盖率
 欢迎 Issue / PR，提交前请：
 
 1. 阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 与 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-2. 执行 `make format && make lint` 保证代码风格一致
+2. 执行 `make format && make lint` 保证代码风格一致（使用 ruff）
 3. 为改动编写测试（如适用）
 
 ---

@@ -7,19 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - Unreleased
+
+### ⚠️ Breaking Changes
+- **New vault format (v3)**: `.gl` files now use binary format with `ZHMM` magic, version byte, HMAC-SM3 integrity tag. **Old `.gl` files are not compatible** — export to Excel first, then re-import.
+- **Cloud sync removed**: Tencent COS / OSS integration has been completely removed. Data is local-only.
+- **Dependency cleanup**: removed `cos-python-sdk-v5`, `pycryptodomex`, `bcrypt`.
+
 ### Added
-- Open-source baseline: MIT `LICENSE`, bilingual `README`, `CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY`.
-- GitHub issue / PR templates and CI workflows (lint + pytest + release builds).
-- `pytest` test scaffold and baseline test cases.
-- Richer `pyproject.toml` metadata: keywords, classifiers, project URLs.
+- New encryption engine (`core/crypto.py`): PBKDF2-HMAC-SM3 (200 000 rounds) + SM4-CBC + HMAC-SM3, replacing the legacy single-pass SM3 hash.
+- `core/` business layer: `vault.py`, `password_service.py`, `backup_service.py`, `export_service.py`, `models.py`, `errors.py`.
+- Unified entry point: `python -m zhmm` dispatches GUI / CLI based on arguments.
+- Full type annotations for `core/`, `config/`, `utils/`, `cli/` (mypy --strict clean).
+- Relaxed mypy configuration for `gui/`, `app/`, `widgets/`, `data/` (Qt signal/slot compatibility).
+- `ruff` lint + format replacing flake8 + isort.
+- CI: `ruff check` + `mypy` jobs as blocking quality gates.
+- Pre-commit hooks: `ruff`, `ruff-format`, `mypy`.
+- 127 pytest test cases covering crypto, vault, services, and utilities.
 
 ### Changed
-- Hardened `.gitignore` to exclude `*.gl` vault files, local configs and certificates.
-- `mv_cmd.sh` / `mv_app.sh` now use `set -euo pipefail` and overridable targets.
+- Reorganized project directory: flat structure → `core/`, `config/`, `cli/`, `app/`, `gui/`, `widgets/`, `data/`, `utils/`.
+- Renamed `qt_components/` → `widgets/`; `window_*` → `gui/*`.
+- CLI entry: `zhmm-cli` now routes through `zhmm.cli.commands`.
+- GUI entry: `zhmm` now routes through `zhmm.__main__`.
+- Version bumped to 0.2.0.
+
+### Removed
+- `cloud/` directory (6 files): `cloud_base.py`, `cloud_cos.py`, `cloud_oss.py`, `cloud_sync.py`, `file_local.py`.
+- `window_setting/cloud_sync_handlers.py`, `window_setting/credentials_input_dialog_cos.py`.
+- `sm_util.py`, `data/sm_crypto.py` (replaced by `core/crypto.py`).
+- Legacy flat-file modules: `cmd_main.py`, `cmd_ui.py`, `ui_app.py`, `ui_main.py`, `ui_config.py`, `ui_defined.py`, etc.
 
 ### Security
-- Removed hardcoded personal contact from `pyproject.toml` and stripped author-identifying
-  headers from several source files.
+- Eliminated hardcoded salt constants previously used in CLI password hashing.
+- KDF upgraded from single-pass SM3 to PBKDF2-HMAC-SM3 with 200 000 iterations.
+- Added HMAC-SM3 authentication tag to vault files, preventing silent tampering.
+
+### Fixed
+- CLI and GUI now share the same key derivation path (previously divergent).
 
 ## [0.1.4] - 2025-09-14
 
@@ -33,5 +58,6 @@ Initial public version, carried over from the pre-open-source tree:
 - Light / dark theme switching.
 - PyInstaller packaging for macOS / Windows / Linux.
 
-[Unreleased]: https://github.com/Lioesquieu/zhmm/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/Lioesquieu/zhmm/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Lioesquieu/zhmm/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/Lioesquieu/zhmm/releases/tag/v0.1.4
