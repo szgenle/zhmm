@@ -4,7 +4,6 @@ import string
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QDialog,
-    QDialogButtonBox,
     QHBoxLayout,
     QLineEdit,
     QPushButton,
@@ -18,7 +17,8 @@ class RandomPasswordDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("生成随机密码")
-        self.setFixedSize(400, 200)
+        # 原先 setFixedSize(400, 200) 容纳不下自绘的 100x36 按钮行，放宽一点
+        self.setFixedSize(420, 240)
 
         layout = QVBoxLayout()
 
@@ -47,15 +47,32 @@ class RandomPasswordDialog(QDialog):
         self.password_edit = QLineEdit()
         self.password_edit.setReadOnly(True)
 
-        # 按钮框
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
+        # 底部按钮行：样式与 AddPasswordDialog / AddRoleDialog 对齐
+        # （100x36、水平居中、间距 15）。
+        # 这里语义上是“采纳该随机密码”，文案用“确认使用”比“确认添加”更贴切。
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(15)
+        button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.confirm_button = QPushButton("确认使用")
+        self.confirm_button.setObjectName("confirm_button")
+        self.confirm_button.setFixedSize(100, 36)
+        self.confirm_button.setDefault(True)
+        self.confirm_button.setAutoDefault(True)
+        self.confirm_button.clicked.connect(self.accept)
+        button_layout.addWidget(self.confirm_button)
+
+        cancel_button = QPushButton("取消")
+        cancel_button.setObjectName("cancel_button")
+        cancel_button.setFixedSize(100, 36)
+        cancel_button.setAutoDefault(False)
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_button)
 
         layout.addLayout(length_layout)
         layout.addWidget(generate_btn)
         layout.addWidget(self.password_edit)
-        layout.addWidget(button_box)
+        layout.addLayout(button_layout)
         self.setLayout(layout)
 
     def generate_password(self):
