@@ -3,6 +3,7 @@
 # @LastEditTime: 2024-07-03
 
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -14,6 +15,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QTableView,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -348,15 +350,29 @@ class PasswordWindow(QWidget):
             QMessageBox.critical(dialog, "错误", f"添加出错: {str(e)}")
 
     def copy_cell_to_clipboard(self, index):
-        """复制单元格内容到剪贴板"""
-        if index.isValid():
-            text = self.proxy_model.data(index, Qt.ItemDataRole.DisplayRole)
-            QApplication.clipboard().setText(str(text))  # type: ignore
-            # 更新状态标签
-            self.status_label.setText("已复制到剪贴板")
-            # 定时清空剪贴板，避免残留敏感信息
-            QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
-            QTimer.singleShot(2000, lambda: self.status_label.setText(""))
+        """复制单元格内容到剪贴板（仅限“密码”列）"""
+        if not index.isValid():
+            return
+        # 仅在点击“密码”列（索引3）时触发复制
+        if index.column() != 3:
+            return
+        text = self.proxy_model.data(index, Qt.ItemDataRole.DisplayRole)
+        QApplication.clipboard().setText(str(text))  # type: ignore
+
+        # 1) 鼠标位置气泡提示（最显眼）
+        QToolTip.showText(QCursor.pos(), "✅ 已复制密码到剪贴板", self.table_view)
+
+        # 2) 状态标签高亮提示（绿色加粗）
+        self.status_label.setText("✅ 已复制密码到剪贴板（10 秒后自动清空）")
+        self.status_label.setStyleSheet("color: #2e7d32; font-size: 13px; font-weight: bold;")
+
+        def _reset_status_label() -> None:
+            self.status_label.setText("")
+            self.status_label.setStyleSheet("color: #666; font-size: 12px;")
+
+        # 定时清空剪贴板，避免残留敏感信息
+        QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
+        QTimer.singleShot(2500, _reset_status_label)
 
     def save(self):
         """保存数据"""
