@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ⚠️ Breaking Changes
+- **Vault format upgraded to v5**: KDF switched from PBKDF2-HMAC-SHA256 (v4) to **Argon2id** (2015 PHC winner, memory-hard). Header now embeds `m_cost / t_cost / p_cost` (each 4 bytes, big-endian) so future strength tuning won't require another format bump. **Old v4 `.zmb` files are not compatible** — export to Excel first, then re-import. v3 `.gl` files remain rejected.
+- Header length grows from 37 B to 49 B; minimum blob overhead grows accordingly.
+
+### Added
+- `argon2-cffi (>=23.1.0)` dependency for Argon2id KDF (C implementation).
+- Argon2id defaults: `m=64 MiB, t=3, p=1` (stronger than OWASP 2024 baseline `m=19 MiB, t=2, p=1`). Single derivation ≈ 100-500 ms on modern desktops.
+- Range check on Argon2 parameters read from blob (`m ≤ 512 MiB, t ≤ 100, p ≤ 64`) to reject malicious vault files that would otherwise allocate gigabytes of memory.
+- New tests covering: v4 blob rejection, Argon2 parameter tampering detection, out-of-range parameter rejection, and cross-parameter decryption (old params embedded in blob still decrypt after default upgrade).
+
+### Changed
+- `core/crypto.py`: full rewrite of `_derive_key` to use `argon2.low_level.hash_secret_raw` with `Argon2Type.ID`. Public API (`Vault.seal / Vault.open`) unchanged.
+- Test suite: `tests/conftest.py` patches Argon2 parameters down to `m=8 KiB, t=1, p=1` during tests (saves several minutes across 146 test cases without changing behavior coverage).
+
+### Security
+- KDF no longer relies on PBKDF2; Argon2id's memory-hard design raises GPU/ASIC offline attack cost by orders of magnitude.
+- Argon2 parameters are part of the HMAC-authenticated header, preventing parameter-downgrade attacks.
+
 ## [0.2.0] - Unreleased
 
 ### ⚠️ Breaking Changes

@@ -18,10 +18,10 @@
 
 ## ✨ Features
 
-- 🔒 **Chinese SM crypto**: PBKDF2-HMAC-SHA256 key derivation (600 000 rounds, account + password double-factor input) + SM4-CBC encryption + HMAC-SM3 integrity tag. Master key never touches disk.
+- 🔒 **Chinese SM crypto**: Argon2id key derivation (memory-hard, defaults m=64 MiB/t=3/p=1, account + password dual-factor input) + SM4-CBC encryption + HMAC-SM3 integrity tag. Master key never touches disk.
 - 🖼 **Anti-screenshot**: windows are excluded from system screen capture (macOS `NSWindowSharingNone` / Windows `WDA_EXCLUDE_FROM_CAPTURE`); on by default, toggleable in **Settings**.
 - 💻 **Dual form factor**: one core, two UIs — **PyQt6 GUI** and **CLI (argparse)**.
-- 📦 **Single-file vault**: one `.zmb` file *is* your vault (binary format v4 with magic, version, auth tag) — easy to back up and migrate.
+- 📦 **Single-file vault**: one `.zmb` file *is* your vault (binary format v5 with magic, version, embedded Argon2 parameters, auth tag) — easy to back up and migrate.
 - 📝 **Import / export**: full Excel (xlsx) round-tripping.
 - 🎨 **Themes**: built-in light / dark themes.
 - 🧰 **Batteries included**: PyInstaller recipes for macOS / Windows / Linux.
@@ -136,7 +136,7 @@ The `.zmb` vault file is protected by a hybrid stack of Chinese SM algorithms an
 
 | Stage | Algorithm | Details |
 |-------|-----------|--------|
-| Key derivation | **PBKDF2-HMAC-SHA256** | 600 000 iterations, 16-byte random salt, derives 32-byte key; KDF input material is `account.utf8 + 0x00 + password.utf8` |
+| Key derivation | **Argon2id** (memory-hard) | defaults `m=64 MiB, t=3, p=1`, 16-byte random salt, derives 32-byte key; KDF input material is `account.utf8 + 0x00 + password.utf8`; parameters are embedded in the vault header |
 | Encryption | **SM4-CBC** | 16-byte random IV, PKCS7 padding |
 | Integrity | **HMAC-SM3** | Covers header + ciphertext, produces 32-byte auth tag |
 
@@ -157,7 +157,7 @@ magic(4B="ZHMM") | ver(1B=4) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
 
 > This project handles password data. Please read before use.
 
-- **Key derivation**: account name + master password are concatenated with `\x00` and processed through PBKDF2-HMAC-SHA256 (600 000 rounds) to derive the encryption key. **Neither the master password nor the account is ever persisted.**
+- **Key derivation**: account name + master password are concatenated with `\x00` and processed through **Argon2id** (defaults m=64 MiB, t=3, p=1) to derive the encryption key. Argon2 parameters are embedded in the vault header so future strength upgrades stay backward-compatible with older files. **Neither the master password nor the account is ever persisted.**
 - **Data encryption**: every password entry is SM4-CBC encrypted inside the `.zmb` file, with an HMAC-SM3 integrity tag.
 - **Config encryption**: local application config is encrypted at rest with `Fernet (PBKDF2-HMAC-SHA256 + random salt)`.
 - **Anti-screenshot**: GUI windows are excluded from system screen capture by default (macOS / Windows 10 2004+); disable it in **Settings → General**. Does not defend against camera re-shoot, capture cards, or VM screen grabs.

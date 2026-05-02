@@ -66,33 +66,36 @@ Please do **not** disclose security vulnerabilities through public GitHub issues
 
 | 环节 | 算法 | 参数 |
 |------|------|------|
-| 密钥派生 | **PBKDF2-HMAC-SHA256** | 600 000 轮迭代（OWASP 2024 推荐），16 字节随机盐，输出 32 字节密钥；KDF 口令材料为 `account.utf8 + 0x00 + password.utf8` |
+| 密钥派生 | **Argon2id**（memory-hard） | 默认 `m=64 MiB, t=3, p=1`（16 字节随机盐），输出 32 字节密钥；KDF 口令材料为 `account.utf8 + 0x00 + password.utf8`；参数随密文头部内嵌存储，允许未来调强度而不破坏老文件 |
 | 数据加密 | **SM4-CBC** | 16 字节随机 IV，PKCS7 填充（块长 16 字节），前 16 字节派生密钥 |
-| 完整性校验 | **HMAC-SM3** | 覆盖 `magic + ver + salt + iv + ciphertext`，生成 32 字节标签，后 16 字节派生密钥 |
+| 完整性校验 | **HMAC-SM3** | 覆盖 `magic + ver + m_cost + t_cost + p_cost + salt + iv + ciphertext`，生成 32 字节标签，后 16 字节派生密钥 |
 
-> KDF 选用 SHA256 而非 SM3 是实用折中：gmssl 的 SM3 是纯 Python 实现，
-> 用作 PBKDF2 的 PRF 时 600 000 轮需分钟级耗时；改用标准库 `hashlib.pbkdf2_hmac`
-> 的 C 实现后，同轮数可在交互级响应时间内完成。
+> KDF 从 v4 的 PBKDF2-HMAC-SHA256 升级为 Argon2id（2015 PHC 冠军算法，
+> memory-hard），显著抬升 GPU/ASIC 离线破解成本。默认 `m=64 MiB`
+> 在现代桌面单次派生约 100-500 ms，体感良好；OWASP 2024 的
+> 最低基线为 `m=19 MiB, t=2, p=1`，本项目取更保守值。
 > 数据加密与完整性保护仍由国密算法（SM4 + SM3）承担。
 
-### 文件格式（v4）
+### 文件格式（v5）
 
 ```
-magic(4B="ZHMM") | ver(1B=4) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
+magic(4B="ZHMM") | ver(1B=5) | m_cost(4B BE) | t_cost(4B BE) | p_cost(4B BE)
+                | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
 ```
 
 - **magic**：固定 4 字节 `ZHMM`，用于文件类型识别
-- **ver**：单字节版本号（当前 = 4），便于未来升级
+- **ver**：单字节版本号（当前 = 5），便于未来升级
+- **m_cost / t_cost / p_cost**：大端无符号 32 位整数，从文件读取的参数优先于默认值，且读取前校验在安全范围内（m ≤ 512 MiB，t ≤ 100，p ≤ 64）以防恶意 blob OOM
 - **salt**：每次保存重新生成，确保相同账号+密码产生不同密钥
 - **iv**：每次保存重新生成，确保相同明文产生不同密文
-- **tag**：覆盖 header + ciphertext，篡改任何字段均会被检测
+- **tag**：覆盖 header（含 Argon2 参数）+ ciphertext，篡改任何字段均会被检测
 - **账号名**：作为 KDF 输入的一部分参与密钥派生，**本身不写入文件**；解密时需由调用方重新提供，账号错误将与密码错误产生相同的 HMAC 认证失败。
 
 ### 设计理由
 
 1. **为什么让账号参与 KDF**：账号作为应用层常量盐，使不同账号 + 相同弱密码的用户派生出完全不同的密钥，缓解弱口令用户面临的离线字典/彩虹表风险。
-2. **为什么 600 000 轮**：OWASP 2024 Password Storage Cheat Sheet 对 PBKDF2-HMAC-SHA256 的推荐下限。
-3. **为什么用 PBKDF2 而不是单次 SM3**：单次哈希无法抵御 GPU/ASIC 暴力破解；60 万轮 PBKDF2 大幅提高攻击成本。
+2. **为什么选 Argon2id**：Argon2id 是 2015 年 Password Hashing Competition 冠军算法，memory-hard 特性使其在 GPU/ASIC 上的并行加速比 PBKDF2 困难得多；OWASP 2024 Password Storage Cheat Sheet 明确推荐 Argon2id 作为首选 KDF。
+3. **为什么头部内嵌 Argon2 参数**：让默认强度未来可调（硬件提升、安全形势演化）无需再次 bump 文件格式版本；老文件仍能用自己原始参数被正确解密。
 4. **为什么用 SM4-CBC 而不是 CTR**：CBC 配合 Encrypt-then-MAC 是经典模式，安全性已被充分证明。
 5. **为什么需要 HMAC 标签**：单纯 CBC 无法检测篡改，HMAC 提供认证加密保证。
 6. **保留国密特色**：SM3 / SM4 是中国国家标准（GB/T 32905、32907），适合需要国密合规的场景。

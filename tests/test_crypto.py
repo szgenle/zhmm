@@ -3,18 +3,23 @@
 覆盖：
 - 正常 seal/open 往返（ASCII / Unicode / 大文件 / 单字节）
 - 参数校验（空密码、非 str 账号、非 bytes 明文、非 bytes blob）
-- 密文篡改检测（tag、iv、salt、ciphertext 各位置）
-- 版本/魔数不匹配（含 v3 硬切拒绝）
+- 密文篡改检测（tag、iv、salt、ciphertext、Argon2 参数各位置）
+- 版本/魔数不匹配（含 v3、v4 硬切拒绝）
 - 短密文
 - 不同账号/不同密码派生不同密钥
 - 每次 seal 结果不同（salt/iv 随机性）
 - 账号参与 KDF 的专项用例
+- v5 文件格式不变式（头部内嵌 Argon2 参数）
+- Argon2 参数越界拒绝
 """
 
 from __future__ import annotations
 
+import struct
+
 import pytest
 
+from zhmm.core import crypto as _crypto_module
 from zhmm.core.crypto import (
     _HEADER_LEN,
     IV_LEN,
@@ -25,6 +30,14 @@ from zhmm.core.crypto import (
     Vault,
 )
 from zhmm.core.errors import CryptoError, ValidationError
+
+# Header 偏移量（用于测试级解析）
+_OFF_VERSION = len(MAGIC)
+_OFF_M_COST = _OFF_VERSION + 1
+_OFF_T_COST = _OFF_M_COST + 4
+_OFF_P_COST = _OFF_T_COST + 4
+_OFF_SALT = _OFF_P_COST + 4
+_OFF_IV = _OFF_SALT + SALT_LEN
 
 
 class TestSealOpenRoundtrip:
@@ -129,14 +142,26 @@ class TestTamperDetection:
             Vault.open("alice", "password", tampered)
 
     def test_tampered_iv(self, blob: bytes):
-        idx = len(MAGIC) + 1 + SALT_LEN  # iv 起始
+        idx = _OFF_IV  # iv 起始
         tampered = blob[:idx] + bytes([blob[idx] ^ 0x01]) + blob[idx + 1 :]
         with pytest.raises(CryptoError, match="authentication failed"):
             Vault.open("alice", "password", tampered)
 
     def test_tampered_salt(self, blob: bytes):
-        idx = len(MAGIC) + 1  # salt 起始
+        idx = _OFF_SALT  # salt 起始
         tampered = blob[:idx] + bytes([blob[idx] ^ 0x01]) + blob[idx + 1 :]
+        with pytest.raises(CryptoError, match="authentication failed"):
+            Vault.open("alice", "password", tampered)
+
+    def test_tampered_m_cost(self, blob: bytes):
+        """篡改 header 中的 Argon2 m_cost 会被 HMAC 检测。"""
+        # 将 m_cost 从 8（测试值）改为 16，合法范围内但 HMAC 不对
+        tampered = blob[:_OFF_M_COST] + struct.pack(">I", 16) + blob[_OFF_M_COST + 4 :]
+        with pytest.raises(CryptoError, match="authentication failed"):
+            Vault.open("alice", "password", tampered)
+
+    def test_tampered_t_cost(self, blob: bytes):
+        tampered = blob[:_OFF_T_COST] + struct.pack(">I", 2) + blob[_OFF_T_COST + 4 :]
         with pytest.raises(CryptoError, match="authentication failed"):
             Vault.open("alice", "password", tampered)
 
@@ -151,9 +176,55 @@ class TestTamperDetection:
             Vault.open("alice", "password", tampered)
 
     def test_v3_blob_is_rejected(self, blob: bytes):
-        """历史 v3 blob 必须被硬拒（升级到 v4 后不再兼容）。"""
+        """历史 v3 blob 必须被硬拒（已升级到 v5 后不再兼容）。"""
         tampered = blob[:4] + bytes([3]) + blob[5:]
         with pytest.raises(CryptoError, match="unsupported vault version"):
+            Vault.open("alice", "password", tampered)
+
+    def test_v4_blob_is_rejected(self, blob: bytes):
+        """历史 v4 blob（PBKDF2）必须被硬拒（已升级到 v5 后不再兼容）。"""
+        tampered = blob[:4] + bytes([4]) + blob[5:]
+        with pytest.raises(CryptoError, match="unsupported vault version"):
+            Vault.open("alice", "password", tampered)
+
+
+class TestArgon2ParameterValidation:
+    """Argon2 参数越界拒绝（防 DoS）。"""
+
+    @pytest.fixture
+    def blob(self) -> bytes:
+        return Vault.seal("alice", "password", b"x")
+
+    def test_m_cost_too_large_rejected(self, blob: bytes):
+        """恶意 blob 构造 m_cost=1 GiB 应被拒绝（避免 OOM）。"""
+        # 1_048_576 KiB = 1 GiB，超出 _ARGON2_M_MAX
+        tampered = blob[:_OFF_M_COST] + struct.pack(">I", 1_048_576) + blob[_OFF_M_COST + 4 :]
+        with pytest.raises(CryptoError, match="m_cost out of range"):
+            Vault.open("alice", "password", tampered)
+
+    def test_m_cost_too_small_rejected(self, blob: bytes):
+        tampered = blob[:_OFF_M_COST] + struct.pack(">I", 1) + blob[_OFF_M_COST + 4 :]
+        with pytest.raises(CryptoError, match="m_cost out of range"):
+            Vault.open("alice", "password", tampered)
+
+    def test_t_cost_zero_rejected(self, blob: bytes):
+        tampered = blob[:_OFF_T_COST] + struct.pack(">I", 0) + blob[_OFF_T_COST + 4 :]
+        with pytest.raises(CryptoError, match="t_cost out of range"):
+            Vault.open("alice", "password", tampered)
+
+    def test_t_cost_too_large_rejected(self, blob: bytes):
+        tampered = blob[:_OFF_T_COST] + struct.pack(">I", 1_000) + blob[_OFF_T_COST + 4 :]
+        with pytest.raises(CryptoError, match="t_cost out of range"):
+            Vault.open("alice", "password", tampered)
+
+    def test_p_cost_zero_rejected(self, blob: bytes):
+        tampered = blob[:_OFF_P_COST] + struct.pack(">I", 0) + blob[_OFF_P_COST + 4 :]
+        with pytest.raises(CryptoError, match="p_cost out of range"):
+            Vault.open("alice", "password", tampered)
+
+    def test_p_cost_too_large_rejected(self, blob: bytes):
+        tampered = blob[:_OFF_P_COST] + struct.pack(">I", 1_024) + blob[_OFF_P_COST + 4 :]
+        with pytest.raises(CryptoError, match="p_cost out of range"):
             Vault.open("alice", "password", tampered)
 
 
@@ -203,24 +274,47 @@ class TestAccountInKdf:
 
 
 class TestFormatInvariants:
-    """文件格式不变式。"""
+    """文件格式不变式（v5）。"""
 
     def test_blob_starts_with_magic(self):
         blob = Vault.seal("acc", "pw", b"x")
         assert blob.startswith(MAGIC)
 
-    def test_version_byte_is_4(self):
+    def test_version_byte_is_5(self):
         blob = Vault.seal("acc", "pw", b"x")
-        assert blob[len(MAGIC)] == VERSION == 4
+        assert blob[len(MAGIC)] == VERSION == 5
 
     def test_minimum_overhead(self):
-        # 单字节明文 -> 1 个 SM4 块 (16B) -> 总开销 = header + 16 + tag = 69B
+        # 单字节明文 -> 1 个 SM4 块 (16B) -> 总开销 = header + 16 + tag = 81B
         blob = Vault.seal("acc", "pw", b"x")
         expected = _HEADER_LEN + 16 + TAG_LEN
         assert len(blob) == expected
 
     def test_header_len_constant(self):
-        assert _HEADER_LEN == len(MAGIC) + 1 + SALT_LEN + IV_LEN == 37
+        # header = magic(4) + version(1) + m_cost(4) + t_cost(4) + p_cost(4)
+        #         + salt(16) + iv(16) = 49
+        assert _HEADER_LEN == len(MAGIC) + 1 + 12 + SALT_LEN + IV_LEN == 49
 
     def test_tag_len_constant(self):
         assert TAG_LEN == 32
+
+    def test_blob_embeds_current_kdf_params(self):
+        """blob 头部内嵌的 Argon2 参数应与模块当前默认值一致。
+
+        这样未来调整默认强度时，老 blob 仍可用其原始参数解密。
+        """
+        blob = Vault.seal("acc", "pw", b"x")
+        m_cost, t_cost, p_cost = struct.unpack(">III", blob[_OFF_M_COST : _OFF_M_COST + 12])
+        assert m_cost == _crypto_module.ARGON2_M_COST
+        assert t_cost == _crypto_module.ARGON2_T_COST
+        assert p_cost == _crypto_module.ARGON2_P_COST
+
+    def test_blob_with_different_m_cost_still_decryptable(self, monkeypatch: pytest.MonkeyPatch):
+        """老 blob 用旧参数加密，默认参数升级后仍应可解密（头部内嵌机制）。"""
+        # 第一次 seal 使用 m=8
+        monkeypatch.setattr(_crypto_module, "ARGON2_M_COST", 8)
+        blob = Vault.seal("acc", "pw", b"legacy")
+        # 默认参数升级为 m=16
+        monkeypatch.setattr(_crypto_module, "ARGON2_M_COST", 16)
+        # 仍能解密（用 blob 中记录的 m=8，而非当前默认 m=16）
+        assert Vault.open("acc", "pw", blob) == b"legacy"
