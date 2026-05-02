@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-02
+
+### ⚠️ 升级须知（必读）
+- **Vault 格式由 v4 升级到 v5（不向后兼容）**：KDF 由 PBKDF2-HMAC-SHA256 切换为 **Argon2id**。**请先用 0.2.x 将现有 `.zmb` 导出为 Excel，升级到 0.3.0 后再从 Excel 导入**；v3 `.gl` 文件依旧被拒绝。
+- 0.2.1 ~ 0.2.8 为累计 bugfix 发布，未单独维护 changelog 条目，详情参考 git 历史。
+
 ### Experimental — Browser Fill Bridge (POC, opt-in, **not covered by stability guarantees**)
 > ⚠️ Endpoints, request/response shapes and the token-file layout may change or be removed at any time. The `zhmm.browser_bridge` package will be deprecated and eventually removed once the stable path (KeePassXC-Browser protocol: X25519 + libsodium + Native Messaging) lands. Do not build long-term workflows on top of this POC.
 
@@ -66,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - KDF no longer relies on PBKDF2; Argon2id's memory-hard design raises GPU/ASIC offline attack cost by orders of magnitude.
 - Argon2 parameters are part of the HMAC-authenticated header, preventing parameter-downgrade attacks.
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2025-10-XX
 
 ### ⚠️ Breaking Changes
 - **New vault format (v4)**: vault files now use `.zmb` suffix with binary format (`ZHMM` magic, version byte `4`, HMAC-SM3 integrity tag). **Old `.gl` files from any previous version are not compatible** — export to Excel first, then re-import.
@@ -125,6 +131,7 @@ Initial public version, carried over from the pre-open-source tree:
 - Light / dark theme switching.
 - PyInstaller packaging for macOS / Windows / Linux.
 
-[Unreleased]: https://github.com/Lioesquieu/zhmm/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Lioesquieu/zhmm/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Lioesquieu/zhmm/compare/v0.2.8...v0.3.0
 [0.2.0]: https://github.com/Lioesquieu/zhmm/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/Lioesquieu/zhmm/releases/tag/v0.1.4
