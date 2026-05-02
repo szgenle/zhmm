@@ -125,6 +125,7 @@ strict = true
 module = [
     "zhmm.config.settings",
     "zhmm.utils.network",
+    "zhmm.browser_bridge.*",
 ]
 disable_error_code = ["misc"]
 

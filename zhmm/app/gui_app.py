@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
+import os
 import sys
 from datetime import datetime, timedelta
 
@@ -14,6 +15,9 @@ from zhmm.gui.main_window import MainWindow
 from zhmm.gui.welcome_widget import WelcomeWidget
 from zhmm.utils.log import logger
 from zhmm.widgets.base_window import BaseWindow
+
+# 浏览器填充桥（方案 C POC），通过环境变量 ZHMM_BROWSER_BRIDGE=1 启用
+_BROWSER_BRIDGE_ENABLED = os.environ.get("ZHMM_BROWSER_BRIDGE", "") == "1"
 
 
 class AppWindow(BaseWindow):
@@ -37,8 +41,45 @@ class AppWindow(BaseWindow):
         self.inactivity_timer.timeout.connect(self.check_inactivity)
         self.inactivity_timer.start(zhmm.config.get_lock_time() * 60000)
 
+        # 可选：浏览器填充桥
+        self._bridge = None
+        if _BROWSER_BRIDGE_ENABLED:
+            self._start_browser_bridge()
+
         # 首次启动时显示欢迎窗口
         QTimer.singleShot(500, self.show_welcome_ui)
+
+    # ------------------------------------------------------------------
+    # 浏览器填充桥（POC）
+    # ------------------------------------------------------------------
+    def _start_browser_bridge(self) -> None:
+        try:
+            from zhmm.browser_bridge import BrowserBridgeController
+
+            self._bridge = BrowserBridgeController(self)
+            self._bridge.set_vault_source(self._current_sm_data)
+            port, _token, path = self._bridge.start()
+            logger.info(f"浏览器填充桥已启用，端口={port}，凭据文件={path}")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"浏览器填充桥启动失败：{exc}")
+            self._bridge = None
+
+    def _current_sm_data(self):
+        """返回当前已解锁的 SmData，未登录/已锁时返回 None。"""
+        if self.main_widget is None:
+            return None
+        info = getattr(self.main_widget, "info", None)
+        if not info:
+            return None
+        return info.get("sm_data")
+
+    def closeEvent(self, event):  # type: ignore[override]
+        if self._bridge is not None:
+            try:
+                self._bridge.stop()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(f"浏览器填充桥关闭异常：{exc}")
+        super().closeEvent(event)
 
     def setup_welcome_ui(self, show_login_dialog: bool = True):
         """设置欢迎界面"""
