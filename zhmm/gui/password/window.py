@@ -131,37 +131,46 @@ class PasswordWindow(QWidget):
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSortingEnabled(True)
 
-        # 设置自适应列宽策略（新增以下三行）
+        # 列宽策略：全部允许用户拖拽调整（Interactive），仅给出一个合理的初始宽度。
+        # 之前常用的 ResizeToContents 会导致表头不能手动拖拽（站点被内容锁死）；
+        # 同时备注这类长文本列会把整行凅到很宽，不利阅读。为此改为 Interactive +
+        # 预设初始宽，备注也给个默认宽度（~220px），太长时用户自行拉宽。
         header = self.table_view.horizontalHeader()
         if header:
-            # 获取表格字体度量
+            # 表格字体度量，用于按内容估算初始宽度
             font_metrics = self.table_view.fontMetrics()
 
-            # 计算列宽方法
-            def calculate_column_width(string, margin=8):
-                # 计算内容最大宽度
+            def calculate_column_width(string: str, margin: int = 16) -> int:
                 content_width = font_metrics.boundingRect(string).width()
                 return content_width + margin
 
-            header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+            # 默认全部可拖，不让最后一列自动撑满（避免更新时间列被拉得很宽）
+            header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+            header.setStretchLastSection(False)
 
-            # 固定列宽度
-            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+            # 各列初始宽度（按列索引，与 headers / keys 保持一致）
+            # 0 ID
             header.resizeSection(0, calculate_column_width("8888888888"))
-            header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(1, calculate_column_width("个人个人"))
-            # 手机列新索引为 6（TOTP 列插入在 5）
-            header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(6, calculate_column_width("+86888888888888"))
-            # 更新时间列新索引为 10
-            header.setSectionResizeMode(10, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(10, calculate_column_width("8888888888"))
-            # “显示”列：固定窄列，容纳一个 SVG 眼睛图标
-            header.setSectionResizeMode(PasswordTableModel.reveal_column(), QHeaderView.ResizeMode.Fixed)
+            # 1 类别
+            header.resizeSection(1, calculate_column_width("个人个人个人"))
+            # 2 账号
+            header.resizeSection(2, calculate_column_width("account@example.com"))
+            # 3 密码
+            header.resizeSection(3, calculate_column_width("••••••••••••"))
+            # 4 “显示”列：固定窄列（按图标宽度）
             header.resizeSection(PasswordTableModel.reveal_column(), RevealColumnDelegate.hint_column_width())
-            # “动态码”列：固定宽度，能容纳 "888888  88s"
-            header.setSectionResizeMode(PasswordTableModel.totp_column(), QHeaderView.ResizeMode.Fixed)
+            # 5 动态码
             header.resizeSection(PasswordTableModel.totp_column(), calculate_column_width("888888  88s"))
+            # 6 手机
+            header.resizeSection(6, calculate_column_width("+86888888888888"))
+            # 7 邮箱
+            header.resizeSection(7, calculate_column_width("account@example.com"))
+            # 8 网站
+            header.resizeSection(8, calculate_column_width("https://auth.example.com"))
+            # 9 备注：给个默认宽度，不够时用户自行拉宽
+            header.resizeSection(9, 220)
+            # 10 更新时间：按 YYYY-MM-DD 宽度
+            header.resizeSection(10, calculate_column_width("2026-05-02"))
 
         main_layout.addWidget(self.table_view)
 
