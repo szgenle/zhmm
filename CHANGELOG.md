@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **主密码更换（Re-key）**：设置页新增「更换主密码」入口，支持在不导出/重导入的前提下原地替换主密码。
+  - 核心层：`core/vault.py` 新增 `VaultFile.rekey(path, account, old_password, new_password)`，流程为「用旧口令 `open` 校验 → 用新口令 `seal` 重新派生 Argon2id 密钥并加密 → 同目录临时文件 `fsync` + `os.replace` 原子替换」；任一步失败均不触碰原文件。
+  - `data/sm_data_manager.py` 新增 `SmData.rekey()`，封装换密并同步更新内部 `_password`，保证后续 `save()` 使用新密钥。
+  - GUI 层新增 `gui/settings/rekey_dialog.py`：模态对话框校验当前密码（bcrypt）/ 新密码非空一致性 / 新旧不相同，后台 `RekeyWorker (QThread)` 先用 `BackupService` 以 `prefix="rekey"` 生成保险备份再执行换密；成功后同步刷新当前会话 `hashpw`、`saved_files` 索引与本地配置中的 bcrypt 哈希。
+  - 新增 5 个单元测试覆盖：新密码可解 / 旧密码被拒 / 错误旧密码时原文件未被破坏 / 无临时文件残留 / 目标文件缺失抛 `StorageError`。
+- **账户信息设置分组**：设置页顶部新增「账户信息」分组，明文展示当前登录账号（作为 KDF 常量盐参与密钥派生，遗忘后无法解密）并提供复制按钮；复制后 10 秒自动清空剪贴板，与密码 / TOTP 的剪贴板策略保持一致。
+- **登录失败限速与锁定（UI 层退避）**：登录对话框连续失败 ≥ 3 次后进入指数退避锁定（2s → 4s → 8s …，单次上限 60s）；锁定期间禁用登录按钮与密码输入框，按钮文字实时显示剩余秒数，倒计时结束后自动恢复并聚焦密码框；登录成功时计数清零。仅用于手动 GUI 重试节流，**不防御离线暴力**（攻击者可绕过 GUI 直接调用 `core.vault`，离线破解成本仍由 Argon2id 承担）。
+- `zhmm/config/saved_files.py`：集中管理 `~/.zhmm/.zhmm_files.json` 索引文件的读写（`load_all / save_all / update_entry`），原先散落在 `FileListWidget` 中的逻辑被抽出，便于更换主密码等功能复用。
+- `zhmm/gui/texts.py` 新增 `Account` / `Rekey` 文案类，集中管理账户信息分组与主密码更换流程中的中文提示、阶段标签与结果消息。
+
+### Fixed
+- 备份列表对话框：在时间字段前补充「数据」前缀（形如 `数据 yyyy-MM-dd HH:mm:ss`），避免与后续文件名 / 大小列混在一起难以阅读。
+
+### Changed
+- `make build-app` / `build-cmd` / `build-all` 不再隐式依赖 `update-version`，避免每次构建都自动递增版本号造成版本污染；版本号改为由 `make update-version` 按需手动递增 patch，Makefile help 补充了该命令的用法说明。
+- `scripts/update_version.py` 字符串引号与格式统一，便于 ruff format 稳定输出。
+
 ## [0.3.0] - 2026-05-02
 
 ### ⚠️ 升级须知（必读）
