@@ -4,7 +4,7 @@
 
 import re
 
-from PyQt6.QtCore import Qt, QTimer, QUrl
+from PyQt6.QtCore import Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import QCursor, QDesktopServices
 from PyQt6.QtWidgets import (
     QApplication,
@@ -37,6 +37,10 @@ from zhmm.widgets.combo_box import WideComboBox
 
 class PasswordWindow(QWidget):
     """密码管理界面"""
+
+    # 状态变更信号：(text, level)，level ∈ {'normal', 'highlight', 'success'}
+    # 由外层 MainWindow 接收后统一渲染到窗口底部状态栏。
+    status_changed = pyqtSignal(str, str)
 
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
@@ -84,17 +88,10 @@ class PasswordWindow(QWidget):
         search_layout.addWidget(self.search_input, 1)
         search_layout.addWidget(self.show_all_checkbox)  # 新增复选框
 
+        # “添加”按钮与搜索同一行（最右侧），腾出窗口底部给状态栏
+        self.setup_ui_button(search_layout)
+
         main_layout.addLayout(search_layout)
-
-        status_layout = QHBoxLayout()
-        # 添加状态标签（在表格下方）
-        self.status_label = QLabel()
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_label.setStyleSheet("color: #666; font-size: 12px;")
-        status_layout.addWidget(self.status_label)
-
-        self.setup_ui_button(status_layout)
-        main_layout.addLayout(status_layout)
 
         # 创建表格视图
         self.table_view = QTableView()
@@ -174,6 +171,9 @@ class PasswordWindow(QWidget):
 
         main_layout.addWidget(self.table_view)
 
+        # 窗口底部状态栏上移到 MainWindow（跟“返回首页”同一行），
+        # 这里只负责 emit status_changed 信号。
+
         # 动态码列每 1 秒刷新（仅发 dataChanged，无需全表重绘）
         self._totp_refresh_timer = QTimer(self)
         self._totp_refresh_timer.setInterval(1000)
@@ -183,18 +183,13 @@ class PasswordWindow(QWidget):
         # 初始化一次状态提示
         self.filter_passwords()
 
-    def setup_ui_button(self, main_layout):
-        # 创建按钮区域
-        button_layout = QHBoxLayout()
-
+    def setup_ui_button(self, search_layout):
+        """把“添加”按钮挂到搜索行最右侧，不再单独占一行。"""
         add_button = QPushButton("添加")
         add_button.setMaximumWidth(128)
         add_button.clicked.connect(self.add_password)
 
-        button_layout.addStretch()
-        button_layout.addWidget(add_button)
-
-        main_layout.addLayout(button_layout)
+        search_layout.addWidget(add_button)
 
     def ini_role_ui(self, search_layout):  # 添加类别筛选下拉框
         role_filter_label = QLabel("类别:")
@@ -243,12 +238,12 @@ class PasswordWindow(QWidget):
         if self.show_all_checkbox.isChecked():
             # 仅显示搜索结果
             if not self.proxy_model._has_filter:
-                self.status_label.setText("请输入关键字以显示结果")
+                self.status_changed.emit("请输入关键字以显示结果", "normal")
             else:
-                self.status_label.setText(f"已按“{search_text}”筛选")
+                self.status_changed.emit(f"已按“{search_text}”筛选", "normal")
         else:
             # 显示全部数据（仍受类别筛选影响）
-            self.status_label.setText("显示全部数据")
+            self.status_changed.emit("显示全部数据", "normal")
 
     def toggle_show_all(self, checked):
         """复选框状态切换处理"""
@@ -473,17 +468,13 @@ class PasswordWindow(QWidget):
         # 1) 鼠标位置气泡提示（最显眼）
         QToolTip.showText(QCursor.pos(), "✅ 已复制密码到剪贴板", self.table_view)
 
-        # 2) 状态标签高亮提示（绿色加粗）
-        self.status_label.setText("✅ 已复制密码到剪贴板（10 秒后自动清空）")
-        self.status_label.setStyleSheet("color: #2e7d32; font-size: 13px; font-weight: bold;")
-
-        def _reset_status_label() -> None:
-            self.status_label.setText("")
-            self.status_label.setStyleSheet("color: #666; font-size: 12px;")
+        # 2) 底部状态栏高亮提示（绿色加粗， success 级别）
+        self.status_changed.emit("✅ 已复制密码到剪贴板（10 秒后自动清空）", "success")
 
         # 定时清空剪贴板，避免残留敏感信息
         QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
-        QTimer.singleShot(2500, _reset_status_label)
+        # 2.5s 后清空状态栏（但如期间文案已被别的操作替换，则不覆盖）
+        self._schedule_status_reset("✅ 已复制密码到剪贴板（10 秒后自动清空）")
 
     # ------------------------------------------------------------------
     # 密码明文显示切换
@@ -534,21 +525,29 @@ class PasswordWindow(QWidget):
             self.table_model.set_revealed(source_row, False)
             self._show_status("🔒 密码已自动隐藏", highlight=False)
 
+    # 底部状态栏由 MainWindow 接收 status_changed 信号后渲染，这里只负责 emit 和自动清空。
+
+    def _schedule_status_reset(self, text: str, delay_ms: int = 2500) -> None:
+        """delay_ms 后，若状态栏文案仍为 text，则发 空串 清空。
+
+        外层 label 不在此处持有，无法直接读取当前文案；改用 sentinel 机制：
+        记录最后一次 emit 的文案 self._last_status_text，到期时核对不一致说明被
+        别的调用替换了，不再清空。
+        """
+        self._last_status_text = text
+
+        def _maybe_clear() -> None:
+            if getattr(self, "_last_status_text", None) == text:
+                self.status_changed.emit("", "normal")
+                self._last_status_text = ""
+
+        QTimer.singleShot(delay_ms, _maybe_clear)
+
     def _show_status(self, text: str, *, highlight: bool) -> None:
-        """状态栏闪提示，2.5 秒后息灭。"""
-        self.status_label.setText(text)
-        if highlight:
-            self.status_label.setStyleSheet("color: #c62828; font-size: 13px; font-weight: bold;")
-        else:
-            self.status_label.setStyleSheet("color: #666; font-size: 12px;")
-
-        def _reset() -> None:
-            # 如果期间文案变了则不覆盖
-            if self.status_label.text() == text:
-                self.status_label.setText("")
-                self.status_label.setStyleSheet("color: #666; font-size: 12px;")
-
-        QTimer.singleShot(2500, _reset)
+        """闪提示：emit 信号给 MainWindow，2.5 秒后自动息灭。"""
+        level = "highlight" if highlight else "normal"
+        self.status_changed.emit(text, level)
+        self._schedule_status_reset(text)
 
     def save(self):
         """保存数据"""
