@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
 
 import zhmm
 from zhmm.config.constants import ZhmmFileInfo
+from zhmm.core.errors import ValidationError
 from zhmm.data.sm_data_manager import SmData
 from zhmm.gui.password.add_dialog import AddPasswordDialog
 from zhmm.gui.password.operations import PasswordOperations
@@ -141,15 +142,26 @@ class PasswordWindow(QWidget):
             header.resizeSection(0, calculate_column_width("8888888888"))
             header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
             header.resizeSection(1, calculate_column_width("个人个人"))
-            header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(5, calculate_column_width("+86888888888888"))
-            header.setSectionResizeMode(9, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(9, calculate_column_width("8888888888"))
+            # 手机列新索引为 6（TOTP 列插入在 5）
+            header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(6, calculate_column_width("+86888888888888"))
+            # 更新时间列新索引为 10
+            header.setSectionResizeMode(10, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(10, calculate_column_width("8888888888"))
             # “显示”列：固定窄列，容纳一个 SVG 眼睛图标
             header.setSectionResizeMode(PasswordTableModel.reveal_column(), QHeaderView.ResizeMode.Fixed)
             header.resizeSection(PasswordTableModel.reveal_column(), RevealColumnDelegate.hint_column_width())
+            # “动态码”列：固定宽度，能容纳 "888888  88s"
+            header.setSectionResizeMode(PasswordTableModel.totp_column(), QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(PasswordTableModel.totp_column(), calculate_column_width("888888  88s"))
 
         main_layout.addWidget(self.table_view)
+
+        # 动态码列每 1 秒刷新（仅发 dataChanged，无需全表重绘）
+        self._totp_refresh_timer = QTimer(self)
+        self._totp_refresh_timer.setInterval(1000)
+        self._totp_refresh_timer.timeout.connect(self._refresh_totp_column)
+        self._totp_refresh_timer.start()
 
         # 初始化一次状态提示
         self.filter_passwords()
@@ -393,7 +405,7 @@ class PasswordWindow(QWidget):
     # 密码明文显示切换
     # ------------------------------------------------------------------
     def on_table_cell_clicked(self, index) -> None:
-        """统一处理密码列 / “显示”列的点击行为。"""
+        """统一处理密码列 / “显示”列 / “动态码”列的点击行为。"""
         if not index.isValid():
             return
         col = index.column()
@@ -401,6 +413,8 @@ class PasswordWindow(QWidget):
             self._toggle_reveal_at(index)
         elif col == PasswordTableModel.password_column():
             self.copy_cell_to_clipboard(index)
+        elif col == PasswordTableModel.totp_column():
+            self._copy_totp_at(index)
 
     def _toggle_reveal_at(self, proxy_index) -> None:
         """切换点击行的密码明文显示，并安排/重置自动隐藏定时器。"""
@@ -455,3 +469,36 @@ class PasswordWindow(QWidget):
     def save(self):
         """保存数据"""
         return self.operations.save()
+
+    # ------------------------------------------------------------------
+    # 动态码列刷新 & 复制
+    # ------------------------------------------------------------------
+    def _refresh_totp_column(self) -> None:
+        n = self.table_model.rowCount()
+        if n <= 0:
+            return
+        col = PasswordTableModel.totp_column()
+        top = self.table_model.index(0, col)
+        bottom = self.table_model.index(n - 1, col)
+        self.table_model.dataChanged.emit(top, bottom, [Qt.ItemDataRole.DisplayRole])
+
+    def _copy_totp_at(self, proxy_index) -> None:
+        """复制所选行的当前动态码到剪贴板。"""
+        source_index = self.proxy_model.mapToSource(proxy_index)
+        source_row = source_index.row()
+        if source_row < 0 or source_row >= len(self.table_model._data):
+            return
+        item = self.table_model._data[source_row]
+        try:
+            code = PasswordTableModel.compute_totp_code(item)
+        except ValidationError as ex:
+            QToolTip.showText(QCursor.pos(), f"⚠ TOTP 配置无效: {ex}", self.table_view)
+            self._show_status("⚠ TOTP 配置无效", highlight=True)
+            return
+        if not code:
+            QToolTip.showText(QCursor.pos(), "该条目未启用 TOTP", self.table_view)
+            return
+        QApplication.clipboard().setText(code)  # type: ignore
+        QToolTip.showText(QCursor.pos(), f"✅ 已复制动态码 {code}", self.table_view)
+        self._show_status(f"✅ 已复制动态码 {code}（10 秒后自动清空剪贴板）", highlight=True)
+        QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore

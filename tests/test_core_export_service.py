@@ -104,3 +104,44 @@ class TestImportQuirks:
         loaded = ExportService.import_xlsx(f)
         assert loaded[0].id == 0
         assert loaded[0].utime == 0
+
+
+class TestTotpExport:
+    def test_totp_secret_is_stripped_on_export(self, tmp_path: Path):
+        """导出 xlsx 故意不包含 totp_secret，仅保留算法标识。"""
+        f = tmp_path / "with_totp.xlsx"
+        entry = PasswordEntry(
+            id=1,
+            userID="u",
+            pwd="p",
+            totp_secret="JBSWY3DPEHPK3PXP",
+            totp_algo="SM3",
+            totp_digits=8,
+            totp_period=60,
+            utime=1,
+        )
+        ExportService.export_xlsx(f, [entry])
+        loaded = ExportService.import_xlsx(f)
+        # secret 已抹除
+        assert loaded[0].totp_secret == ""
+        # 算法标识保留
+        assert loaded[0].totp_algo == "SM3"
+        assert loaded[0].totp_digits == 8
+        assert loaded[0].totp_period == 60
+
+    def test_legacy_xlsx_without_totp_columns_still_imports(self, tmp_path: Path):
+        """老 xlsx 只有 9 列核心表头时应正常导入，TOTP 字段回默认。"""
+        f = tmp_path / "legacy.xlsx"
+        wb = Workbook()
+        ws = wb.active
+        # 仅写入原 9 列表头
+        legacy_heads = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
+        ws.append(legacy_heads)
+        ws.append([1, "个人", "u", "p", "", "", "", "", 1])
+        wb.save(str(f))
+        wb.close()
+        loaded = ExportService.import_xlsx(f)
+        assert len(loaded) == 1
+        # TOTP 字段回默认
+        assert loaded[0].totp_secret == ""
+        assert loaded[0].totp_algo == ""

@@ -1,19 +1,24 @@
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
     QFormLayout,
+    QGroupBox,
     QHBoxLayout,
     QInputDialog,
     QLabel,
     QLineEdit,
     QPushButton,
+    QSpinBox,
     QTextEdit,
     QVBoxLayout,
 )
 
+from zhmm.core import totp as totp_mod
+from zhmm.core.errors import ValidationError
 from zhmm.gui.password.random_dialog import RandomPasswordDialog
 from zhmm.utils import date_util
+from zhmm.utils.log import logger
 
 
 class AddPasswordDialog(QDialog):
@@ -24,9 +29,10 @@ class AddPasswordDialog(QDialog):
     def __init__(self, parent, roles: list[str], edit_data=None):
         super().__init__(parent)
         self.setWindowTitle("添加账号密码")
-        self.setFixedSize(600, 650)  # 增加高度容纳优化后的布局
+        self.setFixedSize(640, 820)  # 容纳 TOTP 新区域
 
         self.roles = roles
+        self._preview_timer: QTimer | None = None
 
         # 创建布局
         layout = QVBoxLayout()
@@ -119,6 +125,9 @@ class AddPasswordDialog(QDialog):
 
         layout.addLayout(form_layout)
 
+        # TOTP 区域
+        self._setup_totp_group(layout)
+
         # 按钮布局
         button_layout = QHBoxLayout()
         button_layout.setSpacing(15)
@@ -162,6 +171,21 @@ class AddPasswordDialog(QDialog):
         self.email_input.setText(data.get("email", ""))
         self.url_input.setText(data.get("url", ""))
         self.desc_input.setText(data.get("desc", ""))
+        # TOTP 回填
+        self.totp_secret_input.setText(data.get("totp_secret", "") or "")
+        algo = (data.get("totp_algo") or "").upper()
+        if algo:
+            idx = self.totp_algo_combo.findText(algo)
+            if idx >= 0:
+                self.totp_algo_combo.setCurrentIndex(idx)
+        digits = data.get("totp_digits") or totp_mod.DEFAULT_DIGITS
+        period = data.get("totp_period") or totp_mod.DEFAULT_PERIOD
+        try:
+            self.totp_digits_spin.setValue(int(digits))
+            self.totp_period_spin.setValue(int(period))
+        except (TypeError, ValueError):
+            pass
+        self._refresh_totp_preview()
 
     def show_random_pwd_dialog(self):
         """显示随机密码生成对话框"""
@@ -171,6 +195,10 @@ class AddPasswordDialog(QDialog):
 
     def get_password_data(self):
         """获取表单数据"""
+        secret = self.totp_secret_input.text().strip()
+        algo = self.totp_algo_combo.currentText().strip().upper() if secret else ""
+        digits = int(self.totp_digits_spin.value()) if secret else totp_mod.DEFAULT_DIGITS
+        period = int(self.totp_period_spin.value()) if secret else totp_mod.DEFAULT_PERIOD
         return {
             "id": date_util.timestamp_int(),
             "role": self.role_combo.currentText(),
@@ -181,4 +209,116 @@ class AddPasswordDialog(QDialog):
             "url": self.url_input.text().strip(),
             "desc": self.desc_input.toPlainText().strip(),
             "utime": date_util.timestamp_int(),
+            "totp_secret": secret,
+            "totp_algo": algo,
+            "totp_digits": digits,
+            "totp_period": period,
         }
+
+    # ------------------------------------------------------------------
+    # TOTP 区域
+    # ------------------------------------------------------------------
+    def _setup_totp_group(self, layout: QVBoxLayout) -> None:
+        """在对话框下方插入可选的 TOTP 配置区。"""
+        group = QGroupBox("二次验证 TOTP（可选）")
+        g_layout = QFormLayout()
+        g_layout.setSpacing(10)
+
+        self.totp_secret_input = QLineEdit()
+        self.totp_secret_input.setPlaceholderText("粘贴 Base32 secret 或 otpauth:// URI（留空则不启用）")
+        self.totp_secret_input.textChanged.connect(self._on_totp_secret_changed)
+        g_layout.addRow("Secret:", self.totp_secret_input)
+
+        algo_row = QHBoxLayout()
+        self.totp_algo_combo = QComboBox()
+        self.totp_algo_combo.addItems(list(totp_mod.SUPPORTED_ALGOS))
+        self.totp_algo_combo.setCurrentText(totp_mod.DEFAULT_ALGO)
+        self.totp_algo_combo.currentIndexChanged.connect(self._refresh_totp_preview)
+        self.totp_digits_spin = QSpinBox()
+        self.totp_digits_spin.setRange(6, 10)
+        self.totp_digits_spin.setValue(totp_mod.DEFAULT_DIGITS)
+        self.totp_digits_spin.valueChanged.connect(self._refresh_totp_preview)
+        self.totp_period_spin = QSpinBox()
+        self.totp_period_spin.setRange(15, 300)
+        self.totp_period_spin.setValue(totp_mod.DEFAULT_PERIOD)
+        self.totp_period_spin.setSuffix(" s")
+        self.totp_period_spin.valueChanged.connect(self._refresh_totp_preview)
+        algo_row.addWidget(QLabel("算法:"))
+        algo_row.addWidget(self.totp_algo_combo)
+        algo_row.addSpacing(12)
+        algo_row.addWidget(QLabel("位数:"))
+        algo_row.addWidget(self.totp_digits_spin)
+        algo_row.addSpacing(12)
+        algo_row.addWidget(QLabel("周期:"))
+        algo_row.addWidget(self.totp_period_spin)
+        algo_row.addStretch(1)
+        g_layout.addRow("参数:", algo_row)
+
+        self.totp_preview_label = QLabel("—")
+        self.totp_preview_label.setStyleSheet("font-family: Menlo, monospace; font-size: 16px; font-weight: bold;")
+        g_layout.addRow("预览:", self.totp_preview_label)
+
+        group.setLayout(g_layout)
+        layout.addWidget(group)
+
+        # 1 秒刷新预览
+        self._preview_timer = QTimer(self)
+        self._preview_timer.setInterval(1000)
+        self._preview_timer.timeout.connect(self._refresh_totp_preview)
+        self._preview_timer.start()
+        # 初次绘制
+        self._refresh_totp_preview()
+
+    def _on_totp_secret_changed(self, text: str) -> None:
+        """检测到 otpauth:// URI 时自动解析并回填各字段。"""
+        s = text.strip()
+        if s.lower().startswith("otpauth://"):
+            try:
+                params = totp_mod.parse_otpauth_uri(s)
+            except ValidationError as ex:
+                logger.debug(f"otpauth 解析失败: {ex}")
+                self._refresh_totp_preview()
+                return
+            # 回填：避免触发 textChanged 递归，先 block
+            self.totp_secret_input.blockSignals(True)
+            try:
+                self.totp_secret_input.setText(params.get("secret", ""))
+            finally:
+                self.totp_secret_input.blockSignals(False)
+            algo = params.get("algo") or totp_mod.DEFAULT_ALGO
+            idx = self.totp_algo_combo.findText(algo)
+            if idx >= 0:
+                self.totp_algo_combo.setCurrentIndex(idx)
+            self.totp_digits_spin.setValue(int(params.get("digits") or totp_mod.DEFAULT_DIGITS))
+            self.totp_period_spin.setValue(int(params.get("period") or totp_mod.DEFAULT_PERIOD))
+        self._refresh_totp_preview()
+
+    def _refresh_totp_preview(self) -> None:
+        """根据当前表单值实时刷新预览文案。"""
+        if not hasattr(self, "totp_preview_label"):
+            return
+        secret = self.totp_secret_input.text().strip()
+        if not secret:
+            self.totp_preview_label.setText("—")
+            self.totp_preview_label.setStyleSheet(
+                "font-family: Menlo, monospace; font-size: 16px; font-weight: bold; color: #888;"
+            )
+            return
+        algo = self.totp_algo_combo.currentText().strip().upper() or totp_mod.DEFAULT_ALGO
+        digits = int(self.totp_digits_spin.value())
+        period = int(self.totp_period_spin.value())
+        try:
+            code = totp_mod.generate(secret, algo=algo, digits=digits, period=period)
+            left = totp_mod.remaining_seconds(period)
+            self.totp_preview_label.setText(f"{code}    剩余 {left}s")
+            self.totp_preview_label.setStyleSheet(
+                "font-family: Menlo, monospace; font-size: 16px; font-weight: bold; color: #2e7d32;"
+            )
+        except ValidationError as ex:
+            self.totp_preview_label.setText(f"⚠️ {ex}")
+            self.totp_preview_label.setStyleSheet("font-family: Menlo, monospace; font-size: 13px; color: #c62828;")
+
+    def closeEvent(self, event):  # type: ignore[override]
+        if self._preview_timer is not None:
+            self._preview_timer.stop()
+        super().closeEvent(event)

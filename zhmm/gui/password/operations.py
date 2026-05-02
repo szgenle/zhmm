@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """密码数据操作逻辑"""
 
+from zhmm.core import totp as totp_mod
+from zhmm.core.errors import ValidationError
 from zhmm.data.sm_data_manager import SmData
 from zhmm.data.sm_data_types import ZhmmDict
 from zhmm.utils.log import logger
@@ -11,6 +13,20 @@ class PasswordOperations:
 
     def __init__(self, gl_data: SmData):
         self.gl_data = gl_data
+
+    @staticmethod
+    def validate_totp_input(secret: str, algo: str, digits: int, period: int) -> tuple[bool, str]:
+        """校验 TOTP 输入是否合法。
+
+        secret 为空表示未启用，直接视为合法；非空时必须能成功 decode + generate 一次。
+        """
+        if not secret:
+            return True, ""
+        try:
+            totp_mod.generate(secret, algo=algo or totp_mod.DEFAULT_ALGO, digits=digits, period=period, now=0)
+            return True, ""
+        except ValidationError as ex:
+            return False, f"TOTP 配置无效: {ex}"
 
     def add_password(self, password_data: ZhmmDict) -> tuple[bool, str]:
         """
@@ -25,6 +41,11 @@ class PasswordOperations:
         # 验证必填字段
         if not password_data.get("userID"):
             return False, "账号不能为空"
+
+        # 可选 TOTP 校验
+        ok, msg = self._check_totp(password_data)
+        if not ok:
+            return False, msg
 
         try:
             self.gl_data.add(password_data)
@@ -81,6 +102,11 @@ class PasswordOperations:
         if not new_data.get("userID"):
             return False, "账号不能为空"
 
+        # 可选 TOTP 校验
+        ok, msg = self._check_totp(new_data)
+        if not ok:
+            return False, msg
+
         try:
             # 更新数据
             self.gl_data.mm["data"][row] = new_data
@@ -118,3 +144,18 @@ class PasswordOperations:
             成功标志
         """
         return self.gl_data.save()
+
+    # ------------------------------------------------------------------
+    # 内部工具
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _check_totp(data: dict) -> tuple[bool, str]:
+        """从 dict 中担取 TOTP 字段并校验。"""
+        secret = str(data.get("totp_secret") or "").strip()
+        algo = str(data.get("totp_algo") or "").strip().upper()
+        try:
+            digits = int(data.get("totp_digits") or totp_mod.DEFAULT_DIGITS)
+            period = int(data.get("totp_period") or totp_mod.DEFAULT_PERIOD)
+        except (TypeError, ValueError):
+            return False, "TOTP 位数/周期必须为整数"
+        return PasswordOperations.validate_totp_input(secret, algo, digits, period)

@@ -102,6 +102,33 @@ magic(4B="ZHMM") | ver(1B=5) | m_cost(4B BE) | t_cost(4B BE) | p_cost(4B BE)
 
 ---
 
+## 🔑 TOTP 2FA 实现说明 / TOTP Implementation
+
+`zhmm` 内置 TOTP（基于时间的一次性密码）动态码能力，用于承担账号「第二因子」：
+
+| 项目 | 说明 |
+|------|------|
+| 标准算法 | 完整实现 **RFC 6238**（TOTP）+ **RFC 4226**（HOTP 动态截断），支持 `HMAC-SHA1 / SHA256 / SHA512` |
+| 国密扩展 | 新增 **HMAC-SM3** 变体（算法名 `SM3`），复用项目现有 SM3 实现，兼容国密合规场景 |
+| Secret 来源 | 支持 Base32 手动粘贴（容错空格、大小写、缺失 padding）与 `otpauth://` URI 解析（自动回填 algo / digits / period） |
+| 默认参数 | `digits=6, period=30`，与主流认证器（Google Authenticator / Microsoft Authenticator / 1Password）完全互通；`SM3` 为 `zhmm` 私有扩展，其它应用不识别 |
+| 刷新节奏 | 表格列每 1 秒重算一次，展示 `当前码 + 剩余秒数`；点击即复制到剪贴板，10 秒后自动清空 |
+
+### TOTP Secret 的存储策略
+
+- **`.zmb` 密库**：TOTP Secret 作为条目字段之一，随整库一起经 **Argon2id → SM4-CBC → HMAC-SM3** 链路加密落盘。**破解 TOTP Secret 的门槛与破解主密码完全等价。**
+- **Excel 导出（`.xlsx`）**：**刻意不包含 TOTP Secret 列**。导出文件仅保留 `totp_algo / totp_digits / totp_period` 三列元信息，便于迁移时提示「此条目曾启用 2FA，请重新扫码绑定」。这一设计避免用户把明文 Secret 泄露给云盘 / 协作工具 / 邮箱等不受控通道。
+- **CLI `--totp <id>`**：仅输出当前动态码与剩余秒数，**不输出 Secret 本身**。
+- **剪贴板**：TOTP 动态码复制后 10 秒自动清空；Secret 不会进入剪贴板。
+
+### 已知边界
+
+1. **TOTP 并非替代主密码**：与主密码同库存储，本质仍是「你拥有的 `.zmb` 文件 + 你记住的主密码」的加强，**不构成独立第二因子**。若追求「物理隔离第二因子」请使用硬件令牌（YubiKey）或手机认证器。
+2. **SM3-TOTP 是私有扩展**：其它认证器不识别 `algorithm=SM3`；请勿将此类 Secret 同时录入到第三方应用。
+3. **时间漂移**：本地系统时间偏差 > 30 秒会导致动态码失效，TOTP 校验方通常允许 ±1 个 period 的容差。
+
+---
+
 ## ⚠️ 已知局限 / Known Limitations
 
 我们开诚布公地列出已知安全局限，欢迎贡献改进：

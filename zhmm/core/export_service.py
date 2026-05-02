@@ -27,6 +27,10 @@ CN_HEADS: tuple[str, ...] = (
     "网站",
     "备注",
     "更新时间",
+    # 下列 TOTP 配置仅导出算法标识，故意不导出原始 secret
+    "TOTP算法",
+    "TOTP位数",
+    "TOTP周期",
 )
 EN_HEADS: tuple[str, ...] = (
     "id",
@@ -38,8 +42,13 @@ EN_HEADS: tuple[str, ...] = (
     "url",
     "desc",
     "utime",
+    "totp_algo",
+    "totp_digits",
+    "totp_period",
 )
-_INT_FIELDS = {"id", "utime"}
+# 核心列：导入时仅对这 9 列做必存校验，以兼容旧 xlsx。
+_CORE_CN_HEADS: tuple[str, ...] = CN_HEADS[:9]
+_INT_FIELDS = {"id", "utime", "totp_digits", "totp_period"}
 
 
 def _escape(value: str) -> str:
@@ -108,7 +117,7 @@ class ExportService:
             if not header_row:
                 raise ValidationError("header row is missing")
             headers = [str(h) if h is not None else "" for h in header_row]
-            missing = [h for h in CN_HEADS if h not in headers]
+            missing = [h for h in _CORE_CN_HEADS if h not in headers]
             if missing:
                 raise ValidationError(f"missing columns: {missing}")
             index_map = {h: i for i, h in enumerate(headers)}

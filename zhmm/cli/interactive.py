@@ -8,6 +8,8 @@ import os.path
 import sys
 import time
 
+from zhmm.core import totp as totp_mod
+from zhmm.core.errors import ValidationError
 from zhmm.core.export_service import ExportService
 from zhmm.core.models import PasswordEntry
 from zhmm.data.sm_data_manager import SmData
@@ -142,6 +144,10 @@ class CmdUI:
             print("账号文件打开失败或账号/密码不对")
             return
         self.fix_id_is_None()
+        # --totp 快通道：打印验证码后直接退出，不进交互循环
+        if getattr(self.args, "totp", None) is not None:
+            self.user_totp(int(self.args.totp))
+            return
         try:
             self.user_input_ui()
         except KeyboardInterrupt:
@@ -222,6 +228,39 @@ class CmdUI:
             timer.start()
         elif self.fixed_id_is_None:
             self.save()
+
+    # ------------------------------------------------------------------
+    # TOTP 快通道
+    # ------------------------------------------------------------------
+    def user_totp(self, rid: int) -> None:
+        """打印指定 ID 条目的当前 TOTP 验证码与剩余秒数。
+
+        条目不存在或未启用 TOTP 时给中性提示，不会泄露敏感信息。
+        """
+        if not self.sm_data.mm or not self.sm_data.mm.get("data"):
+            print("密码库为空")
+            return
+        for item in self.sm_data.mm["data"]:
+            if item.get("id") != rid:
+                continue
+            secret = str(item.get("totp_secret") or "").strip()
+            if not secret:
+                print(f"条目 {rid} 未启用 TOTP")
+                return
+            algo = str(item.get("totp_algo") or totp_mod.DEFAULT_ALGO).upper()
+            try:
+                digits_raw = item.get("totp_digits") or totp_mod.DEFAULT_DIGITS
+                period_raw = item.get("totp_period") or totp_mod.DEFAULT_PERIOD
+                digits = int(digits_raw)  # type: ignore[call-overload]
+                period = int(period_raw)  # type: ignore[call-overload]
+                code = totp_mod.generate(secret, algo=algo, digits=digits, period=period)
+                left = totp_mod.remaining_seconds(period)
+            except (ValidationError, TypeError, ValueError) as ex:
+                print(f"TOTP 计算失败: {ex}")
+                return
+            print(f"{code}  (剩余 {left}s, algo={algo})")
+            return
+        print(f"找不到条目 ID={rid}")
 
 
 __all__ = ["CmdUI"]

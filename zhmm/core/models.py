@@ -32,6 +32,11 @@ class PasswordEntry:
     url: str = ""
     desc: str = ""
     utime: int = 0
+    # TOTP 2FA：secret 为空串时表示该条目未启用 2FA
+    totp_secret: str = ""  # Base32 原文
+    totp_algo: str = ""  # "SHA1" | "SHA256" | "SHA512" | "SM3"
+    totp_digits: int = 6  # 一般 6 或 8
+    totp_period: int = 30  # 步长（秒）
 
     def to_dict(self) -> dict[str, Any]:
         """导出为普通 dict（用于 JSON 序列化 / Excel 导出）。"""

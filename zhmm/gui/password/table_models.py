@@ -3,12 +3,21 @@
 
 from PyQt6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, Qt
 
+from zhmm.core import totp as totp_mod
+from zhmm.core.errors import ValidationError
+
 # 密码掩码占位符（固定 8 个圆点，不暴露真实长度）
 _PWD_MASK = "•" * 8
 # 密码列索引
 _PWD_COL = 3
 # “显示”按钮列索引（紧跟在密码列后面）
 _REVEAL_COL = 4
+# “动态码”列索引（紧跟在显示列后面）
+_TOTP_COL = 5
+# TOTP 计算失败时的占位符
+_TOTP_ERROR = "⚠"
+# 未启用 TOTP 的占位符
+_TOTP_DASH = "—"
 
 
 class PasswordTableModel(QAbstractTableModel):
@@ -16,13 +25,26 @@ class PasswordTableModel(QAbstractTableModel):
 
     def __init__(self, data=None):
         super().__init__()
-        self.headers = ["ID", "类别", "账号", "密码", "显示", "手机", "邮箱", "网站", "备注", "更新时间"]
+        self.headers = [
+            "ID",
+            "类别",
+            "账号",
+            "密码",
+            "显示",
+            "动态码",
+            "手机",
+            "邮箱",
+            "网站",
+            "备注",
+            "更新时间",
+        ]
         self.keys = [
             "id",
             "role",
             "userID",
             "pwd",
             "",  # “显示”列无直接字段，单独处理
+            "",  # “动态码”列无直接字段，按 totp_* 动态计算
             "phone",
             "email",
             "url",
@@ -59,6 +81,9 @@ class PasswordTableModel(QAbstractTableModel):
                 if rid in self._revealed_ids:
                     return str(item.get("pwd", ""))
                 return _PWD_MASK if item.get("pwd") else ""
+            # 动态码列：根据 totp_secret 实时计算
+            if col == _TOTP_COL:
+                return self._compute_totp_display(item)
             # 其他列：原样返回
             key = self.keys[col]
             return str(item.get(key, ""))
@@ -69,14 +94,21 @@ class PasswordTableModel(QAbstractTableModel):
                 return str(item.get("pwd", ""))
             if col == _REVEAL_COL:
                 return ""
+            if col == _TOTP_COL:
+                return self._compute_totp_display(item)
             key = self.keys[col]
             return str(item.get(key, ""))
 
-        if role == Qt.ItemDataRole.TextAlignmentRole and col == _REVEAL_COL:
+        if role == Qt.ItemDataRole.TextAlignmentRole and col in (_REVEAL_COL, _TOTP_COL):
             return int(Qt.AlignmentFlag.AlignCenter)
 
-        if role == Qt.ItemDataRole.ToolTipRole and col == _REVEAL_COL:
-            return "点击显示/隐藏密码"
+        if role == Qt.ItemDataRole.ToolTipRole:
+            if col == _REVEAL_COL:
+                return "点击显示/隐藏密码"
+            if col == _TOTP_COL:
+                if item.get("totp_secret"):
+                    return "点击复制当前动态码"
+                return "未启用二次验证（TOTP）"
 
         return None
 
@@ -142,16 +174,61 @@ class PasswordTableModel(QAbstractTableModel):
     def reveal_column() -> int:
         return _REVEAL_COL
 
+    @staticmethod
+    def totp_column() -> int:
+        return _TOTP_COL
+
     def flags(self, index: QModelIndex):  # type: ignore[override]
         base = super().flags(index)
-        # “显示”列不可选中/不可编辑，但可交互左键点击
-        if index.column() == _REVEAL_COL:
+        # “显示”列与“动态码”列不可选中/不可编辑，但可交互左键点击
+        if index.column() in (_REVEAL_COL, _TOTP_COL):
             return Qt.ItemFlag.ItemIsEnabled
         return base
 
+    # ------------------------------------------------------------------
+    # TOTP 计算
+    # ------------------------------------------------------------------
+    @staticmethod
+    def compute_totp_code(item: dict) -> str | None:
+        """按条目字段实时计算 TOTP 码；secret 为空返回 None，失败抛 ValidationError。"""
+        secret = str(item.get("totp_secret") or "").strip()
+        if not secret:
+            return None
+        algo = str(item.get("totp_algo") or totp_mod.DEFAULT_ALGO).upper()
+        try:
+            digits = int(item.get("totp_digits") or totp_mod.DEFAULT_DIGITS)
+            period = int(item.get("totp_period") or totp_mod.DEFAULT_PERIOD)
+        except (TypeError, ValueError):
+            digits = totp_mod.DEFAULT_DIGITS
+            period = totp_mod.DEFAULT_PERIOD
+        return totp_mod.generate(secret, algo=algo, digits=digits, period=period)
+
+    @classmethod
+    def _compute_totp_display(cls, item: dict) -> str:
+        try:
+            code = cls.compute_totp_code(item)
+        except ValidationError:
+            return _TOTP_ERROR
+        if code is None:
+            return _TOTP_DASH
+        # 附加剩余秒数便于用户判断刷新节奏
+        try:
+            period = int(item.get("totp_period") or totp_mod.DEFAULT_PERIOD)
+        except (TypeError, ValueError):
+            period = totp_mod.DEFAULT_PERIOD
+        left = totp_mod.remaining_seconds(period)
+        return f"{code}  {left}s"
+
 
 class CustomProxyModel(QSortFilterProxyModel):
-    """自定义代理模型（支持灵活的过滤逻辑）"""
+    """自定义代理模型。
+
+    为避免动态变化的"动态码"列干扰搜索结果，过滤阶段不走 base 实现的全列
+    文本匹配，而是只对若干稳定字段做大小写不敏感子串匹配。
+    """
+
+    # 参与搜索的原始字段（与老行为 ``SmData.SEARCHABLE_FIELDS`` 一致）
+    _SEARCHABLE_FIELDS = ("userID", "phone", "email", "url", "desc")
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -159,32 +236,46 @@ class CustomProxyModel(QSortFilterProxyModel):
         self.filter_role = ""  # 角色过滤值
         self.use_role_filter = False  # 是否使用角色过滤
         self._has_filter = False
+        self._filter_text = ""
 
     def setFilterRegularExpression(self, pattern):  # type: ignore
-        self._has_filter = bool(pattern and pattern.strip())
-        super().setFilterRegularExpression(pattern)
+        # 退化为 fixed string 行为，避免正则副作用（并保持搜索字段精准）
+        self.setFilterFixedString(str(pattern) if pattern is not None else "")
 
     def setFilterFixedString(self, text):  # type: ignore
-        self._has_filter = bool(text and text.strip())
-        super().setFilterFixedString(text)
+        raw = (text or "").strip()
+        self._has_filter = bool(raw)
+        self._filter_text = raw.lower()
+        # 仍调用 super()，保持代理内部 pattern 状态一致
+        super().setFilterFixedString(text if text is not None else "")
+        self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent) -> bool:
         """根据复选框状态和角色过滤调整过滤逻辑"""
-        # 首先检查是否需要角色过滤
+        model = self.sourceModel()
+        if model is None:
+            return False
+
+        # 角色过滤
         if self.use_role_filter and self.filter_role:
-            model = self.sourceModel()
-            if model is None:
-                return False
-            role_index = model.index(source_row, 1)  # 1是角色列
+            role_index = model.index(source_row, 1)  # 1 是角色列
             role_value = model.data(role_index, Qt.ItemDataRole.DisplayRole)
             if role_value != self.filter_role:
                 return False
 
-        if self.show_all_data:
-            # 正常过滤
-            return super().filterAcceptsRow(source_row, source_parent)
-        else:
-            if not self._has_filter:
-                return False
-            # 当没有过滤条件时，隐藏所有数据
-            return super().filterAcceptsRow(source_row, source_parent)
+        # 搜索过滤
+        if not self._has_filter:
+            # 没有关键字：show_all_data 决定是否全显
+            return bool(self.show_all_data)
+
+        # 有关键字：在 SEARCHABLE_FIELDS 上做子串匹配
+        try:
+            item = model._data[source_row]  # type: ignore[attr-defined]
+        except (AttributeError, IndexError):
+            return False
+        ft = self._filter_text
+        for field in self._SEARCHABLE_FIELDS:
+            val = str(item.get(field) or "").lower()
+            if ft in val:
+                return True
+        return False

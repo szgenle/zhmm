@@ -30,6 +30,12 @@ def _build_parser(include_data_dir: bool = False) -> argparse.ArgumentParser:
     parser.add_argument("--modify", "-m", action="store_true", help="修改")
     parser.add_argument("--export", "-e", type=str, help="导出的文件路径")
     parser.add_argument("--delete", "-d", type=str, help="要删除记录的ID")
+    parser.add_argument(
+        "--totp",
+        type=int,
+        metavar="ID",
+        help="打印指定条目的当前 TOTP 验证码与剩余秒数后退出",
+    )
     parser.add_argument("--simple", action="store_true", help="简单模式（仅允许查询功能）")
     parser.add_argument("--once", action="store_true", help="仅执行一次操作后退出")
     return parser

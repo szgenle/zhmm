@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — TOTP 2FA
+- **Built-in TOTP (time-based one-time password) support** covering both standard and Chinese SM variants:
+  - Full **RFC 6238 / RFC 4226** implementation with `HMAC-SHA1 / SHA256 / SHA512`.
+  - **SM3-TOTP extension** (algorithm name `SM3`) reusing the existing SM3 implementation — a zhmm-private variant for SM-compliance scenarios.
+  - Accepts both raw Base32 secrets (tolerant of spaces, mixed case, missing padding) and `otpauth://` URIs (algo / digits / period auto-filled on paste).
+- **GUI**
+  - `PasswordEntry` gains four new fields: `totp_secret` (Base32), `totp_algo` (`SHA1|SHA256|SHA512|SM3`), `totp_digits` (default 6), `totp_period` (default 30).
+  - Add / edit dialog shows a collapsible TOTP group box with live code preview and one-click `otpauth://` parsing.
+  - Password table gains a new **「动态码 / TOTP」** column (index 5); the column refreshes every 1 second and shows `code  Ns remaining`. Click to copy to clipboard (cleared after 10 s).
+- **CLI**
+  - New `--totp <record_id>` flag on `zhmm-cli` prints the current code and remaining seconds for a given entry. The secret itself is never printed.
+- **Excel export** explicitly **strips the TOTP secret**; only `totp_algo / totp_digits / totp_period` are written. Old `.xlsx` files without the new columns remain importable (loose header validation on the original 9 core columns).
+- 33 new unit tests in `tests/test_core_totp.py`, including all 18 RFC 6238 official test vectors (SHA1 / SHA256 / SHA512) and SM3 self-consistency / boundary cases.
+
+### Notes
+- **TOTP is not a second factor against `.zmb` theft.** Secrets live inside the vault and are protected by the same Argon2id + SM4-CBC + HMAC-SM3 stack as passwords. For true out-of-band 2FA, use a hardware token or a separate authenticator app.
+- **`SM3-TOTP` is a zhmm-private extension** and is not recognized by Google / Microsoft / 1Password authenticators. Do not dual-register such secrets with third-party apps.
+- CLI *creating / editing* TOTP fields is intentionally deferred to the GUI; `--totp` only performs read-side verification.
+
 ### ⚠️ Breaking Changes
 - **Vault format upgraded to v5**: KDF switched from PBKDF2-HMAC-SHA256 (v4) to **Argon2id** (2015 PHC winner, memory-hard). Header now embeds `m_cost / t_cost / p_cost` (each 4 bytes, big-endian) so future strength tuning won't require another format bump. **Old v4 `.zmb` files are not compatible** — export to Excel first, then re-import. v3 `.gl` files remain rejected.
 - Header length grows from 37 B to 49 B; minimum blob overhead grows accordingly.

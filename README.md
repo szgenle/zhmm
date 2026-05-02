@@ -22,7 +22,8 @@
 - 🖼 **防截屏**：窗口从系统录屏/截图工具中排除（macOS `NSWindowSharingNone` / Windows `WDA_EXCLUDE_FROM_CAPTURE`），默认开启，可在设置中关闭
 - 💻 **双形态**：同一套核心，提供 **GUI（PyQt6）** 与 **CLI（argparse）** 两种使用方式
 - 📦 **单文件密库**：一个 `.zmb` 文件即完整密库（二进制格式 v5，含 magic / 版本号 / Argon2 参数 / 认证标签），便于备份与迁移
-- 📝 **支持导入/导出**：支持 Excel（xlsx）导入导出
+- 📝 **支持导入/导出**：支持 Excel（xlsx）导入导出（导出自动抹除 TOTP Secret，仅 `.zmb` 加密备份保留）
+- 🔐 **TOTP 2FA**：内置动态口令（RFC 6238 标准 SHA1/256/512 + 国密 **SM3-TOTP** 扩展），支持 Base32 手动粘贴与 `otpauth://` URI 一键解析，表格每秒刷新。使用指南详见 [docs/TOTP使用指南.md](docs/TOTP使用指南.md)
 - 🎨 **主题切换**：内置浅色/深色主题
 - 🧰 **开箱即用**：提供 PyInstaller 打包脚本，一键构建 macOS / Windows / Linux 发行版
 - 🛡 **CI 质量门禁**：ruff lint / mypy 类型检查 / pytest 全绿才可合并
@@ -92,6 +93,9 @@ zhmm-cli -i ~/zhmm.zmb --account you@example.com -d <record_id>
 
 # 导出
 zhmm-cli -i ~/zhmm.zmb --account you@example.com -e ~/backup.xlsx
+
+# 查询并打印指定 ID 的 TOTP 动态码（含剩余秒数）
+zhmm-cli -i ~/zhmm.zmb --account you@example.com --totp <record_id>
 
 # 简单（只读）模式
 zhmm-cli -i ~/zhmm.zmb --account you@example.com --simple -s github

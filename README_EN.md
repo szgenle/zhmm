@@ -22,7 +22,8 @@
 - 🖼 **Anti-screenshot**: windows are excluded from system screen capture (macOS `NSWindowSharingNone` / Windows `WDA_EXCLUDE_FROM_CAPTURE`); on by default, toggleable in **Settings**.
 - 💻 **Dual form factor**: one core, two UIs — **PyQt6 GUI** and **CLI (argparse)**.
 - 📦 **Single-file vault**: one `.zmb` file *is* your vault (binary format v5 with magic, version, embedded Argon2 parameters, auth tag) — easy to back up and migrate.
-- 📝 **Import / export**: full Excel (xlsx) round-tripping.
+- 📝 **Import / export**: full Excel (xlsx) round-tripping (TOTP secrets are stripped on export; only the encrypted `.zmb` backup preserves them).
+- 🔐 **TOTP 2FA**: built-in one-time passwords — RFC 6238 with SHA1/256/512, plus a Chinese **SM3-TOTP** extension. Supports both Base32 paste and one-click `otpauth://` URI parsing; table refreshes every second. End-user guide: [docs/TOTP使用指南.md](docs/TOTP使用指南.md).
 - 🎨 **Themes**: built-in light / dark themes.
 - 🧰 **Batteries included**: PyInstaller recipes for macOS / Windows / Linux.
 - 🛡 **CI quality gates**: ruff lint / mypy type check / pytest must all pass before merge.
@@ -92,6 +93,9 @@ zhmm-cli -i ~/zhmm.zmb --account you@example.com -d <record_id>
 
 # Export
 zhmm-cli -i ~/zhmm.zmb --account you@example.com -e ~/backup.xlsx
+
+# Print current TOTP code for a given record id (with remaining seconds)
+zhmm-cli -i ~/zhmm.zmb --account you@example.com --totp <record_id>
 
 # Simple (read-only) mode
 zhmm-cli -i ~/zhmm.zmb --account you@example.com --simple -s github

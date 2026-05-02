@@ -36,6 +36,38 @@ class TestPasswordEntry:
         assert e.pwd == "a"  # 原对象未改
         assert e2.pwd == "b" and e2.id == 1
 
+    def test_totp_fields_default_and_roundtrip(self):
+        # 默认值：secret 空串、algo 空串、digits=6、period=30
+        e = PasswordEntry()
+        assert e.totp_secret == ""
+        assert e.totp_algo == ""
+        assert e.totp_digits == 6
+        assert e.totp_period == 30
+
+        e2 = PasswordEntry(
+            id=1,
+            userID="u",
+            pwd="p",
+            totp_secret="JBSWY3DPEHPK3PXP",
+            totp_algo="SM3",
+            totp_digits=8,
+            totp_period=60,
+        )
+        d = e2.to_dict()
+        assert d["totp_secret"] == "JBSWY3DPEHPK3PXP"
+        assert d["totp_algo"] == "SM3"
+        assert d["totp_digits"] == 8
+        assert d["totp_period"] == 60
+        assert PasswordEntry.from_dict(d) == e2
+
+    def test_from_dict_missing_totp_uses_defaults(self):
+        # 老 JSON 无 TOTP 字段时应回落到默认值
+        e = PasswordEntry.from_dict({"id": 1, "userID": "u", "pwd": "p"})
+        assert e.totp_secret == ""
+        assert e.totp_algo == ""
+        assert e.totp_digits == 6
+        assert e.totp_period == 30
+
 
 class TestVault:
     def test_empty(self):
