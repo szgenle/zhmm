@@ -24,6 +24,7 @@ help:
 	@echo "  make lint          - 代码检查（使用flake8）"
 	@echo "  make test          - 运行 pytest 单元测试"
 	@echo "  make pre-commit    - 运行pre-commit检查"
+	@echo "  make update-version - 递增 patch 版本号（仅发版时手动调用）"
 	@echo ""
 	@echo "可选变量："
 	@echo "  PIP_INDEX=<url>    - pip 镜像源（默认使用官方 PyPI）"
@@ -51,13 +52,13 @@ debug:
 	@echo "使用调试模式启动应用程序..."
 	poetry run python -m pdb -m zhmm.main
 
-# 更新版本号
+# 更新版本号（仅在发版时手动调用：`make update-version`；不挂到 build-* 依赖，避免每次打包都污染版本号）
 update-version:
 	@echo "更新版本号..."
 	poetry run python scripts/update_version.py
 
 # 构建GUI应用程序
-build-app: clean-build update-version
+build-app: clean-build
 	@echo "构建GUI应用程序..."
 	poetry add pyinstaller --group dev
 	poetry run pip install certifi $(PIP_INDEX_ARG)
@@ -70,7 +71,7 @@ build-app: clean-build update-version
 	@echo "GUI应用程序构建完成！"
 
 # 构建命令行应用程序（--onedir：避免 --onefile 每次启动的自解压耗时，启动更快）
-build-cmd: clean-build update-version
+build-cmd: clean-build
 	@echo "构建命令行应用程序..."
 	poetry add pyinstaller --group dev
 	poetry run pip install certifi $(PIP_INDEX_ARG)
@@ -90,7 +91,7 @@ build-cmd: clean-build update-version
 	@echo "命令行应用程序构建完成！产物目录：dist/zhmm_cmd/"
 
 # 构建所有应用程序
-build-all: clean-build update-version
+build-all: clean-build
 	@echo "构建所有应用程序..."
 	poetry add pyinstaller --group dev
 	poetry run pip install certifi $(PIP_INDEX_ARG)
