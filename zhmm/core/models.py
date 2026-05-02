@@ -45,7 +45,7 @@ class PasswordEntry:
         for key in fields:
             if key in data and data[key] is not None:
                 clean[key] = data[key]
-        entry = cls(**clean)  # type: ignore[arg-type]
+        entry = cls(**clean)
         if not entry.role:
             entry.role = DEFAULT_ROLE
         return entry

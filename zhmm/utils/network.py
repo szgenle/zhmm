@@ -1,15 +1,29 @@
+"""简易 PyQt 网络请求封装（SSE 友好）。"""
+
+from __future__ import annotations
+
+from typing import Any, Callable
+
 from PyQt6.QtCore import QObject, QUrl, pyqtSlot
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 
 
 class SsNetwork(QObject):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self.manager = QNetworkAccessManager(self)
         self.manager.finished.connect(self.on_finished)
-        self.callbacks = {}  # 存储 QNetworkReply 对象及其回调函数
+        # 存储 QNetworkReply 对象及其回调函数
+        self.callbacks: dict[QNetworkReply, dict[str, Any]] = {}
 
-    def request(self, url: str, post_data, callback, method="POST", stream=False):
+    def request(
+        self,
+        url: str,
+        post_data: Any,
+        callback: Callable[..., Any],
+        method: str = "POST",
+        stream: bool = False,
+    ) -> None:
         # 创建网络请求
         request = QNetworkRequest(QUrl(url))
         self.set_header(request)
@@ -20,17 +34,20 @@ class SsNetwork(QObject):
         else:
             reply = self.manager.get(request, post_data)
 
+        if reply is None:
+            return
+
         self.callbacks[reply] = {"callback": callback, "stream": stream, "buffer": b""}
 
         # 如果是流式请求，连接readyRead信号
-        if stream and reply:
+        if stream:
             reply.readyRead.connect(lambda r=reply: self.on_stream_ready(r))
 
-    def set_header(self, request: QNetworkRequest):
+    def set_header(self, request: QNetworkRequest) -> None:
         pass
 
     @pyqtSlot(QNetworkReply)
-    def on_finished(self, reply):
+    def on_finished(self, reply: QNetworkReply) -> None:
         if reply not in self.callbacks:
             return
         # """处理网络响应"""
@@ -55,13 +72,13 @@ class SsNetwork(QObject):
             del self.callbacks[reply]
             reply.deleteLater()
 
-    def on_response(self, reply):
+    def on_response(self, reply: QNetworkReply) -> None:
         pass
 
-    def on_response_error(self, reply):
+    def on_response_error(self, reply: QNetworkReply) -> None:
         pass
 
-    def on_stream_ready(self, reply):
+    def on_stream_ready(self, reply: QNetworkReply) -> None:
         if reply not in self.callbacks:
             return
 
@@ -85,8 +102,8 @@ class SsNetwork(QObject):
                 payload = event_data[6:].strip()
                 self.handle_stream_chunk(reply, payload)
 
-    def handle_stream_chunk(self, reply, payload):
+    def handle_stream_chunk(self, reply: QNetworkReply, payload: bytes) -> None:
         print("handle_stream_chunk")
 
-    def handle_stream_end(self, reply):
+    def handle_stream_end(self, reply: QNetworkReply) -> None:
         print("handle_stream_end")

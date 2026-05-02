@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-# @Date: 2024-06-30
-# @LastEditTime: 2024-07-02
+"""命令行子命令解析入口。"""
+
+from __future__ import annotations
+
 import argparse
 import getpass
 import sys
@@ -9,7 +11,7 @@ from zhmm.cli.interactive import CmdUI
 from zhmm.utils.log import logger, setup_logging
 
 
-def main():
+def main() -> None:
     # 初始化日志系统
     setup_logging()
 

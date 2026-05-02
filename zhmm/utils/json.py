@@ -1,4 +1,11 @@
-def get_values_from_json(json_data, key_path):
+"""JSON 数据按键路径取值。"""
+
+from __future__ import annotations
+
+from typing import Any
+
+
+def get_values_from_json(json_data: Any, key_path: str) -> list[Any]:
     """
     从JSON数据中获取指定键路径的所有值。
 
@@ -7,9 +14,9 @@ def get_values_from_json(json_data, key_path):
     :return: 指定键路径的所有值
     """
     keys = key_path.split("/")
-    result = []
+    result: list[Any] = []
 
-    def _find_values(data, current_keys):
+    def _find_values(data: Any, current_keys: list[str]) -> None:
         if not current_keys:
             return
 

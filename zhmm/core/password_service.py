@@ -82,7 +82,7 @@ class PasswordService:
                 now = self._clock()
                 updated_changes = dict(changes)
                 updated_changes.setdefault("utime", now)
-                new_entry = e.clone(**updated_changes)  # type: ignore[arg-type]
+                new_entry = e.clone(**updated_changes)
                 if new_entry.role and new_entry.role not in self.vault.roles:
                     self.vault.roles.append(new_entry.role)
                 self.vault.entries[idx] = new_entry

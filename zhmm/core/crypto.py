@@ -96,7 +96,8 @@ class _Sm3Hash:
         return bytes.fromhex(sm3.sm3_hash(list(self._buf)))
 
     def hexdigest(self) -> str:
-        return sm3.sm3_hash(list(self._buf))
+        result: str = sm3.sm3_hash(list(self._buf))
+        return result
 
     def copy(self) -> _Sm3Hash:
         new = _Sm3Hash()
@@ -111,7 +112,8 @@ class _Sm3Hash:
 
 def _hmac_sm3(key: bytes, msg: bytes) -> bytes:
     """HMAC-SM3（RFC 2104），返回 32 字节摘要。"""
-    return hmac.new(key, msg, digestmod=_Sm3Hash).digest()
+    # _Sm3Hash 实现了 hashlib 接口的子集，hmac 会在内部做 duck typing 调用
+    return hmac.new(key, msg, digestmod=_Sm3Hash).digest()  # type: ignore[arg-type]
 
 
 def _derive_key(password: str, salt: bytes) -> bytes:
@@ -135,14 +137,16 @@ def _sm4_encrypt(key: bytes, iv: bytes, plaintext: bytes) -> bytes:
     """SM4-CBC 加密。gmssl 会自动做 PKCS7 padding。"""
     cipher = sm4.CryptSM4()
     cipher.set_key(key, sm4.SM4_ENCRYPT)
-    return cipher.crypt_cbc(iv, plaintext)
+    ct: bytes = cipher.crypt_cbc(iv, plaintext)
+    return ct
 
 
 def _sm4_decrypt(key: bytes, iv: bytes, ciphertext: bytes) -> bytes:
     """SM4-CBC 解密。gmssl 会自动去除 PKCS7 padding。"""
     cipher = sm4.CryptSM4()
     cipher.set_key(key, sm4.SM4_DECRYPT)
-    return cipher.crypt_cbc(iv, ciphertext)
+    pt: bytes = cipher.crypt_cbc(iv, ciphertext)
+    return pt
 
 
 # ----------------------------------------------------------------------

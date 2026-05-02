@@ -1,3 +1,7 @@
+"""跨平台文件与目录工具。"""
+
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -6,17 +10,18 @@ import subprocess
 import sys
 from importlib.resources import files
 from pathlib import Path
+from typing import Any
 
 from PyQt6.QtCore import QStandardPaths
 
 logger = logging.getLogger(__name__)
 
 
-def is_macos():
+def is_macos() -> bool:
     return platform.system() == "darwin"
 
 
-def get_files_content(file_paths):
+def get_files_content(file_paths: list[str | Path]) -> str:
     content = ""
     for file_path in file_paths:
         with open(file_path, encoding="utf-8") as file:
@@ -24,14 +29,14 @@ def get_files_content(file_paths):
     return content
 
 
-def get_file_content(file_path, default=None):
+def get_file_content(file_path: str | Path, default: str | None = None) -> str | None:
     if not os.path.exists(file_path):
         return default
     with open(file_path) as file:
         return file.read()
 
 
-def set_file_content(file_path, content):
+def set_file_content(file_path: str | Path, content: str) -> bool:
     try:
         with open(file_path, "w", encoding="utf-8") as file:
             file.write(content)
@@ -41,7 +46,7 @@ def set_file_content(file_path, content):
         return False
 
 
-def set_file_bytes(file_path, content):
+def set_file_bytes(file_path: str | Path, content: bytes) -> bool:
     try:
         with open(file_path, "wb") as file:
             file.write(content)
@@ -51,20 +56,21 @@ def set_file_bytes(file_path, content):
         return False
 
 
-def load_json(filepath: str, default=None):
+def load_json(filepath: str, default: Any = None) -> Any:
     if not os.path.exists(filepath):
         return default
     if not os.path.isfile(filepath):
         return default
-    json_data = default
+    json_data: Any = default
     try:
         with open(filepath, encoding="utf-8") as f:
             json_data = json.load(f)
-    finally:
-        return json_data
+    except Exception as e:
+        logger.error("加载JSON失败: %s", str(e))
+    return json_data
 
 
-def save_json(filepath: str, json_data):
+def save_json(filepath: str, json_data: Any) -> bool:
     try:
         with open(str(filepath), "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=2)
@@ -74,25 +80,24 @@ def save_json(filepath: str, json_data):
         return False
 
 
-def rm_file(filepath):
+def rm_file(filepath: str | Path) -> None:
     if os.path.exists(filepath):
         os.remove(filepath)
 
 
-def resource_Path(file_name):
+def resource_Path(file_name: str) -> Path:
     if getattr(sys, "frozen", False):
         # noinspection PyProtectedMember
-        base_dir = sys._MEIPASS  # type: ignore
+        base_dir = sys._MEIPASS  # type: ignore[attr-defined]
         return Path(base_dir, "resources", file_name)
-    else:
-        path: str = str(files("resources").joinpath(file_name))
-        return Path(path)
+    path: str = str(files("resources").joinpath(file_name))
+    return Path(path)
 
 
-data_dir = None
+data_dir: str | None = None
 
 
-def get_writable_dir():
+def get_writable_dir() -> str:
     """获取平台合规的可写数据目录"""
     global data_dir
     if data_dir is None:
@@ -107,11 +112,11 @@ def get_writable_dir():
     return data_dir
 
 
-def get_full_path(file_name):
+def get_full_path(file_name: str) -> Path:
     return Path(get_writable_dir(), file_name)
 
 
-def get_application_support_path():
+def get_application_support_path() -> str | None:
     # 获取Application Support目录
     paths = QStandardPaths.standardLocations(
         QStandardPaths.StandardLocation.AppDataLocation
@@ -121,7 +126,7 @@ def get_application_support_path():
     return None
 
 
-def open_directory(path):
+def open_directory(path: str | Path) -> None:
     """
     打开指定目录的系统文件管理器。
 
@@ -135,10 +140,10 @@ def open_directory(path):
     # 根据操作系统调用相应的命令
     system = platform.system()
     if system == "Darwin":  # macOS
-        subprocess.run(["open", path])
+        subprocess.run(["open", str(path)])
     elif system == "Windows":  # Windows
-        subprocess.run(["explorer", path])
+        subprocess.run(["explorer", str(path)])
     elif system == "Linux":  # Linux
-        subprocess.run(["xdg-open", path])
+        subprocess.run(["xdg-open", str(path)])
     else:
         raise OSError(f"不支持的操作系统: {system}")

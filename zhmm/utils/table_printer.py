@@ -1,20 +1,22 @@
+from typing import Any
+
 from zhmm.utils import string_util
 
 
 class TablePrinter:
     @staticmethod
-    def print_list(data):
+    def print_list(data: list[list[Any]]) -> None:
         # 获取列的最大宽度（可选，用于对齐）
-        def str_len(item):
-            cnt = string_util.count_unicode_chars(item)
+        def str_len(item: Any) -> int:
+            cnt = string_util.count_unicode_chars(str(item))
             return len(str(item)) + cnt if cnt else len(str(item))
 
         max_widths = [max(str_len(item) for item in col) for col in zip(*data, strict=False)]
 
-        def item_width(item, width):
-            cnt = string_util.count_unicode_chars(item)
+        def item_width(item: Any, width: int) -> int:
+            cnt = string_util.count_unicode_chars(str(item))
             if cnt > 0:
-                dc = width - len(item)
+                dc = width - len(str(item))
                 dc = min(dc, cnt) if dc > 0 else 0
                 return width - dc
             return width
@@ -34,10 +36,10 @@ class TablePrinter:
 
     @staticmethod
     def print_info(
-        infos: list[dict],
+        infos: list[dict[str, Any]],
         required_fields: list[str],
         cn_headers: list[str] | None = None,
-    ):
+    ) -> None:
         """
         通用信息表格打印方法
 
@@ -45,21 +47,14 @@ class TablePrinter:
         infos -- 字典列表，每个字典代表一条数据记录
         required_fields -- 需要展示的英文字段名列表
         cn_headers -- 可选的中文表头列表，默认为None时使用required_fields直接展示
-
-        示例：
-        >>> TablePrinter.print_info(
-        ...     [{'userID': 'admin', 'pwd': '123456'}],
-        ...     required_fields=['userID', 'pwd'],
-        ...     cn_headers=[SmData.field_mapping['userID'], SmData.field_mapping['pwd']]
-        ... )
         """
 
-        arrs = []
+        arrs: list[list[Any]] = []
         if cn_headers:
-            arrs.append(cn_headers)
+            arrs.append(list(cn_headers))
 
         for info in infos:
-            values = []
+            values: list[str] = []
             for field in required_fields:
                 # 统一使用字段映射获取值
                 value = info.get(field, "")
@@ -69,4 +64,3 @@ class TablePrinter:
             arrs.append(values)
 
         TablePrinter.print_list(arrs)
-        pass

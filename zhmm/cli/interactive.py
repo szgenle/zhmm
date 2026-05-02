@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import os.path
 import sys
 import time
@@ -16,16 +17,16 @@ from zhmm.utils.table_printer import TablePrinter
 
 
 class CmdUI:
-    sm_data = SmData()
-    fixed_id_is_None = False
+    sm_data: SmData = SmData()
+    fixed_id_is_None: bool = False
 
-    def __init__(self, args):
+    def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
 
     # ------------------------------------------------------------------
     # 查询
     # ------------------------------------------------------------------
-    def user_find(self):
+    def user_find(self) -> None:
         print("您好，请输入您想查找的信息(可用空格间隔多个关键字，按ESC退出)")
         info = input("请输入:").strip()
         if info == "\x1b":
@@ -33,7 +34,7 @@ class CmdUI:
             sys.exit(0)
         self.user_search(info)
 
-    def user_search(self, search_word):
+    def user_search(self, search_word: str) -> None:
         if not search_word:
             print("搜索关键字不能为空")
             return
@@ -49,7 +50,7 @@ class CmdUI:
     # ------------------------------------------------------------------
     # 新增
     # ------------------------------------------------------------------
-    def user_new(self):
+    def user_new(self) -> None:
         print(
             "您好，请输入您要添加的账号密码"
             "(输入用空格间隔的一组会自动分成['账号', '密码', '网站', '备注'])"
@@ -60,9 +61,11 @@ class CmdUI:
         en_infos, cn_infos = self.collect_account_info(en_names, cn_names)
         self.confirm_and_save(en_infos, cn_infos)
 
-    def collect_account_info(self, en_names, cn_names):
-        en_infos: dict = {}
-        cn_infos: dict = {}
+    def collect_account_info(
+        self, en_names: list[str], cn_names: list[str]
+    ) -> tuple[dict[str, str], dict[str, str]]:
+        en_infos: dict[str, str] = {}
+        cn_infos: dict[str, str] = {}
         for i in range(4):
             info = input(f"请输入{cn_names[i]}:").strip()
             if info == "\x1b":
@@ -78,15 +81,21 @@ class CmdUI:
         return en_infos, cn_infos
 
     def process_multi_value_input(
-        self, start_idx, input_str, en_names, cn_names, en_infos, cn_infos
-    ):
+        self,
+        start_idx: int,
+        input_str: str,
+        en_names: list[str],
+        cn_names: list[str],
+        en_infos: dict[str, str],
+        cn_infos: dict[str, str],
+    ) -> None:
         infos = input_str.split()
         for j in range(min(4 - start_idx, len(infos))):
             idx = start_idx + j
             en_infos[en_names[idx]] = infos[j]
             cn_infos[cn_names[idx]] = infos[j]
 
-    def build_zhmm_dict(self, en_infos) -> ZhmmDict:
+    def build_zhmm_dict(self, en_infos: dict[str, str]) -> ZhmmDict:
         return {
             "id": date_util.timestamp_int(),
             "role": "个人",
@@ -99,7 +108,9 @@ class CmdUI:
             "utime": date_util.timestamp_int(),
         }
 
-    def confirm_and_save(self, en_infos, cn_infos):
+    def confirm_and_save(
+        self, en_infos: dict[str, str], cn_infos: dict[str, str]
+    ) -> None:
         if not en_infos or not cn_infos:
             return
         print("新增账号信息：", cn_infos)
@@ -115,12 +126,12 @@ class CmdUI:
     # ------------------------------------------------------------------
     # 主流程
     # ------------------------------------------------------------------
-    def save(self):
+    def save(self) -> None:
         file_path = self.args.out if self.args.out else self.args.input
         if self.sm_data.save(file_path):
             print("操作成功!")
 
-    def user_option(self):
+    def user_option(self) -> int:
         time.sleep(0.3)
         op = input("新增[n/N]查找[f/F]导出[e/E]删除[d/D]退出[q/Q/ESC]:").strip().lower()
         if op == "\x1b" or op is None or op == "q":
@@ -149,7 +160,7 @@ class CmdUI:
         finally:
             print("\n再见\n")
 
-    def user_input_ui(self):
+    def user_input_ui(self) -> None:
         while True:
             if self.args.search:
                 search_word = self.args.search
@@ -179,7 +190,7 @@ class CmdUI:
                 print("\n再见\n")
                 break
 
-    def user_export(self):
+    def user_export(self) -> None:
         file_path = input("请输入导出的路径:").strip()
         if file_path == "\x1b":
             print("\n取消操作\n")
@@ -187,7 +198,8 @@ class CmdUI:
         if file_path and os.path.exists(file_path):
             file_path = os.path.join(file_path, "zhmm.xlsx")
             entries = [
-                PasswordEntry.from_dict(item) for item in self.sm_data.mm["data"]
+                PasswordEntry.from_dict(dict(item))
+                for item in self.sm_data.mm["data"]
             ]
             try:
                 ExportService.export_xlsx(file_path, entries)
@@ -195,7 +207,7 @@ class CmdUI:
             except Exception as e:
                 print(f"导出失败: {e}")
 
-    def user_delete(self):
+    def user_delete(self) -> None:
         try:
             ids = input("请输入要删除的ID(多个ID用空格隔开):").strip()
             if ids == "\x1b":
@@ -214,7 +226,7 @@ class CmdUI:
         except ValueError:
             print("错误：请输入有效的数字ID（多个ID用空格分隔）")
 
-    def fix_id_is_None(self):
+    def fix_id_is_None(self) -> None:
         if not self.sm_data.fix_id_is_None():
             self.fixed_id_is_None = True
             import threading
@@ -224,3 +236,6 @@ class CmdUI:
             timer.start()
         elif self.fixed_id_is_None:
             self.save()
+
+
+__all__ = ["CmdUI"]

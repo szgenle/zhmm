@@ -24,7 +24,7 @@ class ColorFormatter(logging.Formatter):
     }
     RESET_CODE = "\033[0m"
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         color = self.COLOR_CODES.get(record.levelno, "")
         formatter = logging.Formatter(
             f"{color}%(asctime)s - %(levelname)s - %(message)s{self.RESET_CODE}"
@@ -32,7 +32,7 @@ class ColorFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-def setup_logging():
+def setup_logging() -> logging.Logger:
     """配置日志系统（应在应用入口调用）"""
     global _logger_configured
 

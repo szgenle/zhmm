@@ -3,14 +3,14 @@
 # @LastEditTime: 2024-07-02
 
 
-def truncate(s, max_length=32):
+def truncate(s: str, max_length: int = 32) -> str:
     """截断过长的字符串，并在尾部显示..."""
     if len(s) > max_length:
         return s[:max_length] + "..."
     return s
 
 
-def count_chinese_chars(s):
+def count_chinese_chars(s: str) -> int:
     count = 0
     for char in s:
         if "\u4e00" <= char <= "\u9fff":
@@ -18,7 +18,7 @@ def count_chinese_chars(s):
     return count
 
 
-chinese_punctuation = {
+chinese_punctuation: set[str] = {
     "，",
     "。",
     "？",
@@ -41,7 +41,7 @@ chinese_punctuation = {
 }
 
 
-def count_unicode_chars(s):
+def count_unicode_chars(s: str) -> int:
     count = 0
 
     for char in s:
@@ -63,5 +63,5 @@ def count_unicode_chars(s):
     return count
 
 
-def is_string(obj):
+def is_string(obj: object) -> bool:
     return isinstance(obj, str)
