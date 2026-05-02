@@ -1,4 +1,4 @@
-"""QSettings 封装：主题、自动备份、自动锁定、记住密码等本地偏好。"""
+"""QSettings 封装：主题、备份保留策略、自动锁定、记住密码等本地偏好。"""
 
 from __future__ import annotations
 
@@ -70,26 +70,6 @@ class AppSetting(QSettings):
             theme: 'light', 'dark', 'auto'
         """
         self.setValue("theme", theme)
-        self.sync()
-
-    def get_auto_backup_enabled(self) -> bool:
-        """获取自动备份是否启用"""
-        value: bool = self.value("auto_backup_enabled", True, type=bool)
-        return value
-
-    def save_auto_backup_enabled(self, enabled: bool) -> None:
-        """保存自动备份启用状态"""
-        self.setValue("auto_backup_enabled", enabled)
-        self.sync()
-
-    def get_backup_interval(self) -> int:
-        """获取备份间隔（分钟），默认30分钟"""
-        value: int = self.value("backup_interval", 30, type=int)
-        return value
-
-    def save_backup_interval(self, minutes: int) -> None:
-        """保存备份间隔"""
-        self.setValue("backup_interval", minutes)
         self.sync()
 
     def get_backup_keep_count(self) -> int:

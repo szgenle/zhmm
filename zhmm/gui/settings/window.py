@@ -22,7 +22,6 @@ class SettingWindow(QWidget):
     """设置界面组件"""
 
     imported_xlsx = pyqtSignal()  # 登录成功信号
-    backup_settings_changed = pyqtSignal()  # 备份设置变更信号
 
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
@@ -93,10 +92,9 @@ class SettingWindow(QWidget):
         layout.addWidget(self.lock_time_label)
         layout.addWidget(self.lock_time_spinbox)
 
-        # 自动备份设置组件
+        # 数据备份组件
         self.backup_settings_widget = BackupSettings(self.info, self)
-        self.backup_settings_widget.backup_settings_changed.connect(lambda: self.backup_settings_changed.emit())
-        backup_group = QGroupBox("自动备份设置")
+        backup_group = QGroupBox("数据备份")
         backup_group_layout = QVBoxLayout()
         backup_group_layout.addWidget(self.backup_settings_widget)
         backup_group.setLayout(backup_group_layout)
