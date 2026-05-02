@@ -8,7 +8,7 @@ authors = [
 maintainers = [
     {name = "Lioesquieu"}
 ]
-license = {text = "MIT"}
+license = {text = "GPL-3.0-or-later"}
 readme = "README.md"
 requires-python = ">=3.10.17"
 keywords = [

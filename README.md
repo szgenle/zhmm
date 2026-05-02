@@ -10,7 +10,7 @@
   <a href="https://github.com/Lioesquieu/zhmm/releases"><img src="https://img.shields.io/github/v/release/Lioesquieu/zhmm?include_prereleases" alt="Release"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python"></a>
   <a href="https://pypi.org/project/PyQt6/"><img src="https://img.shields.io/badge/GUI-PyQt6-41CD52?logo=qt&logoColor=white" alt="PyQt6"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License"></a>
   <a href="README_EN.md">English</a>
 </p>
 
@@ -206,7 +206,7 @@ poetry run pytest --cov=zhmm      # 带覆盖率
 
 ## 📄 许可证
 
-本项目采用 [MIT License](LICENSE)。
+本项目采用 [GPL-3.0 License](LICENSE)。
 
 ---
 
