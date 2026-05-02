@@ -6,8 +6,8 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
 
-from zhmm.widgets.dialog import Dialog
 from zhmm.utils.log import logger
+from zhmm.widgets.dialog import Dialog
 
 
 class LoginWindow(Dialog):
@@ -16,9 +16,7 @@ class LoginWindow(Dialog):
     login_success = pyqtSignal(dict)  # 保持信号声明不变
     hashpw: str | None = None
 
-    def __init__(
-        self, openid: str | None = None, hashpw: str | None = None, parent=None
-    ):
+    def __init__(self, openid: str | None = None, hashpw: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
@@ -99,9 +97,7 @@ class LoginWindow(Dialog):
             return
 
         try:
-            if self.hashpw and not bcrypt.checkpw(
-                password.encode(), self.hashpw.encode()
-            ):
+            if self.hashpw and not bcrypt.checkpw(password.encode(), self.hashpw.encode()):
                 self.show_error("密码错误")
                 return
         except ValueError as e:

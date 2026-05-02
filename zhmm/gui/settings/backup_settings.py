@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """备份设置管理模块"""
+
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -100,9 +101,7 @@ class BackupSettings(QWidget):
 
         backup_service = BackupService(file_util.get_full_path(".backups"))
         try:
-            backup_path = backup_service.create(
-                file_path, "manual", config_file_path
-            )
+            backup_path = backup_service.create(file_path, "manual", config_file_path)
         except StorageError as e:
             QMessageBox.critical(self, "备份失败", f"备份操作失败：{e}")
             return

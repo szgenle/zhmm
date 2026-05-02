@@ -119,6 +119,15 @@ module = ["zhmm.core.*", "zhmm.config.*", "zhmm.utils.*", "zhmm.cli.*"]
 strict = true
 
 [[tool.mypy.overrides]]
+# Qt-adjacent utilities: 继承/装饰 PyQt6 符号时 mypy 因无 stubs 将其视为 Any,
+# 会产生一批噪音级 misc 错误。保留其他 strict 检查，仅屏蔽该类错误。
+module = [
+    "zhmm.config.settings",
+    "zhmm.utils.network",
+]
+disable_error_code = ["misc"]
+
+[[tool.mypy.overrides]]
 module = ["zhmm.gui.*", "zhmm.app.*", "zhmm.widgets.*", "zhmm.data.*"]
 # Qt signal/slot types make strict checking painful; keep relaxed for UI layer.
 # - Don't require full annotations on GUI functions.
@@ -136,10 +145,11 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 # Tests don't need full annotations; focus on assertion behavior.
+# pytest 的 fixture/parametrize 装饰器无类型标注，会触发 misc；统一屏蔽。
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 check_untyped_defs = false
-disable_error_code = ["unused-ignore"]
+disable_error_code = ["unused-ignore", "misc"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

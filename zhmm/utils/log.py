@@ -15,6 +15,7 @@ _logger_configured = False
 
 class ColorFormatter(logging.Formatter):
     """彩色控制台日志格式化器"""
+
     COLOR_CODES = {
         logging.DEBUG: "\033[94m",
         logging.INFO: "\033[92m",
@@ -26,9 +27,7 @@ class ColorFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         color = self.COLOR_CODES.get(record.levelno, "")
-        formatter = logging.Formatter(
-            f"{color}%(asctime)s - %(levelname)s - %(message)s{self.RESET_CODE}"
-        )
+        formatter = logging.Formatter(f"{color}%(asctime)s - %(levelname)s - %(message)s{self.RESET_CODE}")
         return formatter.format(record)
 
 
@@ -44,12 +43,8 @@ def setup_logging() -> logging.Logger:
     logger.setLevel(logging.DEBUG)
 
     # 创建不同级别的文件路径
-    info_path = file_util.get_full_path(
-        f".log/{datetime.now().strftime('%Y%m%d')}_info.log"
-    )
-    error_path = file_util.get_full_path(
-        f".log/{datetime.now().strftime('%Y%m%d')}_error.log"
-    )
+    info_path = file_util.get_full_path(f".log/{datetime.now().strftime('%Y%m%d')}_info.log")
+    error_path = file_util.get_full_path(f".log/{datetime.now().strftime('%Y%m%d')}_error.log")
     for path in [info_path, error_path]:
         path.parent.mkdir(exist_ok=True)
 
@@ -100,6 +95,6 @@ if __name__ == "__main__":
 
     # 异常记录
     try:
-        1 / 0  # pyright: ignore[reportUnusedExpression]
+        _ = 1 / 0
     except Exception:
         logger.exception("发生异常: ")

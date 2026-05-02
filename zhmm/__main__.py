@@ -35,10 +35,9 @@ def main() -> None:
         sys.argv = [sys.argv[0], *argv[1:]]
 
     # 默认：GUI
-    from zhmm.app.gui_app import main as gui_main
-
     # 初始化应用配置与日志（跟老 main.py 行为一致）
     import zhmm
+    from zhmm.app.gui_app import main as gui_main
     from zhmm.utils.log import setup_logging
 
     zhmm.init_app()

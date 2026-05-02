@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from PyQt6.QtCore import QObject, QUrl, pyqtSlot
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
@@ -28,11 +29,8 @@ class SsNetwork(QObject):
         request = QNetworkRequest(QUrl(url))
         self.set_header(request)
 
-        # 发送 POST 请求
-        if method == "POST":
-            reply = self.manager.post(request, post_data)
-        else:
-            reply = self.manager.get(request, post_data)
+        # 发送 POST / GET 请求
+        reply = self.manager.post(request, post_data) if method == "POST" else self.manager.get(request, post_data)
 
         if reply is None:
             return

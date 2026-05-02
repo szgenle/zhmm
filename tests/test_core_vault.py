@@ -13,14 +13,16 @@ from zhmm.core.vault import VaultFile
 
 @pytest.fixture
 def sample_vault() -> Vault:
-    return Vault.from_dict({
-        "data": [
-            {"id": 1, "role": "工作", "userID": "alice", "pwd": "s3cret!@#$%", "utime": 100},
-            {"id": 2, "role": "个人", "userID": "bob",   "pwd": "另一个密码", "utime": 200},
-        ],
-        "roles": ["个人", "工作"],
-        "utime": 500,
-    })
+    return Vault.from_dict(
+        {
+            "data": [
+                {"id": 1, "role": "工作", "userID": "alice", "pwd": "s3cret!@#$%", "utime": 100},
+                {"id": 2, "role": "个人", "userID": "bob", "pwd": "另一个密码", "utime": 200},
+            ],
+            "roles": ["个人", "工作"],
+            "utime": 500,
+        }
+    )
 
 
 class TestRoundtrip:

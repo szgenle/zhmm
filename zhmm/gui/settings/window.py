@@ -13,9 +13,9 @@ from PyQt6.QtWidgets import (
 
 import zhmm
 from zhmm.config.constants import ZhmmFileInfo
-from zhmm.utils import file_util
 from zhmm.gui.settings.backup_settings import BackupSettings
 from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
+from zhmm.utils import file_util
 
 
 class SettingWindow(QWidget):
@@ -66,9 +66,9 @@ class SettingWindow(QWidget):
 
         # 从配置加载当前主题
         current_theme = zhmm.config.get_theme()
-        if current_theme == 'dark':
+        if current_theme == "dark":
             self.dark_theme_radio.setChecked(True)
-        elif current_theme == 'auto':
+        elif current_theme == "auto":
             self.auto_theme_radio.setChecked(True)
         else:
             self.light_theme_radio.setChecked(True)
@@ -98,9 +98,7 @@ class SettingWindow(QWidget):
 
         # 自动备份设置组件
         self.backup_settings_widget = BackupSettings(self.info, self)
-        self.backup_settings_widget.backup_settings_changed.connect(
-            lambda: self.backup_settings_changed.emit()
-        )
+        self.backup_settings_widget.backup_settings_changed.connect(lambda: self.backup_settings_changed.emit())
         backup_group = QGroupBox("自动备份设置")
         backup_group_layout = QVBoxLayout()
         backup_group_layout.addWidget(self.backup_settings_widget)
@@ -127,6 +125,7 @@ class SettingWindow(QWidget):
 
     def import_xlsx(self):
         """导入xlsx文件"""
+
         def on_success():
             # 发送信号通知界面刷新
             self.imported_xlsx.emit()
@@ -150,11 +149,11 @@ class SettingWindow(QWidget):
 
         # 确定选择的主题
         if button == self.light_theme_radio:
-            theme = 'light'
+            theme = "light"
         elif button == self.dark_theme_radio:
-            theme = 'dark'
+            theme = "dark"
         elif button == self.auto_theme_radio:
-            theme = 'auto'
+            theme = "auto"
         else:
             return
 

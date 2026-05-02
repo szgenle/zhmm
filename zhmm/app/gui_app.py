@@ -9,11 +9,11 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 import zhmm
-from zhmm.widgets.base_window import BaseWindow
-from zhmm.gui.welcome_widget import WelcomeWidget
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.main_window import MainWindow
+from zhmm.gui.welcome_widget import WelcomeWidget
 from zhmm.utils.log import logger
+from zhmm.widgets.base_window import BaseWindow
 
 
 class AppWindow(BaseWindow):
@@ -45,9 +45,7 @@ class AppWindow(BaseWindow):
         welcome_widget = WelcomeWidget(self)
         if show_login_dialog:
             welcome_widget.file_list.auto_select_last_file()
-        welcome_widget.file_list.login_success.connect(
-            lambda info: self.on_login_success(info)
-        )
+        welcome_widget.file_list.login_success.connect(lambda info: self.on_login_success(info))
         self.setCentralWidget(welcome_widget)
         return welcome_widget
 
@@ -80,9 +78,7 @@ class AppWindow(BaseWindow):
         self.main_widget = MainWindow(info)
         self.setCentralWidget(self.main_widget)
         # 连接返回首页信号
-        self.main_widget.return_requested.connect(
-            lambda: self.show_welcome_ui(False)
-        )
+        self.main_widget.return_requested.connect(lambda: self.show_welcome_ui(False))
         # 隐藏欢迎界面
         self.hide_welcome_ui()
 
@@ -106,9 +102,9 @@ class AppWindow(BaseWindow):
         inactive_duration = current_time - self.last_active_time
 
         # 使用配置的锁屏时间检查非活动时间
-        if inactive_duration > timedelta(
-            minutes=zhmm.config.get_lock_time()
-        ) and not isinstance(self.centralWidget(), WelcomeWidget):
+        if inactive_duration > timedelta(minutes=zhmm.config.get_lock_time()) and not isinstance(
+            self.centralWidget(), WelcomeWidget
+        ):
             logger.info(f"检测到非活动时间: {inactive_duration}，显示登录窗口")
             self.show_welcome_ui()
         else:

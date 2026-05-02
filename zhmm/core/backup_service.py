@@ -57,20 +57,14 @@ class BackupService:
                 try:
                     shutil.copy2(cfg_src, cfg_dst)
                 except OSError as e:
-                    raise StorageError(
-                        f"copy failed: {cfg_src} -> {cfg_dst}: {e}"
-                    ) from e
+                    raise StorageError(f"copy failed: {cfg_src} -> {cfg_dst}: {e}") from e
         return data_dst
 
     # ---------- 查询 ----------
 
     def list(self, prefix: str = "backup", pattern: str = "*" + DATA_SUFFIX) -> list[Path]:
         """列出所有符合 prefix+pattern 的备份，按修改时间倒序。"""
-        items = [
-            p
-            for p in self.backup_dir.glob(pattern)
-            if p.is_file() and p.name.startswith(prefix)
-        ]
+        items = [p for p in self.backup_dir.glob(pattern) if p.is_file() and p.name.startswith(prefix)]
         items.sort(key=lambda p: p.stat().st_mtime, reverse=True)
         return items
 
@@ -142,16 +136,11 @@ class BackupService:
                 cfg_dst = Path(config_target)
                 try:
                     if cfg_dst.exists():
-                        cfg_safety = (
-                            cfg_dst.parent
-                            / f"{cfg_dst.stem}_before_restore_{ts}{cfg_dst.suffix}"
-                        )
+                        cfg_safety = cfg_dst.parent / f"{cfg_dst.stem}_before_restore_{ts}{cfg_dst.suffix}"
                         shutil.copy2(cfg_dst, cfg_safety)
                     shutil.copy2(cfg_backup, cfg_dst)
                 except OSError as e:
-                    raise StorageError(
-                        f"config restore failed: {cfg_backup} -> {cfg_dst}: {e}"
-                    ) from e
+                    raise StorageError(f"config restore failed: {cfg_backup} -> {cfg_dst}: {e}") from e
 
     # ---------- 工具 ----------
 

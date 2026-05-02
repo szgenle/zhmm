@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from zhmm.core.models import PasswordEntry, Vault
+from zhmm.core.models import PasswordEntry
 from zhmm.core.password_service import PasswordService
 
 

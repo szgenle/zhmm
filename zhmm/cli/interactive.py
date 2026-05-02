@@ -40,30 +40,23 @@ class CmdUI:
             return
         infos: list[ZhmmDict] | None = self.sm_data.search(search_word)
         if infos:
-            print("您好，查找到[%s]的相关信息：" % search_word)
-            TablePrinter.print_info(
-                [dict(info) for info in infos], SmData.keys, SmData.heads
-            )
+            print(f"您好，查找到[{search_word}]的相关信息：")
+            TablePrinter.print_info([dict(info) for info in infos], SmData.keys, SmData.heads)
         else:
-            print("您好，没有查找到[%s]的相关信息：" % search_word)
+            print(f"您好，没有查找到[{search_word}]的相关信息：")
 
     # ------------------------------------------------------------------
     # 新增
     # ------------------------------------------------------------------
     def user_new(self) -> None:
-        print(
-            "您好，请输入您要添加的账号密码"
-            "(输入用空格间隔的一组会自动分成['账号', '密码', '网站', '备注'])"
-        )
+        print("您好，请输入您要添加的账号密码" "(输入用空格间隔的一组会自动分成['账号', '密码', '网站', '备注'])")
         en_names = ["userID", "pwd", "url", "desc"]
         cn_names = [SmData.field_mapping[field] for field in en_names]
 
         en_infos, cn_infos = self.collect_account_info(en_names, cn_names)
         self.confirm_and_save(en_infos, cn_infos)
 
-    def collect_account_info(
-        self, en_names: list[str], cn_names: list[str]
-    ) -> tuple[dict[str, str], dict[str, str]]:
+    def collect_account_info(self, en_names: list[str], cn_names: list[str]) -> tuple[dict[str, str], dict[str, str]]:
         en_infos: dict[str, str] = {}
         cn_infos: dict[str, str] = {}
         for i in range(4):
@@ -72,9 +65,7 @@ class CmdUI:
                 print("\n取消操作\n")
                 return {}, {}
             if " " in info:
-                self.process_multi_value_input(
-                    i, info, en_names, cn_names, en_infos, cn_infos
-                )
+                self.process_multi_value_input(i, info, en_names, cn_names, en_infos, cn_infos)
                 break
             en_infos[en_names[i]] = info
             cn_infos[cn_names[i]] = info
@@ -108,9 +99,7 @@ class CmdUI:
             "utime": date_util.timestamp_int(),
         }
 
-    def confirm_and_save(
-        self, en_infos: dict[str, str], cn_infos: dict[str, str]
-    ) -> None:
+    def confirm_and_save(self, en_infos: dict[str, str], cn_infos: dict[str, str]) -> None:
         if not en_infos or not cn_infos:
             return
         print("新增账号信息：", cn_infos)
@@ -197,10 +186,7 @@ class CmdUI:
             return
         if file_path and os.path.exists(file_path):
             file_path = os.path.join(file_path, "zhmm.xlsx")
-            entries = [
-                PasswordEntry.from_dict(dict(item))
-                for item in self.sm_data.mm["data"]
-            ]
+            entries = [PasswordEntry.from_dict(dict(item)) for item in self.sm_data.mm["data"]]
             try:
                 ExportService.export_xlsx(file_path, entries)
                 print(f"已导出到 {file_path}")

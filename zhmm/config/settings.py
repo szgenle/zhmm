@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import os
-from hashlib import sha256
 
 from cryptography.fernet import Fernet
 from PyQt6.QtCore import QSettings
@@ -37,11 +36,6 @@ class AppSetting(QSettings):
         salt = self._get_or_create_encryption_salt()
         derived = hashlib.pbkdf2_hmac("sha256", input_bytes, salt, 200_000, dklen=32)
         return base64.urlsafe_b64encode(derived).decode()
-
-    # 旧版兼容：SHA256摘要 + URL安全Base64（保留等号）
-    def legacy_generate_key_from_string(self, input_str: str) -> str:
-        digest = sha256(input_str.encode()).digest()
-        return base64.urlsafe_b64encode(digest).decode()
 
     @property
     def remember_password(self) -> bool:

@@ -19,9 +19,7 @@ from zhmm.utils.log import logger
 class UIDecryptData:
     """UI 侧解密工具类。"""
 
-    def decrypt_file(
-        self, file_path: str, openid: str, password: str
-    ) -> SmData | None:
+    def decrypt_file(self, file_path: str, openid: str, password: str) -> SmData | None:
         """读取并解密文件；文件为空或不存在时返回新建库。"""
         try:
             smdata = SmData()

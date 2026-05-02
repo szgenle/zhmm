@@ -61,9 +61,7 @@ class VaultFile:
             StorageError: 写入失败
         """
         p = Path(path)
-        plaintext = json.dumps(
-            vault.to_dict(), ensure_ascii=False, separators=(",", ":")
-        ).encode("utf-8")
+        plaintext = json.dumps(vault.to_dict(), ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         blob = CryptoVault.seal(password, plaintext)
 
         parent = p.parent if str(p.parent) else Path(".")

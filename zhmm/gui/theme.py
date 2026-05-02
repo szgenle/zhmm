@@ -283,37 +283,33 @@ class ThemeManager:
         """
         system = platform.system()
 
-        if system == 'Darwin':  # macOS
+        if system == "Darwin":  # macOS
             try:
                 result = subprocess.run(
-                    ['defaults', 'read', '-g', 'AppleInterfaceStyle'],
-                    capture_output=True,
-                    text=True
+                    ["defaults", "read", "-g", "AppleInterfaceStyle"], capture_output=True, text=True
                 )
                 # 如果命令成功且返回 'Dark'，则为深色模式
-                if result.returncode == 0 and 'Dark' in result.stdout:
-                    return 'dark'
-                return 'light'
+                if result.returncode == 0 and "Dark" in result.stdout:
+                    return "dark"
+                return "light"
             except Exception:
-                return 'light'
+                return "light"
 
-        elif system == 'Windows':  # Windows
+        elif system == "Windows":  # Windows
             try:
                 import winreg
+
                 registry = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-                key = winreg.OpenKey(
-                    registry,
-                    r'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
-                )
-                value, _ = winreg.QueryValueEx(key, 'AppsUseLightTheme')
+                key = winreg.OpenKey(registry, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
+                value, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
                 winreg.CloseKey(key)
                 # 0 = 深色, 1 = 浅色
-                return 'dark' if value == 0 else 'light'
+                return "dark" if value == 0 else "light"
             except Exception:
-                return 'light'
+                return "light"
 
         # 其他系统默认返回浅色
-        return 'light'
+        return "light"
 
     @staticmethod
     def get_theme_stylesheet(theme_mode):
@@ -323,11 +319,11 @@ class ThemeManager:
         返回:
             样式表字符串
         """
-        if theme_mode == 'auto':
+        if theme_mode == "auto":
             # 自动模式：检测系统主题
             system_theme = ThemeManager.get_system_theme()
-            return ThemeManager.DARK_THEME if system_theme == 'dark' else ThemeManager.LIGHT_THEME
-        elif theme_mode == 'dark':
+            return ThemeManager.DARK_THEME if system_theme == "dark" else ThemeManager.LIGHT_THEME
+        elif theme_mode == "dark":
             return ThemeManager.DARK_THEME
         else:  # 'light' 或其他默认值
             return ThemeManager.LIGHT_THEME

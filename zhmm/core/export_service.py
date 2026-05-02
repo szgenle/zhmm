@@ -18,10 +18,26 @@ from zhmm.core.errors import StorageError, ValidationError
 from zhmm.core.models import PasswordEntry
 
 CN_HEADS: tuple[str, ...] = (
-    "ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间",
+    "ID",
+    "类别",
+    "账号",
+    "密码",
+    "手机",
+    "邮箱",
+    "网站",
+    "备注",
+    "更新时间",
 )
 EN_HEADS: tuple[str, ...] = (
-    "id", "role", "userID", "pwd", "phone", "email", "url", "desc", "utime",
+    "id",
+    "role",
+    "userID",
+    "pwd",
+    "phone",
+    "email",
+    "url",
+    "desc",
+    "utime",
 )
 _INT_FIELDS = {"id", "utime"}
 

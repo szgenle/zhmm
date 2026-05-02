@@ -102,9 +102,7 @@ def get_writable_dir() -> str:
     global data_dir
     if data_dir is None:
         # 使用Qt的自动路径拼接功能，避免手动拼接目录名
-        data_dir = QStandardPaths.writableLocation(
-            QStandardPaths.StandardLocation.AppDataLocation
-        )
+        data_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
         # 删除原有的手动拼接 'zhmm' 操作
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
@@ -118,11 +116,9 @@ def get_full_path(file_name: str) -> Path:
 
 def get_application_support_path() -> str | None:
     # 获取Application Support目录
-    paths = QStandardPaths.standardLocations(
-        QStandardPaths.StandardLocation.AppDataLocation
-    )
+    paths = QStandardPaths.standardLocations(QStandardPaths.StandardLocation.AppDataLocation)
     if paths:
-        return paths[0]
+        return str(paths[0])
     return None
 
 

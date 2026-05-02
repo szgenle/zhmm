@@ -19,10 +19,10 @@ from PyQt6.QtWidgets import (
 )
 
 import zhmm
-from zhmm.gui.decrypt_data_view import UIDecryptData
 from zhmm.config.constants import ZhmmFileInfo
-from zhmm.utils import file_util
+from zhmm.gui.decrypt_data_view import UIDecryptData
 from zhmm.gui.login.login_window import LoginWindow
+from zhmm.utils import file_util
 
 
 class FileListWidget(QWidget):
@@ -42,18 +42,14 @@ class FileListWidget(QWidget):
         # 文件列表表格
         self.file_table = QTableWidget()
         self.file_table.setColumnCount(5)  # 增加OpenID列
-        self.file_table.setHorizontalHeaderLabels(
-            ["文件名", "文件路径", "OpenID", "密码", "最近访问时间"]
-        )
+        self.file_table.setHorizontalHeaderLabels(["文件名", "文件路径", "OpenID", "密码", "最近访问时间"])
         self.file_table.setColumnHidden(0, True)
         self.file_table.setColumnHidden(2, True)
         self.file_table.setColumnHidden(3, True)
         self.file_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # type: ignore
         self.file_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # type: ignore
         self.file_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.file_table.setContextMenuPolicy(
-            Qt.ContextMenuPolicy.CustomContextMenu
-        )  # 启用右键菜单
+        self.file_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # 启用右键菜单
         self.file_table.customContextMenuRequested.connect(self.show_context_menu)
         self.file_table.itemClicked.connect(self.handle_item_click)
 
@@ -118,13 +114,9 @@ class FileListWidget(QWidget):
         if file_path:
             self.show_login_dialog(file_path)
 
-    def show_login_dialog(
-        self, file_path: str, openid: str | None = None, hashpw: str | None = None
-    ):
+    def show_login_dialog(self, file_path: str, openid: str | None = None, hashpw: str | None = None):
         login_dialog = LoginWindow(openid, hashpw)
-        login_dialog.login_success.connect(
-            lambda info: self.on_login_success(file_path, info)
-        )
+        login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
         login_dialog.exec()
 
     def show_create_dialog(self, file_path: str):
@@ -139,23 +131,20 @@ class FileListWidget(QWidget):
         message_box.setWindowTitle("提示")
         message_box.setFont(font)
         message_box.setText("该文件不存在或未登录，是否创建新账号小本本？")
-        message_box.setStandardButtons(
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
+        message_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         message_box.setDefaultButton(QMessageBox.StandardButton.No)
         message_box.setIcon(QMessageBox.Icon.Question)
         result = message_box.exec()
         if result == QMessageBox.StandardButton.Yes:
             login_dialog = LoginWindow("")
-            login_dialog.login_success.connect(
-                lambda info: self.on_create_success(file_path, info)
-            )
+            login_dialog.login_success.connect(lambda info: self.on_create_success(file_path, info))
             login_dialog.exec()
         else:
             print("用户取消了创建操作")
 
     def on_create_success(self, file_path: str, info: dict):
         import hashlib
+
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
         # 使用原始密码进行密钥派生（更安全）
         if zhmm.config.init(file_name, info["password"]) is False:
@@ -166,6 +155,7 @@ class FileListWidget(QWidget):
     def on_login_success(self, file_path: str, info: dict):
         """登录成功后解密并加载文件。"""
         import hashlib
+
         file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
         if zhmm.config.init(file_name, info["password"]) is False:
             return
@@ -180,6 +170,7 @@ class FileListWidget(QWidget):
         # 构造文件信息字典，确保类型匹配
         # 使用类型断言确保 sm_data 是 SmData 类型
         from zhmm.data.sm_data_manager import SmData
+
         assert isinstance(sm_data, SmData)
 
         file_info: ZhmmFileInfo = {
@@ -296,7 +287,10 @@ class FileListWidget(QWidget):
     def create_new_file(self):
         """新建密码本文件"""
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "新建账号小本本文件", "", "账号文件 (*.gl)"  # 初始路径设为空
+            self,
+            "新建账号小本本文件",
+            "",
+            "账号文件 (*.gl)",  # 初始路径设为空
         )
         if file_path:
             # 确保文件后缀正确

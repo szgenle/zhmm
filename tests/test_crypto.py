@@ -35,7 +35,7 @@ class TestSealOpenRoundtrip:
         assert Vault.open("password", blob) == pt
 
     def test_unicode_roundtrip(self):
-        pt = "你好，世界 🌍 zhmm".encode("utf-8")
+        pt = "你好，世界 🌍 zhmm".encode()
         blob = Vault.seal("密码😀", pt)
         assert Vault.open("密码😀", blob) == pt
 
@@ -109,19 +109,19 @@ class TestTamperDetection:
     def test_tampered_ciphertext(self, blob: bytes):
         # 翻转密文区域首字节的一个 bit
         idx = _HEADER_LEN
-        tampered = blob[:idx] + bytes([blob[idx] ^ 0x01]) + blob[idx + 1:]
+        tampered = blob[:idx] + bytes([blob[idx] ^ 0x01]) + blob[idx + 1 :]
         with pytest.raises(CryptoError, match="authentication failed"):
             Vault.open("password", tampered)
 
     def test_tampered_iv(self, blob: bytes):
         idx = len(MAGIC) + 1 + SALT_LEN  # iv 起始
-        tampered = blob[:idx] + bytes([blob[idx] ^ 0x01]) + blob[idx + 1:]
+        tampered = blob[:idx] + bytes([blob[idx] ^ 0x01]) + blob[idx + 1 :]
         with pytest.raises(CryptoError, match="authentication failed"):
             Vault.open("password", tampered)
 
     def test_tampered_salt(self, blob: bytes):
         idx = len(MAGIC) + 1  # salt 起始
-        tampered = blob[:idx] + bytes([blob[idx] ^ 0x01]) + blob[idx + 1:]
+        tampered = blob[:idx] + bytes([blob[idx] ^ 0x01]) + blob[idx + 1 :]
         with pytest.raises(CryptoError, match="authentication failed"):
             Vault.open("password", tampered)
 

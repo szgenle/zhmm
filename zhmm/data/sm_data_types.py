@@ -8,6 +8,7 @@ from typing import TypedDict
 
 class ZhmmDict(TypedDict):
     """单条密码数据的类型定义"""
+
     id: int | None
     role: str | None
     userID: str
@@ -21,6 +22,7 @@ class ZhmmDict(TypedDict):
 
 class ZhmmDataDict(TypedDict):
     """密码数据集合的类型定义"""
+
     data: list[ZhmmDict]
     roles: list[str] | None
     utime: int | None

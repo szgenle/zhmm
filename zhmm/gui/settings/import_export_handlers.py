@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from PyQt6.QtWidgets import QFileDialog, QMessageBox, QWidget
 
+from zhmm.config.constants import ZhmmFileInfo
 from zhmm.core.errors import StorageError, ValidationError
 from zhmm.core.export_service import ExportService
 from zhmm.core.models import PasswordEntry
-from zhmm.config.constants import ZhmmFileInfo
 
 
 class ImportExportHandlers:
@@ -39,9 +39,7 @@ class ImportExportHandlers:
             return
 
         try:
-            entries = [
-                PasswordEntry.from_dict(item) for item in sm_data.mm["data"]
-            ]
+            entries = [PasswordEntry.from_dict(item) for item in sm_data.mm["data"]]
             ExportService.export_xlsx(file_path, entries)
         except StorageError as e:
             QMessageBox.warning(self.parent, "导出失败", f"数据导出失败：{e}")
@@ -59,9 +57,7 @@ class ImportExportHandlers:
             QMessageBox.warning(self.parent, "导入失败", "数据管理器未初始化")
             return
 
-        file_path, _ = QFileDialog.getOpenFileName(
-            self.parent, "选择xlsx文件", "", "Excel文件 (*.xlsx)"
-        )
+        file_path, _ = QFileDialog.getOpenFileName(self.parent, "选择xlsx文件", "", "Excel文件 (*.xlsx)")
         if not file_path:
             return
 
@@ -132,10 +128,6 @@ class ImportExportHandlers:
             ws.append(headers)
             wb.save(save_path)
         except Exception as e:
-            QMessageBox.critical(
-                self.parent, "下载失败", f"保存模版文件时发生错误：\n\n{e!s}"
-            )
+            QMessageBox.critical(self.parent, "下载失败", f"保存模版文件时发生错误：\n\n{e!s}")
             return
-        QMessageBox.information(
-            self.parent, "下载成功", f"模版文件已成功保存到：\n{save_path}"
-        )
+        QMessageBox.information(self.parent, "下载成功", f"模版文件已成功保存到：\n{save_path}")

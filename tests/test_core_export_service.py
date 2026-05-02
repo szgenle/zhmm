@@ -15,12 +15,18 @@ from zhmm.core.models import PasswordEntry
 @pytest.fixture
 def entries() -> list[PasswordEntry]:
     return [
-        PasswordEntry(id=1, role="工作", userID="alice", pwd="p1",
-                      phone="13800138000", email="a@x.com",
-                      url="https://example.com", desc="line1\r\nline2",
-                      utime=1000),
-        PasswordEntry(id=2, role="个人", userID="bob", pwd="中文密码",
-                      phone="", email="", url="", desc="", utime=2000),
+        PasswordEntry(
+            id=1,
+            role="工作",
+            userID="alice",
+            pwd="p1",
+            phone="13800138000",
+            email="a@x.com",
+            url="https://example.com",
+            desc="line1\r\nline2",
+            utime=1000,
+        ),
+        PasswordEntry(id=2, role="个人", userID="bob", pwd="中文密码", phone="", email="", url="", desc="", utime=2000),
     ]
 
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from typing import Any
 
@@ -98,50 +97,11 @@ class AppConfig:
             cipher_suite = Fernet(key)
             try:
                 decrypted_data = cipher_suite.decrypt(encrypted_data).decode()
-                print("配置解密方式: 新算法(PBKDF2+盐)成功")
             except Exception:
-                # 回退1：旧算法 + md5(密码)
-                try:
-                    pwd = self._password_input or ""
-                    pwd_md5 = hashlib.md5(pwd.encode("utf-8")).hexdigest()
-                    legacy_key = self.setting.legacy_generate_key_from_string(pwd_md5)
-                    legacy_cipher = Fernet(legacy_key)
-                    decrypted_data = legacy_cipher.decrypt(encrypted_data).decode()
-                    print("配置解密方式: 旧算法(md5(密码)→SHA256)成功，已迁移到新算法")
-                    self.config = json.loads(decrypted_data)
-                    # 用新算法重写保存
-                    self.save_config()
-                    return True
-                except Exception:
-                    # 回退2：旧算法 + 原始密码
-                    try:
-                        legacy_key2 = self.setting.legacy_generate_key_from_string(
-                            self._password_input or ""
-                        )
-                        legacy_cipher2 = Fernet(legacy_key2)
-                        decrypted_data = legacy_cipher2.decrypt(encrypted_data).decode()
-                        print(
-                            "配置解密方式: 旧算法(原始密码→SHA256)成功，已迁移到新算法"
-                        )
-                        self.config = json.loads(decrypted_data)
-                        # 用新算法重写保存
-                        self.save_config()
-                        return True
-                    except Exception:
-                        # 回退3：尝试当作纯文本JSON读取
-                        try:
-                            decrypted_text = encrypted_data.decode("utf-8")
-                            self.config = json.loads(decrypted_text)
-                            print("配置解析方式: 纯文本JSON成功，已迁移到新算法")
-                            # 用新算法重写保存
-                            self.save_config()
-                            return True
-                        except Exception:
-                            # 放宽兜底：使用空配置继续，避免阻塞
-                            print("配置解密失败，采用空配置并重写为新算法")
-                            self.config = {}
-                            self.save_config()
-                            return True
+                # 解密失败：使用空配置继续
+                self.config = {}
+                self.save_config()
+                return True
 
         if decrypted_data is None:
             return False

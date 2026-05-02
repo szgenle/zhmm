@@ -12,8 +12,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
-from zhmm.utils import date_util
 from zhmm.gui.password.random_dialog import RandomPasswordDialog
+from zhmm.utils import date_util
 
 
 class AddPasswordDialog(QDialog):
@@ -146,13 +146,10 @@ class AddPasswordDialog(QDialog):
 
     def _add_custom_role(self):
         """添加新类别"""
-        new_role, ok = QInputDialog.getText(
-            self, "新建类别", "请输入新类别名称:", QLineEdit.EchoMode.Normal
-        )
-        if ok and new_role.strip():
-            if new_role not in self.roles:
-                self.added_role.emit(new_role)
-                self.role_combo.addItem(new_role)
+        new_role, ok = QInputDialog.getText(self, "新建类别", "请输入新类别名称:", QLineEdit.EchoMode.Normal)
+        if ok and new_role.strip() and new_role not in self.roles:
+            self.added_role.emit(new_role)
+            self.role_combo.addItem(new_role)
 
     def _populate_data(self, data):
         """填充编辑数据"""

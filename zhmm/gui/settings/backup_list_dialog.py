@@ -3,6 +3,7 @@
 备份列表管理对话框
 显示所有备份文件，支持恢复和删除操作
 """
+
 from datetime import datetime
 from pathlib import Path
 
@@ -18,9 +19,9 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
+from zhmm.config.constants import ZhmmFileInfo
 from zhmm.core.backup_service import BackupService
 from zhmm.core.errors import StorageError
-from zhmm.config.constants import ZhmmFileInfo
 from zhmm.utils import file_util
 
 
@@ -106,9 +107,7 @@ class BackupListDialog(QDialog):
 
         # 更新统计信息
         total_size = self.backup_manager.total_size()
-        self.stats_label.setText(
-            f"共 {len(all_backups)} 个备份，总大小：{BackupService.format_size(total_size)}"
-        )
+        self.stats_label.setText(f"共 {len(all_backups)} 个备份，总大小：{BackupService.format_size(total_size)}")
 
     def format_backup_info(self, backup_path: Path) -> str:
         """
@@ -162,16 +161,14 @@ class BackupListDialog(QDialog):
             "确认恢复",
             f"确定要恢复此备份吗？\n\n{item.text()}\n\n"
             "当前数据文件和配置文件（如果有）将被备份后替换。此操作不可撤销！",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
             target = Path(target_path)
             config_target = str(file_util.get_full_path(target.stem))
             try:
-                self.backup_manager.restore(
-                    backup_path, target_path, config_target=config_target
-                )
+                self.backup_manager.restore(backup_path, target_path, config_target=config_target)
             except StorageError as e:
                 QMessageBox.critical(
                     self,
@@ -179,11 +176,7 @@ class BackupListDialog(QDialog):
                     f"备份恢复失败：{e}",
                 )
                 return
-            QMessageBox.information(
-                self,
-                "恢复成功",
-                "备份已成功恢复！\n\n请重新打开文件以加载恢复的数据。"
-            )
+            QMessageBox.information(self, "恢复成功", "备份已成功恢复！\n\n请重新打开文件以加载恢复的数据。")
             self.accept()  # 关闭对话框
 
     def delete_backup(self):
@@ -199,7 +192,7 @@ class BackupListDialog(QDialog):
             self,
             "确认删除",
             f"确定要删除此备份吗？\n\n{item.text()}\n\n此操作不可恢复！",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
         if reply == QMessageBox.StandardButton.Yes:

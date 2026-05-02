@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """密码数据操作逻辑"""
 
-
 from zhmm.data.sm_data_manager import SmData
 from zhmm.data.sm_data_types import ZhmmDict
 from zhmm.utils.log import logger

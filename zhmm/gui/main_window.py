@@ -5,13 +5,13 @@ from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import QHBoxLayout, QPushButton, QTabWidget, QVBoxLayout, QWidget
 
 import zhmm
+from zhmm.config.constants import ZhmmFileInfo
 from zhmm.core.backup_service import BackupService
 from zhmm.core.errors import StorageError
-from zhmm.config.constants import ZhmmFileInfo
-from zhmm.utils import file_util
-from zhmm.utils.log import logger
 from zhmm.gui.password.window import PasswordWindow
 from zhmm.gui.settings.window import SettingWindow
+from zhmm.utils import file_util
+from zhmm.utils.log import logger
 
 
 class MainWindow(QWidget):

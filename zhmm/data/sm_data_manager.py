@@ -117,9 +117,7 @@ class SmData:
         if not self.mm or not self.mm["data"]:
             return False
         before = len(self.mm["data"])
-        self.mm["data"] = [
-            item for item in self.mm["data"] if item.get("id") != id
-        ]
+        self.mm["data"] = [item for item in self.mm["data"] if item.get("id") != id]
         if len(self.mm["data"]) < before:
             self.mm["utime"] = date_util.timestamp_int()
             return True
@@ -136,9 +134,7 @@ class SmData:
         self.mm["data"].append(info)
         self.mm["utime"] = date_util.timestamp_int()
 
-    def merge(
-        self, other: list[ZhmmDict], auto_save: bool = True
-    ) -> tuple[int, int]:
+    def merge(self, other: list[ZhmmDict], auto_save: bool = True) -> tuple[int, int]:
         """合并数据列表；按 utime 保留较新版本。"""
         if not other:
             return 0, 0
@@ -237,9 +233,7 @@ class SmData:
             return False
 
         try:
-            plaintext = json.dumps(
-                self.mm, ensure_ascii=False, separators=(",", ":")
-            ).encode("utf-8")
+            plaintext = json.dumps(self.mm, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
             blob = CryptoVault.seal(self._password, plaintext)
         except (CryptoError, ValueError) as e:
             print(f"[错误] 加密失败: {file_path}, 原因: {e}")

@@ -18,12 +18,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from zhmm.data.sm_data_manager import SmData
 from zhmm.config.constants import ZhmmFileInfo
-from zhmm.utils.log import logger
+from zhmm.data.sm_data_manager import SmData
 from zhmm.gui.password.add_dialog import AddPasswordDialog
 from zhmm.gui.password.operations import PasswordOperations
 from zhmm.gui.password.table_models import CustomProxyModel, PasswordTableModel
+from zhmm.utils.log import logger
 
 
 class PasswordWindow(QWidget):
@@ -63,7 +63,9 @@ class PasswordWindow(QWidget):
         # 在搜索区域添加复选框
         self.show_all_checkbox = QCheckBox("仅显示搜索结果")
         self.show_all_checkbox.setChecked(True)
-        self.show_all_checkbox.setToolTip("勾选：仅显示匹配关键字的数据；未填写关键字时不显示任何数据。取消勾选：显示全部数据（仍受类别筛选影响）。")
+        self.show_all_checkbox.setToolTip(
+            "勾选：仅显示匹配关键字的数据；未填写关键字时不显示任何数据。取消勾选：显示全部数据（仍受类别筛选影响）。"
+        )
         self.show_all_checkbox.toggled.connect(self.toggle_show_all)
 
         search_layout.addWidget(search_label)
@@ -157,7 +159,7 @@ class PasswordWindow(QWidget):
 
         main_layout.addLayout(button_layout)
 
-    def ini_role_ui(self, search_layout):# 添加类别筛选下拉框
+    def ini_role_ui(self, search_layout):  # 添加类别筛选下拉框
         role_filter_label = QLabel("类别:")
         self.role_filter_combo = QComboBox()
         self.reset_roles_option()
@@ -171,7 +173,6 @@ class PasswordWindow(QWidget):
         search_layout.addWidget(role_filter_label)
         search_layout.addWidget(self.role_filter_combo)
         pass
-
 
     def reset_roles_option(self):
         self.role_filter_combo.clear()
@@ -302,9 +303,7 @@ class PasswordWindow(QWidget):
         # 创建编辑对话框并传入数据
         roles = self.gl_data.mm.get("roles") or []
         dialog = AddPasswordDialog(self, roles, edit_data=edit_data)
-        dialog.confirm_button.clicked.connect(
-            lambda: self._process_edit_result(dialog, row)
-        )
+        dialog.confirm_button.clicked.connect(lambda: self._process_edit_result(dialog, row))
         dialog.added_role.connect(lambda new_role: self.add_role(new_role))
         dialog.setWindowTitle("编辑账号信息")
         dialog.confirm_button.setText("确认修改")

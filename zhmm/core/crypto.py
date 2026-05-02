@@ -113,7 +113,11 @@ class _Sm3Hash:
 def _hmac_sm3(key: bytes, msg: bytes) -> bytes:
     """HMAC-SM3（RFC 2104），返回 32 字节摘要。"""
     # _Sm3Hash 实现了 hashlib 接口的子集，hmac 会在内部做 duck typing 调用
-    return hmac.new(key, msg, digestmod=_Sm3Hash).digest()  # type: ignore[arg-type]
+    # 两套 mypy 运行环境下 digestmod 的类型推断不同：
+    # - 项目环境（poetry run mypy）依赖齐全，需要忽略 arg-type
+    # - pre-commit mirrors-mypy 隔离环境缺依赖，类型推断更松，ignore 会变 unused
+    # 同时忽略 unused-ignore 以兼容两种环境。
+    return hmac.new(key, msg, digestmod=_Sm3Hash).digest()  # type: ignore[arg-type, unused-ignore]
 
 
 def _derive_key(password: str, salt: bytes) -> bytes:
@@ -210,9 +214,7 @@ class Vault:
         if not isinstance(blob, bytes | bytearray):
             raise ValidationError("blob must be bytes")
         if len(blob) < _MIN_BLOB_LEN:
-            raise ValidationError(
-                f"blob too short: {len(blob)} < {_MIN_BLOB_LEN}"
-            )
+            raise ValidationError(f"blob too short: {len(blob)} < {_MIN_BLOB_LEN}")
 
         blob = bytes(blob)
         if blob[: len(MAGIC)] != MAGIC:
@@ -223,9 +225,7 @@ class Vault:
             raise CryptoError(f"unsupported vault version: {version}")
 
         salt = blob[len(MAGIC) + 1 : len(MAGIC) + 1 + SALT_LEN]
-        iv = blob[
-            len(MAGIC) + 1 + SALT_LEN : _HEADER_LEN
-        ]
+        iv = blob[len(MAGIC) + 1 + SALT_LEN : _HEADER_LEN]
         tag = blob[-TAG_LEN:]
         ciphertext = blob[_HEADER_LEN:-TAG_LEN]
 
@@ -244,9 +244,7 @@ class Vault:
         expected_tag = _hmac_sm3(key_mac, blob[:-TAG_LEN])
         if not hmac.compare_digest(tag, expected_tag):
             # 无法区分"密码错"和"被篡改"，这是 AEAD 的设计特性
-            raise CryptoError(
-                "authentication failed (wrong password or tampered data)"
-            )
+            raise CryptoError("authentication failed (wrong password or tampered data)")
 
         try:
             return _sm4_decrypt(key_enc, iv, ciphertext)

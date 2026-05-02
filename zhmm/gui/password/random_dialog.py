@@ -62,7 +62,7 @@ class RandomPasswordDialog(QDialog):
         """生成随机密码"""
         length = self.length_spin.value()
         characters = string.ascii_letters + string.digits + "!@#$%^&*"
-        password = ''.join(random.choice(characters) for _ in range(length))
+        password = "".join(random.choice(characters) for _ in range(length))
         self.password_edit.setText(password)
 
     def get_password(self):

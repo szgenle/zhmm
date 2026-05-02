@@ -14,4 +14,4 @@ class ZhmmFileInfo(TypedDict):
     file_path: str
     openid: str
     hashpw: str
-    sm_data: "SmData | None"
+    sm_data: SmData | None

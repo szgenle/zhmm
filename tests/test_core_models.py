@@ -18,9 +18,14 @@ class TestPasswordEntry:
         assert e == e2
 
     def test_from_dict_ignores_unknown_and_none(self):
-        e = PasswordEntry.from_dict({
-            "id": 1, "userID": None, "unknown": "xxx", "role": "",
-        })
+        e = PasswordEntry.from_dict(
+            {
+                "id": 1,
+                "userID": None,
+                "unknown": "xxx",
+                "role": "",
+            }
+        )
         assert e.id == 1
         assert e.userID == ""
         assert e.role == DEFAULT_ROLE  # 空串会回落到默认
@@ -40,13 +45,15 @@ class TestVault:
         assert v.utime == 0
 
     def test_from_dict_collects_unknown_roles(self):
-        v = Vault.from_dict({
-            "data": [
-                {"id": 1, "role": "新类别", "userID": "u", "pwd": "p"},
-            ],
-            "roles": ["个人"],
-            "utime": 123,
-        })
+        v = Vault.from_dict(
+            {
+                "data": [
+                    {"id": 1, "role": "新类别", "userID": "u", "pwd": "p"},
+                ],
+                "roles": ["个人"],
+                "utime": 123,
+            }
+        )
         assert "新类别" in v.roles
         assert v.utime == 123
         assert len(v.entries) == 1
@@ -56,11 +63,13 @@ class TestVault:
         assert list(v.roles) == list(DEFAULT_ROLES)
 
     def test_to_dict_roundtrip(self):
-        v = Vault.from_dict({
-            "data": [{"id": 1, "role": "工作", "userID": "u", "pwd": "p", "utime": 100}],
-            "roles": ["工作"],
-            "utime": 200,
-        })
+        v = Vault.from_dict(
+            {
+                "data": [{"id": 1, "role": "工作", "userID": "u", "pwd": "p", "utime": 100}],
+                "roles": ["工作"],
+                "utime": 200,
+            }
+        )
         d = v.to_dict()
         v2 = Vault.from_dict(d)
         assert v2.entries == v.entries

@@ -14,16 +14,11 @@ class Dialog(QDialog):
 
             # 解析 geometry
             if isinstance(geometry, str):
-                # 将字符串解析为四个整数
-                x, y, width, height = map(int, geometry.split(","))
+                # 将字符串解析为四个整数（仅需 x/y）
+                x, y, _w, _h = map(int, geometry.split(","))
             else:
-                # 如果 geometry 是 QRect 对象，直接提取值
-                x, y, width, height = (
-                    geometry.x(),
-                    geometry.y(),
-                    geometry.width(),
-                    geometry.height(),
-                )
+                # 如果 geometry 是 QRect 对象，只取偏移需要的 x/y
+                x, y = geometry.x(), geometry.y()
 
             # 解析 *__args
             if len(__args) == 1 and isinstance(__args[0], QRect):

@@ -7,13 +7,13 @@ from zhmm.utils import data_conversion as dc
 
 class TestToHexString:
     def test_from_list(self):
-        assert dc.to_hex_string([0x00, 0x01, 0xff]) == "0001ff"
+        assert dc.to_hex_string([0x00, 0x01, 0xFF]) == "0001ff"
 
     def test_from_bytes(self):
         assert dc.to_hex_string(b"\x00\xab\xcd") == "00abcd"
 
     def test_from_bytearray(self):
-        assert dc.to_hex_string(bytearray([0xde, 0xad, 0xbe, 0xef])) == "deadbeef"
+        assert dc.to_hex_string(bytearray([0xDE, 0xAD, 0xBE, 0xEF])) == "deadbeef"
 
     def test_empty(self):
         assert dc.to_hex_string([]) == ""
@@ -41,16 +41,19 @@ class TestHexToArray:
 
     def test_odd_length_pads_leading_zero(self):
         # 奇数长度时应在前面补 "0"。
-        assert dc.hex_to_array("1ff") == [0x01, 0xff]
+        assert dc.hex_to_array("1ff") == [0x01, 0xFF]
 
     def test_empty(self):
         assert dc.hex_to_array("") == []
 
-    @pytest.mark.parametrize("hex_str, expected", [
-        ("deadbeef", [0xde, 0xad, 0xbe, 0xef]),
-        ("ff", [0xff]),
-        ("00", [0]),
-    ])
+    @pytest.mark.parametrize(
+        "hex_str, expected",
+        [
+            ("deadbeef", [0xDE, 0xAD, 0xBE, 0xEF]),
+            ("ff", [0xFF]),
+            ("00", [0]),
+        ],
+    )
     def test_roundtrip_with_to_hex_string(self, hex_str, expected):
         assert dc.hex_to_array(hex_str) == expected
         assert dc.to_hex_string(expected) == hex_str
