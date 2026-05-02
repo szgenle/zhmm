@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from zhmm.config.app_config import AppConfig
     from zhmm.config.settings import AppSetting
 
-__version__ = "0.2.3"
+__version__ = "0.2.7"
 
 # 模块级变量，由 init_app 初始化
 setting: AppSetting | None = None
