@@ -59,6 +59,14 @@ class AppConfig:
         """保存防截屏开关"""
         self.setting.save_anti_screenshot(enabled)
 
+    def get_password_reveal_duration(self) -> int:
+        """获取密码明文显示时长（秒）"""
+        return self.setting.get_password_reveal_duration()
+
+    def save_password_reveal_duration(self, seconds: int) -> None:
+        """保存密码明文显示时长（秒）"""
+        self.setting.save_password_reveal_duration(seconds)
+
     def get(self, key: str, default_value: Any = None) -> Any:
         return self.config.get(key, default_value)
 

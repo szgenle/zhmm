@@ -20,10 +20,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+import zhmm
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.data.sm_data_manager import SmData
 from zhmm.gui.password.add_dialog import AddPasswordDialog
 from zhmm.gui.password.operations import PasswordOperations
+from zhmm.gui.password.reveal_delegate import RevealColumnDelegate
 from zhmm.gui.password.table_models import CustomProxyModel, PasswordTableModel
 from zhmm.utils.log import logger
 
@@ -42,6 +44,9 @@ class PasswordWindow(QWidget):
 
         # 创建操作管理器
         self.operations = PasswordOperations(self.gl_data)
+
+        # 密码明文显示自动隐藏定时器：{record_id: QTimer}
+        self._reveal_timers: dict[int, QTimer] = {}
 
         self.setup_ui()
 
@@ -101,11 +106,15 @@ class PasswordWindow(QWidget):
         self.proxy_model.setFilterKeyColumn(-1)  # -1 表示搜索所有列
 
         self.table_view.setModel(self.proxy_model)
-        # 默认隐藏密码列（索引3）
+        # 默认显示密码列（掩码呈现由 model 层控制）
         self.table_view.setColumnHidden(3, False)
 
+        # 安装“显示”列委托：用 SVG 眼睛图标代替文本
+        self._reveal_delegate = RevealColumnDelegate(self.table_view, icon_size=18)
+        self.table_view.setItemDelegateForColumn(PasswordTableModel.reveal_column(), self._reveal_delegate)
+
         # 新增单元格点击事件处理
-        self.table_view.clicked.connect(self.copy_cell_to_clipboard)
+        self.table_view.clicked.connect(self.on_table_cell_clicked)
 
         # 新增双击事件处理
         self.table_view.doubleClicked.connect(self.edit_selected_password)
@@ -132,10 +141,13 @@ class PasswordWindow(QWidget):
             header.resizeSection(0, calculate_column_width("8888888888"))
             header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
             header.resizeSection(1, calculate_column_width("个人个人"))
-            header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(4, calculate_column_width("+86888888888888"))
-            header.setSectionResizeMode(8, QHeaderView.ResizeMode.Fixed)
-            header.resizeSection(8, calculate_column_width("8888888888"))
+            header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(5, calculate_column_width("+86888888888888"))
+            header.setSectionResizeMode(9, QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(9, calculate_column_width("8888888888"))
+            # “显示”列：固定窄列，容纳一个 SVG 眼睛图标
+            header.setSectionResizeMode(PasswordTableModel.reveal_column(), QHeaderView.ResizeMode.Fixed)
+            header.resizeSection(PasswordTableModel.reveal_column(), RevealColumnDelegate.hint_column_width())
 
         main_layout.addWidget(self.table_view)
 
@@ -354,9 +366,12 @@ class PasswordWindow(QWidget):
         if not index.isValid():
             return
         # 仅在点击“密码”列（索引3）时触发复制
-        if index.column() != 3:
+        if index.column() != PasswordTableModel.password_column():
             return
-        text = self.proxy_model.data(index, Qt.ItemDataRole.DisplayRole)
+        # 用 EditRole 取真实明文，避免复制到掩码占位符
+        text = self.proxy_model.data(index, Qt.ItemDataRole.EditRole)
+        if not text:
+            return
         QApplication.clipboard().setText(str(text))  # type: ignore
 
         # 1) 鼠标位置气泡提示（最显眼）
@@ -373,6 +388,69 @@ class PasswordWindow(QWidget):
         # 定时清空剪贴板，避免残留敏感信息
         QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
         QTimer.singleShot(2500, _reset_status_label)
+
+    # ------------------------------------------------------------------
+    # 密码明文显示切换
+    # ------------------------------------------------------------------
+    def on_table_cell_clicked(self, index) -> None:
+        """统一处理密码列 / “显示”列的点击行为。"""
+        if not index.isValid():
+            return
+        col = index.column()
+        if col == PasswordTableModel.reveal_column():
+            self._toggle_reveal_at(index)
+        elif col == PasswordTableModel.password_column():
+            self.copy_cell_to_clipboard(index)
+
+    def _toggle_reveal_at(self, proxy_index) -> None:
+        """切换点击行的密码明文显示，并安排/重置自动隐藏定时器。"""
+        source_index = self.proxy_model.mapToSource(proxy_index)
+        source_row = source_index.row()
+        rid = self.table_model.row_id(source_row)
+        if rid is None:
+            return
+        revealed = self.table_model.toggle_revealed(source_row)
+        # 已有定时器先停掉
+        existing = self._reveal_timers.pop(rid, None)
+        if existing is not None:
+            existing.stop()
+            existing.deleteLater()
+        if revealed:
+            duration = max(1, int(zhmm.config.get_password_reveal_duration()))
+            timer = QTimer(self)
+            timer.setSingleShot(True)
+            timer.timeout.connect(lambda _rid=rid: self._auto_hide_reveal(_rid))
+            timer.start(duration * 1000)
+            self._reveal_timers[rid] = timer
+            self._show_status(f"👁 密码已显示，{duration} 秒后自动隐藏", highlight=True)
+        else:
+            self._show_status("🔒 密码已隐藏", highlight=False)
+
+    def _auto_hide_reveal(self, rid: int) -> None:
+        """到期自动隐藏指定行的密码。"""
+        self._reveal_timers.pop(rid, None)
+        source_row = self.table_model.row_by_id(rid)
+        if source_row < 0:
+            return
+        if self.table_model.is_revealed(source_row):
+            self.table_model.set_revealed(source_row, False)
+            self._show_status("🔒 密码已自动隐藏", highlight=False)
+
+    def _show_status(self, text: str, *, highlight: bool) -> None:
+        """状态栏闪提示，2.5 秒后息灭。"""
+        self.status_label.setText(text)
+        if highlight:
+            self.status_label.setStyleSheet("color: #c62828; font-size: 13px; font-weight: bold;")
+        else:
+            self.status_label.setStyleSheet("color: #666; font-size: 12px;")
+
+        def _reset() -> None:
+            # 如果期间文案变了则不覆盖
+            if self.status_label.text() == text:
+                self.status_label.setText("")
+                self.status_label.setStyleSheet("color: #666; font-size: 12px;")
+
+        QTimer.singleShot(2500, _reset)
 
     def save(self):
         """保存数据"""

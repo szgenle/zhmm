@@ -91,3 +91,13 @@ class AppSetting(QSettings):
         """保存防截屏开关。"""
         self.setValue("anti_screenshot", enabled)
         self.sync()
+
+    def get_password_reveal_duration(self) -> int:
+        """获取密码明文显示时长（秒），默认 10 秒。"""
+        value: int = self.value("password_reveal_duration", 10, type=int)
+        return value
+
+    def save_password_reveal_duration(self, seconds: int) -> None:
+        """保存密码明文显示时长（秒）。"""
+        self.setValue("password_reveal_duration", seconds)
+        self.sync()

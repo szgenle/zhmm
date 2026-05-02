@@ -123,6 +123,16 @@ class SettingWindow(QWidget):
         self.anti_screenshot_checkbox.toggled.connect(self.on_anti_screenshot_toggled)
         form.addRow("防截屏：", self.anti_screenshot_checkbox)
 
+        # 密码明文显示时长
+        self.reveal_duration_spinbox = QSpinBox()
+        self.reveal_duration_spinbox.setRange(3, 120)
+        self.reveal_duration_spinbox.setValue(zhmm.config.get_password_reveal_duration())
+        self.reveal_duration_spinbox.setSuffix(" 秒")
+        self.reveal_duration_spinbox.setFixedWidth(120)
+        self.reveal_duration_spinbox.setToolTip("点击表格中的 👁 按钮显示密码后，到达该时长将自动隐藏")
+        self.reveal_duration_spinbox.valueChanged.connect(zhmm.config.save_password_reveal_duration)
+        form.addRow("密码明文显示时长：", self.reveal_duration_spinbox)
+
         group.setLayout(form)
         return group
 

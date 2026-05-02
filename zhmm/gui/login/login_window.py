@@ -2,48 +2,15 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 import bcrypt
-from PyQt6.QtCore import QByteArray, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QIcon, QPainter, QPixmap, QShowEvent
-from PyQt6.QtSvg import QSvgRenderer
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QShowEvent
 from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
 
 import zhmm
 from zhmm.utils.anti_capture import apply_anti_capture
 from zhmm.utils.log import logger
 from zhmm.widgets.dialog import Dialog
-
-# 睁眼图标（Feather Icons 风格，适用于“当前显示密码，点击可隐藏”）
-_EYE_OPEN_SVG = (
-    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
-    b'stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-    b'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>'
-    b'<circle cx="12" cy="12" r="3"/>'
-    b"</svg>"
-)
-
-# 闭眼图标（带斜线，适用于“当前隐藏密码，点击可显示”）
-_EYE_CLOSED_SVG = (
-    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
-    b'stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-    b'<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a19.62 19.62 0 0 1 5.06-5.94"/>'
-    b'<path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a19.4 19.4 0 0 1-2.17 3.19"/>'
-    b'<path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/>'
-    b'<line x1="1" y1="1" x2="23" y2="23"/>'
-    b"</svg>"
-)
-
-
-def _svg_to_icon(svg_data: bytes, size: int = 20) -> QIcon:
-    """将内联 SVG 字节串渲染为 QIcon，避免依赖外部资源文件。"""
-    renderer = QSvgRenderer(QByteArray(svg_data))
-    pixmap = QPixmap(QSize(size, size))
-    pixmap.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(pixmap)
-    try:
-        renderer.render(painter)
-    finally:
-        painter.end()
-    return QIcon(pixmap)
+from zhmm.widgets.eye_icon import EYE_CLOSED_SVG, EYE_OPEN_SVG, svg_to_icon
 
 
 def _to_halfwidth(text: str) -> str:
@@ -116,9 +83,9 @@ class LoginWindow(Dialog):
         self.password_input.setPlaceholderText("请输入密码（半角）")
         self.password_input.textEdited.connect(lambda _text: self._normalize_line_edit(self.password_input))
 
-        # 显示/隐藏密码切换按钮（使用内联 SVG 图标）
-        self._icon_eye_open = _svg_to_icon(_EYE_OPEN_SVG)
-        self._icon_eye_closed = _svg_to_icon(_EYE_CLOSED_SVG)
+        # 显示/隐藏密码切换按钮（使用共享的内联 SVG 图标）
+        self._icon_eye_open = svg_to_icon(EYE_OPEN_SVG)
+        self._icon_eye_closed = svg_to_icon(EYE_CLOSED_SVG)
         self.toggle_password_button = QPushButton()
         self.toggle_password_button.setIcon(self._icon_eye_closed)
         self.toggle_password_button.setIconSize(QSize(18, 18))
