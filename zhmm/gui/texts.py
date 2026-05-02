@@ -49,6 +49,9 @@ class Status:
     # ---- TOTP ----
     TOTP_INVALID = "⚠ TOTP 配置无效"
 
+    # ---- 账户信息 ----
+    ACCOUNT_COPIED_WITH_HINT = "✅ 已复制登录账号（10 秒后自动清空剪贴板）"
+
     @staticmethod
     def filter_by(keyword: str) -> str:
         """搜索命中时的状态文案。"""
@@ -75,6 +78,7 @@ class Tooltip:
 
     PWD_COPIED = "✅ 已复制密码到剪贴板"
     TOTP_NOT_ENABLED = "该条目未启用 TOTP"
+    ACCOUNT_COPIED = "✅ 已复制登录账号"
 
     @staticmethod
     def copied_plain(label: str) -> str:
@@ -87,3 +91,63 @@ class Tooltip:
     @staticmethod
     def totp_invalid(detail: str) -> str:
         return f"⚠ TOTP 配置无效: {detail}"
+
+
+class Rekey:
+    """主密码更换（Re-key）相关文案。
+
+    统一收敛对话框标题、标签、校验提示、进度阶段、
+    成功 / 失败提示等，依旧例采用「静态字段 + 带参 @staticmethod」。
+    """
+
+    # ---- 对话框 ----
+    TITLE = "更换主密码"
+    HINT = "换密后，数据库将用新密码重新加密。账号保持不变。\n" "操作前会自动在备份目录中保存一份 rekey 备份作为保险。"
+    LABEL_OLD = "当前密码："
+    LABEL_NEW = "新密码："
+    LABEL_CONFIRM = "确认新密码："
+    BTN_OK = "确定更换"
+    BTN_CANCEL = "取消"
+
+    # ---- 校验提示 ----
+    ERR_OLD_EMPTY = "请输入当前密码"
+    ERR_NEW_EMPTY = "新密码不能为空"
+    ERR_CONFIRM_MISMATCH = "两次输入的新密码不一致"
+    ERR_SAME_AS_OLD = "新密码不能与当前密码相同"
+    ERR_OLD_WRONG = "当前密码错误"
+
+    # ---- 进度阶段 ----
+    PROGRESS_TITLE = "正在更换主密码"
+    STAGE_BACKUP = "正在创建保险备份…"
+    STAGE_REKEY = "正在重新加密数据…"
+    STAGE_FINALIZE = "正在同步会话与本地配置…"
+
+    # ---- 结果提示 ----
+    SUCCESS_TITLE = "主密码已更新"
+    FAIL_TITLE = "更换失败"
+    FAIL_BACKUP = "创建保险备份失败，已中止换密："
+    FAIL_REKEY = "重新加密失败："
+    FAIL_CONFIG_SYNC = "密库已更新，但本地配置文件同步失败。\n" "下次启动时部分偏好设置可能被重置，不影响密码数据。"
+
+    @staticmethod
+    def success_message(backup_path: str) -> str:
+        """换密成功后的结果提示，附上保险备份路径。"""
+        return f"主密码已更新。\n\n保险备份位于：\n{backup_path}"
+
+
+class Account:
+    """设置页「账户信息」分组相关文案。
+
+    登录账号作为 KDF 输入参与密钥派生，本身不写入加密文件，若用户
+    遗忘将无法解密已有数据。该分组的文案就是围绕「持续可见地回显账号 +
+    牢记提示」组织的。
+    """
+
+    # ---- 分组与字段 ----
+    GROUP_TITLE = "账户信息"
+    LABEL_ACCOUNT = "登录账号："
+    BTN_COPY = "复制账号"
+
+    # ---- 说明文字 ----
+    # 不内置换行，交给 QLabel.setWordWrap 根据容器宽度自适应
+    HINT = "⚠ 该账号与登录密码共同参与数据加密，未写入加密文件。\n" "如遗忘或输错，将无法解密已有数据，请务必牢记。"
