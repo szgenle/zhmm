@@ -15,11 +15,11 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 # 应用身份（对应 Qt 的 organizationName / applicationName）
-# CLI 下保持为 None，行为与历史一致（返回裸的 Application Support 路径）。
-# GUI 在 zhmm.init_app() 中通过 set_app_identity() 注入，得到
-# 与 QCoreApplication 相同的 per-app 子目录。
-_org_name: str | None = None
-_app_name: str | None = None
+# 默认值与 GUI init_app() 一致，让 CLI 和 GUI 使用同一个数据目录：
+#   macOS: ~/Library/Application Support/szgenle/zhmm
+# GUI 入口会通过 set_app_identity() 重复设置（幂等、无副作用）。
+_org_name: str | None = "szgenle"
+_app_name: str | None = "zhmm"
 
 
 def set_app_identity(org_name: str | None, app_name: str | None) -> None:
