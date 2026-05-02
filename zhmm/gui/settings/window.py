@@ -21,10 +21,13 @@ from PyQt6.QtWidgets import (
 )
 
 import zhmm
+from zhmm.config import saved_files as saved_files_store
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.settings.backup_settings import BackupSettings
 from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
+from zhmm.gui.settings.rekey_dialog import RekeyDialog
 from zhmm.gui.texts import Account as AccountText
+from zhmm.gui.texts import Account as RekeyText
 from zhmm.gui.texts import Tooltip
 from zhmm.utils.log import logger
 
@@ -70,6 +73,9 @@ class SettingWindow(QWidget):
 
         # ---------- 常规设置 ----------
         layout.addWidget(self._build_general_group())
+
+        # ---------- 主密码 ----------
+        layout.addWidget(self._build_master_password_group())
 
         # ---------- 数据备份 ----------
         layout.addWidget(self._build_backup_group())
@@ -222,6 +228,18 @@ class SettingWindow(QWidget):
         group.setLayout(v)
         return group
 
+    def _build_master_password_group(self) -> QGroupBox:
+        """主密码分组：更换主密码按钮。"""
+        group = QGroupBox("主密码")
+        v = QHBoxLayout()
+        v.setContentsMargins(4, 8, 4, 8)
+        v.setSpacing(10)
+        self.rekey_button = self._make_button(RekeyText.TITLE, self.open_rekey_dialog)
+        v.addWidget(self.rekey_button)
+        v.addStretch()
+        group.setLayout(v)
+        return group
+
     def _build_import_export_group(self) -> QGroupBox:
         """数据导入导出组：按钮采用网格布局，等宽整齐"""
         group = QGroupBox("数据导入导出")
@@ -305,3 +323,51 @@ class SettingWindow(QWidget):
         top = self.window()
         if top is not None:
             apply_anti_capture(top, enabled=checked)
+
+    # ------------------------------------------------------------------
+    # 更换主密码
+    # ------------------------------------------------------------------
+    def open_rekey_dialog(self) -> None:
+        """打开「更换主密码」对话框；成功后同步会话与本地配置。"""
+        dlg = RekeyDialog(self.info, parent=self)
+        dlg.finished_ok.connect(self._on_rekey_success)
+        dlg.exec()
+
+    def _on_rekey_success(self, new_password: str, backup_path: str) -> None:
+        """Re-key 成功后的后续操作：
+
+        1) 会话 hashpw 更新为新密码的 bcrypt 哈希；
+        2) saved_files 索引中的 hashpw 写回磁盘（后续自动登录才会用新密码）；
+        3) AppConfig 用新密码重新派生 Fernet 密钥并落盘，
+           避免下次启动时配置文件解密失败。
+        """
+        import bcrypt
+        from PyQt6.QtWidgets import QMessageBox
+
+        # 1) 更新会话 hashpw
+        new_hashpw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode("utf-8")
+        self.info["hashpw"] = new_hashpw
+
+        # 2) 更新 saved_files——仅覆盖 hashpw 字段，其他元数据保持
+        file_path = self.info.get("file_path") or ""
+        if file_path:
+            try:
+                saved_files_store.update_entry(file_path, {"hashpw": new_hashpw})
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"saved_files hashpw 同步失败: {e}")
+
+        # 3) 更新 AppConfig 的 Fernet 密钥并落盘
+        config_synced = True
+        try:
+            if zhmm.config is not None and zhmm.config.setting is not None:
+                zhmm.config.my_encryption_key = zhmm.config.setting.generate_key_from_string(new_password)
+                zhmm.config.save_config()
+        except Exception as e:  # noqa: BLE001
+            config_synced = False
+            logger.warning(f"AppConfig 同步失败: {e}")
+
+        # 4) 提示用户
+        msg = RekeyText.success_message(backup_path) if backup_path else "主密码已更新。"
+        if not config_synced:
+            msg = f"{msg}\n\n{RekeyText.FAIL_CONFIG_SYNC}"
+        QMessageBox.information(self, RekeyText.SUCCESS_TITLE, msg)

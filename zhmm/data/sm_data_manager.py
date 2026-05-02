@@ -18,6 +18,7 @@ from pathlib import Path
 
 from zhmm.core.crypto import Vault as CryptoVault
 from zhmm.core.errors import CryptoError, StorageError
+from zhmm.core.vault import VaultFile
 from zhmm.data.sm_data_types import SmDataConstants, ZhmmDataDict, ZhmmDict
 from zhmm.utils import date_util, dict_util
 
@@ -265,3 +266,33 @@ class SmData:
                 with contextlib.suppress(OSError):
                     os.unlink(tmp_path)
             return False
+
+    # ------------------------------------------------------------------
+    # 主密码更换（Re-key）
+    # ------------------------------------------------------------------
+    def rekey(self, new_password: str) -> None:
+        """原地更换主密码。
+
+        前置：必须已 ``init(account, password)`` 且 ``file_path`` 非空。
+        成功后 ``self._password`` 切换为 ``new_password``，后续 ``save()``
+        将以新密码加密。
+
+        账号保持不变，因此基于 account MD5 的 config 文件名与 saved_files
+        索引键都无需迁移。
+
+        Raises:
+            ValueError: 前置条件未满足或新密码为空 / 与旧密码相同。
+            StorageError: 读写失败。
+            CryptoError:  旧密码错误 / 文件被篡改 / 版本不匹配。
+        """
+        if not self._account or not self._password:
+            raise ValueError("数据管理器未初始化（缺少账号或当前密码）")
+        if not self.file_path:
+            raise ValueError("文件路径为空，无法换密")
+        if not isinstance(new_password, str) or not new_password:
+            raise ValueError("新密码不能为空")
+        if new_password == self._password:
+            raise ValueError("新密码不能与当前密码相同")
+
+        VaultFile.rekey(self.file_path, self._account, self._password, new_password)
+        self._password = new_password

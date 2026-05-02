@@ -20,12 +20,12 @@ def get_project_root() -> Path:
 
 def read_file(path: Path) -> str:
     """读取文件内容"""
-    return path.read_text(encoding='utf-8')
+    return path.read_text(encoding="utf-8")
 
 
 def write_file(path: Path, content: str) -> None:
     """写入文件内容"""
-    path.write_text(content, encoding='utf-8')
+    path.write_text(content, encoding="utf-8")
 
 
 def increment_version(version: str) -> str:
@@ -38,17 +38,17 @@ def increment_version(version: str) -> str:
     Returns:
         新版本号，如 "0.1.1"
     """
-    parts = version.split('.')
+    parts = version.split(".")
     if len(parts) >= 3:
         # 增加最后一个数字（构建号）
         parts[-1] = str(int(parts[-1]) + 1)
     elif len(parts) == 2:
         # 如果只有两位，添加构建号 1
-        parts.append('1')
+        parts.append("1")
     else:
         # 如果只有一位，添加 .0.1
-        parts.extend(['0', '1'])
-    return '.'.join(parts)
+        parts.extend(["0", "1"])
+    return ".".join(parts)
 
 
 def update_pyproject_version(project_root: Path, new_version: str) -> str:
@@ -62,7 +62,7 @@ def update_pyproject_version(project_root: Path, new_version: str) -> str:
     Returns:
         旧版本号
     """
-    pyproject_path = project_root / 'pyproject.toml'
+    pyproject_path = project_root / "pyproject.toml"
     content = read_file(pyproject_path)
 
     # 查找当前版本号
@@ -74,12 +74,7 @@ def update_pyproject_version(project_root: Path, new_version: str) -> str:
     old_version = match.group(1)
 
     # 替换版本号
-    new_content = re.sub(
-        r'^(version\s*=\s*")([^"]+)(")',
-        rf'\g<1>{new_version}\g<3>',
-        content,
-        flags=re.MULTILINE
-    )
+    new_content = re.sub(r'^(version\s*=\s*")([^"]+)(")', rf"\g<1>{new_version}\g<3>", content, flags=re.MULTILINE)
 
     write_file(pyproject_path, new_content)
     print(f"已更新 pyproject.toml: {old_version} -> {new_version}")
@@ -97,7 +92,7 @@ def update_init_version(project_root: Path, new_version: str) -> str:
     Returns:
         旧版本号
     """
-    init_path = project_root / 'zhmm' / '__init__.py'
+    init_path = project_root / "zhmm" / "__init__.py"
     content = read_file(init_path)
 
     # 查找当前版本号
@@ -109,12 +104,7 @@ def update_init_version(project_root: Path, new_version: str) -> str:
     old_version = match.group(1)
 
     # 替换版本号
-    new_content = re.sub(
-        r'^(__version__\s*=\s*")([^"]+)(")',
-        rf'\g<1>{new_version}\g<3>',
-        content,
-        flags=re.MULTILINE
-    )
+    new_content = re.sub(r'^(__version__\s*=\s*")([^"]+)(")', rf"\g<1>{new_version}\g<3>", content, flags=re.MULTILINE)
 
     write_file(init_path, new_content)
     print(f"已更新 zhmm/__init__.py: {old_version} -> {new_version}")
@@ -123,7 +113,7 @@ def update_init_version(project_root: Path, new_version: str) -> str:
 
 def get_current_version(project_root: Path) -> str:
     """获取当前版本号（从 pyproject.toml 读取）"""
-    pyproject_path = project_root / 'pyproject.toml'
+    pyproject_path = project_root / "pyproject.toml"
     content = read_file(pyproject_path)
 
     match = re.search(r'^version\s*=\s*"([^"]+)"', content, re.MULTILINE)

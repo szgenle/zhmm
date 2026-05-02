@@ -5,6 +5,7 @@
 职责：
     - load(path, password) → models.Vault
     - save(path, password, vault) → None，原子性写入
+    - rekey(path, account, old_password, new_password) → None，原地换密
 
 不涉及业务 CRUD（那是 password_service 的活），也不关心 UI。
 """
@@ -78,6 +79,66 @@ class VaultFile:
             ) as tmp:
                 tmp_path = tmp.name
                 tmp.write(blob)
+                tmp.flush()
+                os.fsync(tmp.fileno())
+            os.replace(tmp_path, p)
+            tmp_path = None
+        except OSError as e:
+            raise StorageError(f"write failed: {p}: {e}") from e
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                with contextlib.suppress(OSError):
+                    os.unlink(tmp_path)
+
+    @staticmethod
+    def rekey(
+        path: str | os.PathLike[str],
+        account: str,
+        old_password: str,
+        new_password: str,
+    ) -> None:
+        """原地更换主密码（重新派生密钥并重写密文）。
+
+        流程：
+            1) 读取 blob，用 ``old_password`` 通过 :func:`CryptoVault.open`
+               验证并得到明文；
+            2) 用 ``new_password`` 通过 :func:`CryptoVault.seal` 重新加密
+               （生成新的随机 salt/iv、按当前默认 Argon2id 参数）；
+            3) 写入同目录临时文件 → fsync → ``os.replace`` 原子替换。
+
+        不处理备份 / 会话刷新 / 配置同步 —— 这些由调用方（GUI 层）负责，
+        以保持本模块纯净。
+
+        Raises:
+            StorageError: 读写失败。
+            CryptoError:  ``old_password`` 错误、文件被篡改、版本不匹配等。
+        """
+        p = Path(path)
+        try:
+            blob = p.read_bytes()
+        except FileNotFoundError as e:
+            raise StorageError(f"file not found: {p}") from e
+        except OSError as e:
+            raise StorageError(f"read failed: {p}: {e}") from e
+
+        # 用旧口令解密；任何失败均不触碰原文件。
+        plaintext = CryptoVault.open(account, old_password, blob)
+        new_blob = CryptoVault.seal(account, new_password, plaintext)
+
+        parent = p.parent if str(p.parent) else Path(".")
+        parent.mkdir(parents=True, exist_ok=True)
+
+        tmp_path: str | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=str(parent),
+                prefix=f".{p.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as tmp:
+                tmp_path = tmp.name
+                tmp.write(new_blob)
                 tmp.flush()
                 os.fsync(tmp.fileno())
             os.replace(tmp_path, p)

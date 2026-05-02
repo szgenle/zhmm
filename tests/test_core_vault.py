@@ -93,3 +93,44 @@ class TestAtomicity:
         f = tmp_path / "nested" / "sub" / "mm.zmb"
         VaultFile.save(f, "acc", "pw", sample_vault)
         assert f.exists()
+
+
+class TestRekey:
+    """主密码更换：原地重新派生密钥并重写密文。"""
+
+    def test_rekey_then_load_with_new_pw(self, tmp_path: Path, sample_vault: Vault):
+        f = tmp_path / "mm.zmb"
+        VaultFile.save(f, "alice", "old-pw", sample_vault)
+        VaultFile.rekey(f, "alice", "old-pw", "new-pw")
+        loaded = VaultFile.load(f, "alice", "new-pw")
+        assert loaded.to_dict() == sample_vault.to_dict()
+
+    def test_rekey_old_pw_rejected(self, tmp_path: Path, sample_vault: Vault):
+        f = tmp_path / "mm.zmb"
+        VaultFile.save(f, "alice", "old-pw", sample_vault)
+        VaultFile.rekey(f, "alice", "old-pw", "new-pw")
+        with pytest.raises(CryptoError):
+            VaultFile.load(f, "alice", "old-pw")
+
+    def test_rekey_wrong_old_pw_raises_and_file_untouched(self, tmp_path: Path, sample_vault: Vault):
+        f = tmp_path / "mm.zmb"
+        VaultFile.save(f, "alice", "right", sample_vault)
+        before = f.read_bytes()
+        with pytest.raises(CryptoError):
+            VaultFile.rekey(f, "alice", "wrong", "new-pw")
+        after = f.read_bytes()
+        assert before == after
+        # 旧密码仍可用
+        loaded = VaultFile.load(f, "alice", "right")
+        assert loaded.to_dict() == sample_vault.to_dict()
+
+    def test_rekey_is_atomic_no_tmp_leftover(self, tmp_path: Path, sample_vault: Vault):
+        f = tmp_path / "mm.zmb"
+        VaultFile.save(f, "alice", "old-pw", sample_vault)
+        VaultFile.rekey(f, "alice", "old-pw", "new-pw")
+        leftover = [p for p in tmp_path.iterdir() if p.name.startswith(".")]
+        assert leftover == []
+
+    def test_rekey_missing_file_raises_storage(self, tmp_path: Path):
+        with pytest.raises(StorageError):
+            VaultFile.rekey(tmp_path / "nope.zmb", "acc", "old", "new")

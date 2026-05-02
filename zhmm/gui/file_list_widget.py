@@ -19,10 +19,10 @@ from PyQt6.QtWidgets import (
 )
 
 import zhmm
+from zhmm.config import saved_files as saved_files_store
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.decrypt_data_view import UIDecryptData
 from zhmm.gui.login.login_window import LoginWindow
-from zhmm.utils import file_util
 
 
 class FileListWidget(QWidget):
@@ -225,18 +225,15 @@ class FileListWidget(QWidget):
             self.add_file_path(file_path, info)
 
     def load_all_saved_files(self) -> dict:
-        """从文件加载所有保存记录"""
-        files = file_util.load_json(self._get_storage_path())
-        if not files:
-            return {}
-        return files
+        """从文件加载所有保存记录（委托给 :mod:`zhmm.config.saved_files`）。"""
+        return saved_files_store.load_all()
 
     def save_all_saved_files(self, file_infos):
-        file_util.save_json(self._get_storage_path(), file_infos)
+        saved_files_store.save_all(file_infos)
 
     def _get_storage_path(self):
-        """获取存储文件路径"""
-        return file_util.get_full_path(".zhmm_files.json").as_posix()
+        """获取存储文件路径。"""
+        return saved_files_store.get_storage_path()
 
     def show_context_menu(self, pos):
         """显示右键菜单"""
