@@ -67,16 +67,11 @@ class FileListWidget(QWidget):
         self.new_button = QPushButton("新建账号小本本")
         self.new_button.clicked.connect(self.create_new_file)
 
-        # 云配置导入
-        self.import_button = QPushButton("云配置导入")
-        self.import_button.clicked.connect(self.import_cloud_config)
-
         # 按钮布局
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         button_layout.addWidget(self.new_button)
         button_layout.addWidget(self.select_button)
-        button_layout.addWidget(self.import_button)
         button_layout.addStretch()
         main_layout.addLayout(button_layout)
         self.load_saved_files()
@@ -298,17 +293,3 @@ class FileListWidget(QWidget):
                 file_path += ".gl"
 
             self.show_create_dialog(file_path)
-
-    def import_cloud_config(self):
-        """导入云配置"""
-
-        cloud_cfg_path, _ = QFileDialog.getOpenFileName(self, "导入云配置")
-        if not cloud_cfg_path:
-            return
-        content = file_util.get_file_content(cloud_cfg_path)
-        # 获得文件名
-        cfg_file_name = cloud_cfg_path.split("/")[-1]
-        local_cfg_path = file_util.get_full_path(cfg_file_name)
-        file_util.set_file_content(local_cfg_path, content)
-
-        self.create_new_file()
