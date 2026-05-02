@@ -1,9 +1,9 @@
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -240,21 +240,23 @@ class AddPasswordDialog(QDialog):
     # TOTP 区域
     # ------------------------------------------------------------------
     def _setup_totp_group(self, layout: QVBoxLayout) -> None:
-        """在对话框下方插入可选的 TOTP 配置区（默认折叠，勾选才展开）。"""
-        group = QGroupBox("启用二次验证 TOTP")
-        # 标题栏上直接挂一个勾选框；默认未勾选 = 折叠
-        group.setCheckable(True)
-        group.setChecked(False)
-        self.totp_group = group
+        """在对话框下方插入可选的 TOTP 配置区。
 
-        outer = QVBoxLayout()
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
+        设计：默认未启用 = 仅展示一个单独的勾选框，
+        不在下方留任何空的“内容框”（此前用 QGroupBox+setCheckable
+        会残留边框和 padding）。勾选后再展开 secret / 参数 / 预览。
+        """
+        self.totp_checkbox = QCheckBox("启用二次验证 TOTP")
+        self.totp_checkbox.setChecked(False)
+        # 保留 totp_group 别名以兼容可能的外部引用，且让现有
+        # self.totp_group.isChecked() 等调用无需更改
+        self.totp_group = self.totp_checkbox
 
-        # 把所有表单控件放进 inner widget，方便整体 show/hide
+        # 将所有表单控件放进 inner widget，默认隐藏
         inner = QWidget()
         self._totp_inner = inner
         g_layout = QFormLayout()
+        g_layout.setContentsMargins(18, 8, 0, 0)  # 左边略缩进，视觉上隐含属于上方勾选框
         g_layout.setSpacing(10)
 
         self.totp_secret_input = QLineEdit()
@@ -293,12 +295,13 @@ class AddPasswordDialog(QDialog):
 
         inner.setLayout(g_layout)
         inner.setVisible(False)  # 默认折叠
-        outer.addWidget(inner)
-        group.setLayout(outer)
-        layout.addWidget(group)
+
+        # 直接将勾选框 + inner 交给外层 layout，不再套 QGroupBox
+        layout.addWidget(self.totp_checkbox)
+        layout.addWidget(inner)
 
         # 勾选/取消勾选时切换内部可见性
-        group.toggled.connect(self._on_totp_group_toggled)
+        self.totp_checkbox.toggled.connect(self._on_totp_group_toggled)
 
         # 1 秒刷新预览（仅在展开时才有意义；_refresh_totp_preview 内部会判断）
         self._preview_timer = QTimer(self)
