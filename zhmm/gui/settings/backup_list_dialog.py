@@ -42,7 +42,7 @@ class BackupListDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # 说明标签
-        info_label = QLabel("自动备份和手动备份列表（双击可恢复备份，含配置文件）")
+        info_label = QLabel("手动备份列表（双击可恢复备份，含配置文件）")
         info_label.setStyleSheet("color: #666; padding: 5px;")
         layout.addWidget(info_label)
 
@@ -90,7 +90,7 @@ class BackupListDialog(QDialog):
         """加载备份列表"""
         self.backup_list.clear()
 
-        # 获取所有备份（自动备份和手动备份）
+        # 获取所有备份（手动备份）
         auto_backups = self.backup_manager.list("backup")
         manual_backups = self.backup_manager.list("manual")
         all_backups = auto_backups + manual_backups
@@ -126,7 +126,7 @@ class BackupListDialog(QDialog):
             mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
 
             # 判断备份类型
-            backup_type = "手动备份" if backup_path.name.startswith("manual") else "自动备份"
+            backup_type = "手动备份"
 
             # 检查是否有配置文件备份
             config_backup = backup_path.parent / backup_path.name.replace(".zmb", ".config")
