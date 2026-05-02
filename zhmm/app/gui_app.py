@@ -156,7 +156,7 @@ class AppWindow(BaseWindow):
         QMessageBox.about(self, "关于", about_text)
 
 
-def main():
+def main() -> None:
     """主函数"""
 
     app = QApplication(sys.argv)

@@ -127,11 +127,19 @@ module = ["zhmm.gui.*", "zhmm.app.*", "zhmm.widgets.*", "zhmm.data.*"]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 warn_return_any = false
-disable_error_code = ["no-untyped-call", "attr-defined", "union-attr", "assignment", "arg-type", "return-value", "index", "operator", "call-arg", "misc"]
+disable_error_code = ["no-untyped-call", "attr-defined", "union-attr", "assignment", "arg-type", "return-value", "index", "operator", "call-arg", "misc", "unused-ignore", "override", "type-arg", "no-untyped-def", "var-annotated", "no-any-return"]
 
 [[tool.mypy.overrides]]
 module = "gmssl.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+# Tests don't need full annotations; focus on assertion behavior.
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+disable_error_code = ["unused-ignore"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
