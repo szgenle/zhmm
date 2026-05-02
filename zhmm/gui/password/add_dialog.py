@@ -5,7 +5,6 @@ from PyQt6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -17,6 +16,7 @@ from PyQt6.QtWidgets import (
 
 from zhmm.core import totp as totp_mod
 from zhmm.core.errors import ValidationError
+from zhmm.gui.password.add_role_dialog import AddRoleDialog
 from zhmm.gui.password.random_dialog import RandomPasswordDialog
 from zhmm.utils import date_util
 from zhmm.utils.log import logger
@@ -158,11 +158,23 @@ class AddPasswordDialog(QDialog):
             self._populate_data(edit_data)
 
     def _add_custom_role(self):
-        """添加新类别"""
-        new_role, ok = QInputDialog.getText(self, "新建类别", "请输入新类别名称:", QLineEdit.EchoMode.Normal)
-        if ok and new_role.strip() and new_role not in self.roles:
-            self.added_role.emit(new_role)
-            self.role_combo.addItem(new_role)
+        """打开自绘「新建类别」对话框，确认后将新类别加入下拉。
+
+        对话框内部已做空值 / 重复校验（大小写不敏感），结果回来一定是合法的新类别。
+        下拉去重仍以 roles 列表原始值为准。
+        """
+        dialog = AddRoleDialog(self, self.roles)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        new_role = dialog.role_value()
+        if not new_role:
+            return
+        self.added_role.emit(new_role)
+        self.role_combo.addItem(new_role)
+        # 新增后自动选中，减少一次手动点击
+        idx = self.role_combo.findText(new_role)
+        if idx >= 0:
+            self.role_combo.setCurrentIndex(idx)
 
     def _populate_data(self, data):
         """填充编辑数据"""
