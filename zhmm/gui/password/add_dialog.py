@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
     QSpinBox,
     QTextEdit,
     QVBoxLayout,
+    QWidget,
 )
 
 from zhmm.core import totp as totp_mod
@@ -29,7 +30,9 @@ class AddPasswordDialog(QDialog):
     def __init__(self, parent, roles: list[str], edit_data=None):
         super().__init__(parent)
         self.setWindowTitle("添加账号密码")
-        self.setFixedSize(640, 820)  # 容纳 TOTP 新区域
+        # 宽度固定，高度随 TOTP 折叠状态自适应（给一个初始高度方便首屏呈现）
+        self.setFixedWidth(640)
+        self.resize(640, 640)
 
         self.roles = roles
         self._preview_timer: QTimer | None = None
@@ -171,8 +174,9 @@ class AddPasswordDialog(QDialog):
         self.email_input.setText(data.get("email", ""))
         self.url_input.setText(data.get("url", ""))
         self.desc_input.setText(data.get("desc", ""))
-        # TOTP 回填
-        self.totp_secret_input.setText(data.get("totp_secret", "") or "")
+        # TOTP 回填：已有 secret 才勾选并展开折叠区
+        existing_secret = (data.get("totp_secret") or "").strip()
+        self.totp_secret_input.setText(existing_secret)
         algo = (data.get("totp_algo") or "").upper()
         if algo:
             idx = self.totp_algo_combo.findText(algo)
@@ -185,6 +189,8 @@ class AddPasswordDialog(QDialog):
             self.totp_period_spin.setValue(int(period))
         except (TypeError, ValueError):
             pass
+        if existing_secret:
+            self.totp_group.setChecked(True)
         self._refresh_totp_preview()
 
     def show_random_pwd_dialog(self):
@@ -195,7 +201,9 @@ class AddPasswordDialog(QDialog):
 
     def get_password_data(self):
         """获取表单数据"""
-        secret = self.totp_secret_input.text().strip()
+        # 未勾选 TOTP 折叠区时，强制视为未启用，丢弃任何残留输入
+        totp_enabled = self.totp_group.isChecked()
+        secret = self.totp_secret_input.text().strip() if totp_enabled else ""
         algo = self.totp_algo_combo.currentText().strip().upper() if secret else ""
         digits = int(self.totp_digits_spin.value()) if secret else totp_mod.DEFAULT_DIGITS
         period = int(self.totp_period_spin.value()) if secret else totp_mod.DEFAULT_PERIOD
@@ -219,13 +227,25 @@ class AddPasswordDialog(QDialog):
     # TOTP 区域
     # ------------------------------------------------------------------
     def _setup_totp_group(self, layout: QVBoxLayout) -> None:
-        """在对话框下方插入可选的 TOTP 配置区。"""
-        group = QGroupBox("二次验证 TOTP（可选）")
+        """在对话框下方插入可选的 TOTP 配置区（默认折叠，勾选才展开）。"""
+        group = QGroupBox("启用二次验证 TOTP")
+        # 标题栏上直接挂一个勾选框；默认未勾选 = 折叠
+        group.setCheckable(True)
+        group.setChecked(False)
+        self.totp_group = group
+
+        outer = QVBoxLayout()
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        # 把所有表单控件放进 inner widget，方便整体 show/hide
+        inner = QWidget()
+        self._totp_inner = inner
         g_layout = QFormLayout()
         g_layout.setSpacing(10)
 
         self.totp_secret_input = QLineEdit()
-        self.totp_secret_input.setPlaceholderText("粘贴 Base32 secret 或 otpauth:// URI（留空则不启用）")
+        self.totp_secret_input.setPlaceholderText("粘贴 Base32 secret 或 otpauth:// URI")
         self.totp_secret_input.textChanged.connect(self._on_totp_secret_changed)
         g_layout.addRow("Secret:", self.totp_secret_input)
 
@@ -258,16 +278,31 @@ class AddPasswordDialog(QDialog):
         self.totp_preview_label.setStyleSheet("font-family: Menlo, monospace; font-size: 16px; font-weight: bold;")
         g_layout.addRow("预览:", self.totp_preview_label)
 
-        group.setLayout(g_layout)
+        inner.setLayout(g_layout)
+        inner.setVisible(False)  # 默认折叠
+        outer.addWidget(inner)
+        group.setLayout(outer)
         layout.addWidget(group)
 
-        # 1 秒刷新预览
+        # 勾选/取消勾选时切换内部可见性
+        group.toggled.connect(self._on_totp_group_toggled)
+
+        # 1 秒刷新预览（仅在展开时才有意义；_refresh_totp_preview 内部会判断）
         self._preview_timer = QTimer(self)
         self._preview_timer.setInterval(1000)
         self._preview_timer.timeout.connect(self._refresh_totp_preview)
         self._preview_timer.start()
         # 初次绘制
         self._refresh_totp_preview()
+
+    def _on_totp_group_toggled(self, checked: bool) -> None:
+        """勾选框 toggled：展开/折叠内部控件。"""
+        if hasattr(self, "_totp_inner"):
+            self._totp_inner.setVisible(checked)
+        if checked:
+            self._refresh_totp_preview()
+        # 让对话框按需重新计算布局尺寸
+        self.adjustSize()
 
     def _on_totp_secret_changed(self, text: str) -> None:
         """检测到 otpauth:// URI 时自动解析并回填各字段。"""
@@ -296,6 +331,9 @@ class AddPasswordDialog(QDialog):
     def _refresh_totp_preview(self) -> None:
         """根据当前表单值实时刷新预览文案。"""
         if not hasattr(self, "totp_preview_label"):
+            return
+        # 折叠状态下无需计算，直接跳过
+        if hasattr(self, "totp_group") and not self.totp_group.isChecked():
             return
         secret = self.totp_secret_input.text().strip()
         if not secret:
