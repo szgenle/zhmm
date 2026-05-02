@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dependency cleanup**: removed `cos-python-sdk-v5`, `pycryptodomex`, `bcrypt`.
 
 ### Added
+- **Anti-screenshot** (default on, toggleable in **Settings → General**): excludes `zhmm` windows from system screen capture on macOS (`NSWindow.sharingType = NSWindowSharingNone`) and Windows 10 2004+ (`SetWindowDisplayAffinity(WDA_EXCLUDE_FROM_CAPTURE)`, with `WDA_MONITOR` fallback). Applies to both the login dialog and the main window; takes effect instantly without restart. Linux is a no-op (no reliable system API). Cannot defend against camera re-shoot, capture cards, or VM screen grabs.
 - New encryption engine (`core/crypto.py`): PBKDF2-HMAC-SHA256 (600 000 rounds) + SM4-CBC + HMAC-SM3, with account-in-KDF as an application-level constant salt against offline dictionary / rainbow attacks on weak passwords.
 - `core/` business layer: `vault.py`, `password_service.py`, `backup_service.py`, `export_service.py`, `models.py`, `errors.py`.
 - Unified entry point: `python -m zhmm` dispatches GUI / CLI based on arguments.

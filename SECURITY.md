@@ -106,6 +106,7 @@ magic(4B="ZHMM") | ver(1B=4) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
 1. **GUI 主密码在 Qt 事件循环期间驻留内存**：PyQt6 字符串对象不保证被及时清零。
 2. **未做「锁屏」功能**：GUI 打开后长时间无操作不会自动锁定，敏感使用请手动退出。
 3. **无多因素认证支持**（主密码之外）。
+4. **防截屏仅覆盖系统截图/录屏 API**：默认开启防截屏（macOS `NSWindowSharingNone` / Windows 10 2004+ `WDA_EXCLUDE_FROM_CAPTURE`，可在「设置 → 常规」关闭）仅能让系统级截图/录屏工具抓到黑屏，**无法防御摄像头翻拍、外接采集卡、虚拟机抓屏、内核级屏幕驱动 hook**。Linux 无可靠系统 API，为 no-op。Windows 在部分远程桌面/投屏场景下画面会全黑，属预期行为。
 
 ---
 
