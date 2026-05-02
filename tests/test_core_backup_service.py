@@ -45,7 +45,7 @@ class TestCreate:
 
     def test_missing_source_raises(self, svc, tmp_path):
         with pytest.raises(StorageError):
-            svc.create(tmp_path / "missing.gl")
+            svc.create(tmp_path / "missing.zmb")
 
 
 class TestListAndSize:
@@ -113,7 +113,7 @@ class TestRestore:
 
     def test_restore_missing_backup_raises(self, svc, tmp_path):
         with pytest.raises(StorageError):
-            svc.restore(tmp_path / "nope.gl", tmp_path / "mm.gl")
+            svc.restore(tmp_path / "nope.zmb", tmp_path / "mm.zmb")
 
 
 class TestFormatSize:

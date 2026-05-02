@@ -18,9 +18,9 @@
 
 ## ✨ Features
 
-- 🔒 **Chinese SM crypto**: PBKDF2-HMAC-SM3 key derivation (200 000 rounds) + SM4-CBC encryption + HMAC-SM3 integrity tag. Master key never touches disk.
+- 🔒 **Chinese SM crypto**: PBKDF2-HMAC-SHA256 key derivation (600 000 rounds, account + password double-factor input) + SM4-CBC encryption + HMAC-SM3 integrity tag. Master key never touches disk.
 - 💻 **Dual form factor**: one core, two UIs — **PyQt6 GUI** and **CLI (argparse)**.
-- 📦 **Single-file vault**: one `.gl` file *is* your vault (binary format with magic, version, auth tag) — easy to back up and migrate.
+- 📦 **Single-file vault**: one `.zmb` file *is* your vault (binary format v4 with magic, version, auth tag) — easy to back up and migrate.
 - 📝 **Import / export**: full Excel (xlsx) round-tripping.
 - 🎨 **Themes**: built-in light / dark themes.
 - 🧰 **Batteries included**: PyInstaller recipes for macOS / Windows / Linux.
@@ -70,32 +70,33 @@ open /Applications/zhmm.app
 
 On first launch:
 
-1. Enter your **OpenID** (any stable unique identifier: email, phone, etc.) and a **master password**.
-2. Add entries (site, account, password, notes) in the main window.
+1. Enter an **account name** (any stable unique identifier: email, phone, etc. — it participates in KDF as an application-level constant salt) and a **master password**.
+2. Pick or create a `.zmb` vault file; then add entries (site, account, password, notes) in the main window.
 3. Configure backup strategy in **Settings** (optional).
 
 ### CLI
 
 ```bash
 # Search
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -s github
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -s github
 
 # Create
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -n
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -n
 
 # Modify
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -m
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -m
 
 # Delete
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -d <record_id>
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -d <record_id>
 
 # Export
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -e ~/backup.xlsx
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -e ~/backup.xlsx
 
 # Simple (read-only) mode
-zhmm-cli -i ~/zhmm.gl --openId you@example.com --simple -s github
+zhmm-cli -i ~/zhmm.zmb --account you@example.com --simple -s github
 ```
 
+> The account name is required and participates in key derivation alongside the password.
 > Password is read from stdin by default. `--pwd` is supported but will be
 > recorded in shell history — avoid it.
 > See `zhmm-cli --help` for the full flag list.
@@ -130,23 +131,24 @@ zhmm/
 
 ### 🔐 Encryption Design
 
-The `.gl` vault file is protected by a pure Chinese SM algorithm stack:
+The `.zmb` vault file is protected by a hybrid stack of Chinese SM algorithms and standard hashes:
 
 | Stage | Algorithm | Details |
 |-------|-----------|--------|
-| Key derivation | **PBKDF2-HMAC-SM3** | 200 000 iterations, 16-byte random salt, derives 32-byte key |
+| Key derivation | **PBKDF2-HMAC-SHA256** | 600 000 iterations, 16-byte random salt, derives 32-byte key; KDF input material is `account.utf8 + 0x00 + password.utf8` |
 | Encryption | **SM4-CBC** | 16-byte random IV, PKCS7 padding |
 | Integrity | **HMAC-SM3** | Covers header + ciphertext, produces 32-byte auth tag |
 
-File layout:
+File layout (v4):
 
 ```
-magic(4B="ZHMM") | ver(1B=3) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
+magic(4B="ZHMM") | ver(1B=4) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
 ```
 
 - **magic**: lets the `file` command identify the file type
 - **ver**: standalone version byte for future upgrades
 - **tag**: covers header + ciphertext, preventing downgrade attacks and tampering
+- **account**: participates in KDF but is **not** stored in the file; must be re-supplied on decrypt. A wrong account looks identical to a wrong password (HMAC authentication failure).
 
 ---
 
@@ -154,10 +156,10 @@ magic(4B="ZHMM") | ver(1B=3) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
 
 > This project handles password data. Please read before use.
 
-- **Key derivation**: the master password is processed through PBKDF2-HMAC-SM3 (200 000 rounds) to derive the encryption key. **The master password is never persisted.**
-- **Data encryption**: every password entry is SM4-CBC encrypted inside the `.gl` file, with an HMAC-SM3 integrity tag.
+- **Key derivation**: account name + master password are concatenated with `\x00` and processed through PBKDF2-HMAC-SHA256 (600 000 rounds) to derive the encryption key. **Neither the master password nor the account is ever persisted.**
+- **Data encryption**: every password entry is SM4-CBC encrypted inside the `.zmb` file, with an HMAC-SM3 integrity tag.
 - **Config encryption**: local application config is encrypted at rest with `Fernet (PBKDF2-HMAC-SHA256 + random salt)`.
-- **`.gl` file**: treat it like your vault; back it up in multiple places.
+- **`.zmb` file**: treat it like your vault; back it up in multiple places.
 - **Known limitations**: see [SECURITY.md](SECURITY.md).
 
 Security vulnerabilities? Please **privately** disclose them per [SECURITY.md](SECURITY.md) — do **not** open a public issue.

@@ -18,9 +18,9 @@
 
 ## ✨ 特性
 
-- 🔒 **国密加密**：PBKDF2-HMAC-SM3 密钥派生（200 000 轮）+ SM4-CBC 数据加密 + HMAC-SM3 完整性校验，密钥永不落盘
+- 🔒 **国密加密**：PBKDF2-HMAC-SHA256 密钥派生（600 000 轮，账号+密码双因子输入）+ SM4-CBC 数据加密 + HMAC-SM3 完整性校验，密钥永不落盘
 - 💻 **双形态**：同一套核心，提供 **GUI（PyQt6）** 与 **CLI（argparse）** 两种使用方式
-- 📦 **单文件密库**：一个 `.gl` 文件即完整密库（二进制格式，含 magic / 版本号 / 认证标签），便于备份与迁移
+- 📦 **单文件密库**：一个 `.zmb` 文件即完整密库（二进制格式 v4，含 magic / 版本号 / 认证标签），便于备份与迁移
 - 📝 **支持导入/导出**：支持 Excel（xlsx）导入导出
 - 🎨 **主题切换**：内置浅色/深色主题
 - 🧰 **开箱即用**：提供 PyInstaller 打包脚本，一键构建 macOS / Windows / Linux 发行版
@@ -70,33 +70,33 @@ open /Applications/zhmm.app
 
 首次使用：
 
-1. 在登录窗口输入 **OpenID**（任意稳定唯一标识均可，如邮箱、手机号）和 **主密码**
-2. 进入主界面后新增条目（站点名、账号、密码、备注）
+1. 在登录窗口输入 **账号名**（任意稳定唯一标识均可，如邮箱、手机号；会作为 KDF 常量盐参与密钥派生）和 **主密码**
+2. 选择或创建 `.zmb` 密库文件，进入主界面后新增条目（站点名、账号、密码、备注）
 3. 可在「设置」中配置备份策略
 
 ### CLI 模式
 
 ```bash
 # 查询（search / find）
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -s github
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -s github
 
 # 新增
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -n
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -n
 
 # 修改
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -m
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -m
 
 # 删除
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -d <record_id>
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -d <record_id>
 
 # 导出
-zhmm-cli -i ~/zhmm.gl --openId you@example.com -e ~/backup.xlsx
+zhmm-cli -i ~/zhmm.zmb --account you@example.com -e ~/backup.xlsx
 
 # 简单（只读）模式
-zhmm-cli -i ~/zhmm.gl --openId you@example.com --simple -s github
+zhmm-cli -i ~/zhmm.zmb --account you@example.com --simple -s github
 ```
 
-> 密码默认从 stdin 隐式读取；也可通过 `--pwd` 显式传入（⚠️ 会被 shell history 记录）。
+> 账号名需非空，与密码共同参与密钥派生；密码默认从 stdin 隐式读取，也可通过 `--pwd` 显式传入（⚠️ 会被 shell history 记录）。
 > 完整参数列表见 `zhmm-cli --help`。
 
 ---
@@ -129,23 +129,24 @@ zhmm/
 
 ### 🔐 加密设计
 
-`zhmm` 的 `.gl` 密库文件使用纯国密算法栈保护：
+`zhmm` 的 `.zmb` 密库文件使用国密 + 标准哈希混合栈保护：
 
 | 环节 | 算法 | 说明 |
 |------|------|------|
-| 密钥派生 | **PBKDF2-HMAC-SM3** | 200 000 轮迭代，16 字节随机盐，派生 32 字节密钥 |
+| 密钥派生 | **PBKDF2-HMAC-SHA256** | 600 000 轮迭代，16 字节随机盐，派生 32 字节密钥；KDF 口令材料为 `account.utf8 + 0x00 + password.utf8` |
 | 数据加密 | **SM4-CBC** | 16 字节随机 IV，PKCS7 填充 |
 | 完整性校验 | **HMAC-SM3** | 覆盖文件头 + 密文，生成 32 字节认证标签 |
 
-文件格式：
+文件格式（v4）：
 
 ```
-magic(4B="ZHMM") | ver(1B=3) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
+magic(4B="ZHMM") | ver(1B=4) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
 ```
 
 - **magic**：让 `file` 命令可识别文件类型
 - **ver**：独立版本号，方便未来升级
 - **tag**：覆盖 header + ciphertext，防止降级攻击和篡改
+- **账号名**：参与 KDF 但不写入文件，解密时由调用方重新提供，账号错误与密码错误表现一致（HMAC 认证失败）
 
 ---
 
@@ -153,10 +154,10 @@ magic(4B="ZHMM") | ver(1B=3) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
 
 > 本项目处理用户密码数据，请在使用前仔细阅读。
 
-- **密钥派生**：用户主密码经 PBKDF2-HMAC-SM3（200 000 轮）派生加密密钥，**主密码永不持久化**
-- **数据加密**：所有密码条目以 SM4-CBC 加密写入 `.gl` 文件，附带 HMAC-SM3 完整性标签
+- **密钥派生**：账号名 + 主密码以 `\x00` 拼接后经 PBKDF2-HMAC-SHA256（600 000 轮）派生加密密钥，**主密码与账号永不持久化**
+- **数据加密**：所有密码条目以 SM4-CBC 加密写入 `.zmb` 文件，附带 HMAC-SM3 完整性标签
 - **配置加密**：本地应用配置经 `Fernet (PBKDF2-HMAC-SHA256 + 随机盐)` 加密落盘
-- **`.gl` 文件**：等同于密库，请妥善保管，建议多地备份
+- **`.zmb` 文件**：等同于密库，请妥善保管，建议多地备份
 - **已知限制**：详见 [SECURITY.md](SECURITY.md)
 
 发现安全漏洞请通过 [SECURITY.md](SECURITY.md) 中的方式进行**私下**披露，请勿直接提 Issue。
