@@ -76,9 +76,6 @@ class SettingWindow(QWidget):
         # 连接主题切换信号
         self.theme_button_group.buttonClicked.connect(self.on_theme_changed)
 
-        # 更改OpenID
-        # 云同步功能已移除，OpenID 在新版本中仅作为账号标识符，不再提供修改入口
-
         # 导入xlsx文件
         self.import_xlsx_button = QPushButton("导入xlsx文件")
         self.import_xlsx_button.clicked.connect(self.import_xlsx)

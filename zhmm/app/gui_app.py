@@ -146,7 +146,7 @@ class AppWindow(BaseWindow):
         <h2>账号管理器</h2>
         <p>版本: {__version__}</p>
         <p>一个用于管理网站、App 账号密码及相关信息的工具。</p>
-        <p>支持数据加密存储、自动备份、云同步等功能。</p>
+        <p>支持数据加密存储、自动备份等功能。</p>
         """
 
         QMessageBox.about(self, "关于", about_text)

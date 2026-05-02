@@ -6,7 +6,7 @@
     - load(path, password) → models.Vault
     - save(path, password, vault) → None，原子性写入
 
-不涉及业务 CRUD（那是 password_service 的活），也不关心云同步或 UI。
+不涉及业务 CRUD（那是 password_service 的活），也不关心 UI。
 """
 
 from __future__ import annotations

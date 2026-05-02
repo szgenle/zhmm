@@ -122,10 +122,6 @@ class ThemeManager:
             padding-top: 10px;
             background-color: #f8f9fa;
         }
-        QGroupBox#cloud-storage-group {
-            background-color: #ffffff;
-            border: 1px solid #dcdde1;
-        }
 
         QScrollBar:vertical {
             border: none;
@@ -255,10 +251,6 @@ class ThemeManager:
             margin-top: 10px;
             padding-top: 10px;
             background-color: #2c3e50;
-        }
-        QGroupBox#cloud-storage-group {
-            background-color: #1e272e;
-            border: 1px solid #34495e;
         }
 
         QScrollBar:vertical {
