@@ -18,7 +18,6 @@ import zhmm
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.settings.backup_settings import BackupSettings
 from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
-from zhmm.utils import file_util
 
 # 统一的按钮尺寸，避免大小不一造成视觉混乱
 _BUTTON_MIN_WIDTH = 140
@@ -65,9 +64,6 @@ class SettingWindow(QWidget):
 
         # ---------- 数据导入导出 ----------
         layout.addWidget(self._build_import_export_group())
-
-        # ---------- 其他 ----------
-        layout.addWidget(self._build_misc_group())
 
         layout.addStretch()
 
@@ -153,17 +149,6 @@ class SettingWindow(QWidget):
         group.setLayout(grid)
         return group
 
-    def _build_misc_group(self) -> QGroupBox:
-        """其他"""
-        group = QGroupBox("其他")
-        h = QHBoxLayout()
-        h.setContentsMargins(4, 8, 4, 8)
-        self.open_log_button = self._make_button("打开日志目录", self.open_log_dir)
-        h.addWidget(self.open_log_button)
-        h.addStretch()
-        group.setLayout(h)
-        return group
-
     @staticmethod
     def _make_button(text: str, slot) -> QPushButton:
         """创建统一尺寸的按钮"""
@@ -193,11 +178,6 @@ class SettingWindow(QWidget):
     def download_xlsx_template(self):
         """下载xlsx模版文件"""
         self.import_export_handlers.download_xlsx_template()
-
-    def open_log_dir(self):
-        """打开日志目录"""
-        path = file_util.get_full_path(".log").as_posix()
-        file_util.open_directory(path)
 
     def on_theme_changed(self, button):
         """主题切换事件处理"""

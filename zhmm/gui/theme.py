@@ -13,9 +13,9 @@ class ThemeManager:
         QDialog { background-color: #f5f7fa; border-radius: 8px; }
         QMainWindow { background-color: #ffffff; }
         QWidget { background-color: #ffffff; color: #2c3e50; }
-        QLabel#title_label { color: #2c3e50; font-size: 18px; font-weight: bold; }
-        QLabel { color: #34495e; font-size: 14px; }
-        QLabel#setting-datasave-title { color: #2c3e50; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        QLabel#title_label { color: #2c3e50; font-size: 18px; font-weight: bold; background-color: transparent; }
+        QLabel { color: #34495e; font-size: 14px; background-color: transparent; }
+        QLabel#setting-datasave-title { color: #2c3e50; font-size: 16px; font-weight: bold; margin-top: 10px; background-color: transparent; }
 
         QLineEdit, QTextEdit, QComboBox, QSpinBox {
             border: 1px solid #bdc3c7;
@@ -101,6 +101,7 @@ class ThemeManager:
         QCheckBox, QRadioButton {
             color: #34495e;
             spacing: 5px;
+            background-color: transparent;
         }
         QCheckBox::indicator, QRadioButton::indicator {
             width: 18px;
@@ -153,9 +154,9 @@ class ThemeManager:
         QDialog { background-color: #2c3e50; border-radius: 8px; }
         QMainWindow { background-color: #1e272e; }
         QWidget { background-color: #1e272e; color: #ecf0f1; }
-        QLabel#title_label { color: #ecf0f1; font-size: 18px; font-weight: bold; }
-        QLabel { color: #bdc3c7; font-size: 14px; }
-        QLabel#setting-datasave-title { color: #ecf0f1; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        QLabel#title_label { color: #ecf0f1; font-size: 18px; font-weight: bold; background-color: transparent; }
+        QLabel { color: #bdc3c7; font-size: 14px; background-color: transparent; }
+        QLabel#setting-datasave-title { color: #ecf0f1; font-size: 16px; font-weight: bold; margin-top: 10px; background-color: transparent; }
 
         QLineEdit, QTextEdit, QComboBox, QSpinBox {
             border: 1px solid #34495e;
@@ -241,6 +242,7 @@ class ThemeManager:
         QCheckBox, QRadioButton {
             color: #bdc3c7;
             spacing: 5px;
+            background-color: transparent;
         }
         QCheckBox::indicator, QRadioButton::indicator {
             width: 18px;
