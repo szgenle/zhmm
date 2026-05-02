@@ -132,7 +132,7 @@ class BackupListDialog(QDialog):
             config_backup = backup_path.parent / backup_path.name.replace(".zmb", ".config")
             has_config = "[含配置]" if config_backup.exists() else ""
 
-            return f"[{backup_type}] {backup_path.name}  {has_config}  |  {size}  |  {mtime}"
+            return f"[{backup_type}] {backup_path.name}  {has_config}  |  {size}  |  数据 {mtime}"
 
         except Exception:
             return backup_path.name
