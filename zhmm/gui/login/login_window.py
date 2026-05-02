@@ -10,6 +10,26 @@ from zhmm.utils.log import logger
 from zhmm.widgets.dialog import Dialog
 
 
+def _to_halfwidth(text: str) -> str:
+    """将常见全角字符转换为半角。
+
+    覆盖范围：
+    - 全角空格(U+3000) -> 普通空格
+    - 全角 ASCII 可见字符(U+FF01 ~ U+FF5E) -> 对应的半角字符
+    其他字符保持不变。
+    """
+    result: list[str] = []
+    for ch in text:
+        code = ord(ch)
+        if code == 0x3000:
+            result.append(" ")
+        elif 0xFF01 <= code <= 0xFF5E:
+            result.append(chr(code - 0xFEE0))
+        else:
+            result.append(ch)
+    return "".join(result)
+
+
 class LoginWindow(Dialog):
     """登录对话框"""
 
@@ -44,6 +64,7 @@ class LoginWindow(Dialog):
         openid_label = QLabel("OpenID:")
         self.openid_input = QLineEdit()
         self.openid_input.setPlaceholderText("请输入微信小程序中显示的OpenId")
+        self.openid_input.textEdited.connect(lambda _text: self._normalize_line_edit(self.openid_input))
         if openid:
             self.openid_input.setText(openid)
             self.openid_input.hide()
@@ -56,7 +77,8 @@ class LoginWindow(Dialog):
         password_label = QLabel("密码:")
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password_input.setPlaceholderText("请输入密码")
+        self.password_input.setPlaceholderText("请输入密码（半角）")
+        self.password_input.textEdited.connect(lambda _text: self._normalize_line_edit(self.password_input))
 
         # 显示/隐藏密码切换按钮
         self.toggle_password_button = QPushButton("显示")
@@ -96,6 +118,20 @@ class LoginWindow(Dialog):
 
         self.setLayout(layout)
 
+    def _normalize_line_edit(self, line_edit: QLineEdit) -> None:
+        """实时将输入框中的全角字符纠正为半角，避免用户因输入法差异出错。"""
+        original = line_edit.text()
+        normalized = _to_halfwidth(original)
+        if normalized == original:
+            return
+        cursor_pos = line_edit.cursorPosition()
+        line_edit.blockSignals(True)
+        try:
+            line_edit.setText(normalized)
+            line_edit.setCursorPosition(min(cursor_pos, len(normalized)))
+        finally:
+            line_edit.blockSignals(False)
+
     def _toggle_password_visibility(self, checked: bool) -> None:
         """切换密码明文/密文显示"""
         if checked:
@@ -107,8 +143,8 @@ class LoginWindow(Dialog):
 
     def verify_login(self):
         """验证登录信息"""
-        openid = self.openid_input.text().strip()
-        password = self.password_input.text().strip()
+        openid = _to_halfwidth(self.openid_input.text()).strip()
+        password = _to_halfwidth(self.password_input.text()).strip()
 
         if not openid:
             QMessageBox.warning(self, "警告", "OpenID不能为空")
