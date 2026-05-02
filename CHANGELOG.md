@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documented
+- README / SECURITY.md now explicitly document two long-existing safety features that were previously undocumented (or incorrectly described as missing):
+  - **Auto-lock**: GUI returns to the login page and releases in-memory entries (`main_widget.deleteLater()`) when the window has been inactive for the user-configured duration (Settings → General → 自动锁定时间). Detection is based on `QWidget.isActiveWindow()` — it does not monitor mouse/keyboard, so a foreground-but-idle window will not trigger the lock.
+  - **Clipboard auto-clear**: both password and TOTP code copies are wiped from the clipboard after 10 seconds; TOTP secrets never enter the clipboard.
+- Corrected SECURITY.md "Known Limitations" entry that previously claimed no auto-lock existed.
+
 ### Added — TOTP 2FA
 - **Built-in TOTP (time-based one-time password) support** covering both standard and Chinese SM variants:
   - Full **RFC 6238 / RFC 4226** implementation with `HMAC-SHA1 / SHA256 / SHA512`.

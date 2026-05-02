@@ -119,7 +119,7 @@ magic(4B="ZHMM") | ver(1B=5) | m_cost(4B BE) | t_cost(4B BE) | p_cost(4B BE)
 - **`.zmb` 密库**：TOTP Secret 作为条目字段之一，随整库一起经 **Argon2id → SM4-CBC → HMAC-SM3** 链路加密落盘。**破解 TOTP Secret 的门槛与破解主密码完全等价。**
 - **Excel 导出（`.xlsx`）**：**刻意不包含 TOTP Secret 列**。导出文件仅保留 `totp_algo / totp_digits / totp_period` 三列元信息，便于迁移时提示「此条目曾启用 2FA，请重新扫码绑定」。这一设计避免用户把明文 Secret 泄露给云盘 / 协作工具 / 邮箱等不受控通道。
 - **CLI `--totp <id>`**：仅输出当前动态码与剩余秒数，**不输出 Secret 本身**。
-- **剪贴板**：TOTP 动态码复制后 10 秒自动清空；Secret 不会进入剪贴板。
+- **剪贴板**：TOTP 动态码与密码列复制后均 10 秒自动清空；TOTP Secret 不会进入剪贴板。
 
 ### 已知边界
 
@@ -134,7 +134,7 @@ magic(4B="ZHMM") | ver(1B=5) | m_cost(4B BE) | t_cost(4B BE) | p_cost(4B BE)
 我们开诚布公地列出已知安全局限，欢迎贡献改进：
 
 1. **GUI 主密码在 Qt 事件循环期间驻留内存**：PyQt6 字符串对象不保证被及时清零。
-2. **未做「锁屏」功能**：GUI 打开后长时间无操作不会自动锁定，敏感使用请手动退出。
+2. **自动锁定的粒度有限**：GUI 支持按「设置 → 常规 → 自动锁定时间」配置的分钟数，窗口失去焦点并超过该时长后会自动回到登录页并释放内存中的明文条目（`main_widget.deleteLater()`）；但判定活动的依据是 `QWidget.isActiveWindow()`，**不监听鼠标 / 键盘输入**——窗口保持前台但长时间无人操作的场景不会触发锁定。敏感场景建议手动退出或缩短该时长。
 3. **无多因素认证支持**（主密码之外）。
 4. **防截屏仅覆盖系统截图/录屏 API**：默认开启防截屏（macOS `NSWindowSharingNone` / Windows 10 2004+ `WDA_EXCLUDE_FROM_CAPTURE`，可在「设置 → 常规」关闭）仅能让系统级截图/录屏工具抓到黑屏，**无法防御摄像头翻拍、外接采集卡、虚拟机抓屏、内核级屏幕驱动 hook**。Linux 无可靠系统 API，为 no-op。Windows 在部分远程桌面/投屏场景下画面会全黑，属预期行为。
 
