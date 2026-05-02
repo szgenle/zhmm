@@ -2,8 +2,10 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QCursor
+import re
+
+from PyQt6.QtCore import Qt, QTimer, QUrl
+from PyQt6.QtGui import QCursor, QDesktopServices
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -12,6 +14,7 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMenu,
     QMessageBox,
     QPushButton,
     QTableView,
@@ -121,6 +124,10 @@ class PasswordWindow(QWidget):
         # 新增双击事件处理
         self.table_view.doubleClicked.connect(self.edit_selected_password)
 
+        # 右键上下文菜单
+        self.table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table_view.customContextMenuRequested.connect(self._show_context_menu)
+
         self.table_view.setAlternatingRowColors(True)
         self.table_view.setSortingEnabled(True)
 
@@ -171,17 +178,11 @@ class PasswordWindow(QWidget):
         # 创建按钮区域
         button_layout = QHBoxLayout()
 
-        # 新增删除按钮
-        delete_button = QPushButton("删除")
-        delete_button.setMaximumWidth(128)
-        delete_button.clicked.connect(self.delete_selected_password)
-
         add_button = QPushButton("添加")
         add_button.setMaximumWidth(128)
         add_button.clicked.connect(self.add_password)
 
         button_layout.addStretch()
-        button_layout.addWidget(delete_button)
         button_layout.addWidget(add_button)
 
         main_layout.addLayout(button_layout)
@@ -286,6 +287,79 @@ class PasswordWindow(QWidget):
     def refresh_data(self):
         """刷新数据"""
         self.table_model.setZhData(self.gl_data.mm["data"])
+
+    # ------------------------------------------------------------------
+    # 右键上下文菜单
+    # ------------------------------------------------------------------
+    def _show_context_menu(self, pos) -> None:
+        """在密码表格上弹出行级操作菜单。"""
+        index = self.table_view.indexAt(pos)
+        if not index.isValid():
+            return
+        # 高亮当前行，确保后续操作针对这一行
+        self.table_view.selectRow(index.row())
+
+        source_index = self.proxy_model.mapToSource(index)
+        source_row = source_index.row()
+        if source_row < 0 or source_row >= len(self.table_model._data):
+            return
+        item = self.table_model._data[source_row]
+
+        menu = QMenu(self.table_view)
+
+        act_edit = menu.addAction("编辑…")
+        act_edit.triggered.connect(self.edit_selected_password)
+
+        menu.addSeparator()
+
+        act_copy_user = menu.addAction("复制账号")
+        user_text = str(item.get("userID") or "")
+        act_copy_user.setEnabled(bool(user_text))
+        act_copy_user.triggered.connect(lambda _=False, t=user_text: self._copy_plain(t, "账号"))
+
+        act_copy_pwd = menu.addAction("复制密码")
+        act_copy_pwd.setEnabled(bool(item.get("pwd")))
+        pwd_proxy = self.proxy_model.index(index.row(), PasswordTableModel.password_column())
+        act_copy_pwd.triggered.connect(lambda _=False, i=pwd_proxy: self.copy_cell_to_clipboard(i))
+
+        if item.get("totp_secret"):
+            act_copy_totp = menu.addAction("复制动态码")
+            totp_proxy = self.proxy_model.index(index.row(), PasswordTableModel.totp_column())
+            act_copy_totp.triggered.connect(lambda _=False, i=totp_proxy: self._copy_totp_at(i))
+
+        url_text = str(item.get("url") or "").strip()
+        if url_text:
+            act_copy_url = menu.addAction("复制网址")
+            act_copy_url.triggered.connect(lambda _=False, t=url_text: self._copy_plain(t, "网址"))
+            act_open_url = menu.addAction("打开网址")
+            act_open_url.triggered.connect(lambda _=False, t=url_text: self._open_url(t))
+
+        menu.addSeparator()
+
+        act_delete = menu.addAction("删除")
+        act_delete.triggered.connect(self.delete_selected_password)
+
+        viewport = self.table_view.viewport()
+        global_pos = viewport.mapToGlobal(pos) if viewport is not None else QCursor.pos()
+        menu.exec(global_pos)
+
+    def _copy_plain(self, text: str, label: str) -> None:
+        """将文本复制到剪贴板并提示。非敏感字段（账号/网址）不自动清空。"""
+        if not text:
+            return
+        QApplication.clipboard().setText(text)  # type: ignore
+        QToolTip.showText(QCursor.pos(), f"✅ 已复制{label}", self.table_view)
+        self._show_status(f"✅ 已复制{label}", highlight=True)
+
+    def _open_url(self, url: str) -> None:
+        """调用系统浏览器打开 URL。支持多 URL 字段（取第一个），缺失 scheme 时补 https://。"""
+        tokens = [t for t in re.split(r"[\s,;]+", (url or "").strip()) if t]
+        if not tokens:
+            return
+        first = tokens[0]
+        if not re.match(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://", first):
+            first = "https://" + first
+        QDesktopServices.openUrl(QUrl(first))
 
     def delete_selected_password(self):
         """删除选中的密码项"""
