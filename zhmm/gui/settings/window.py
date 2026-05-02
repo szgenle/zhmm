@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import (
+    QApplication,
     QButtonGroup,
     QCheckBox,
     QFormLayout,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QLabel,
+    QLineEdit,
     QPushButton,
     QRadioButton,
     QScrollArea,
     QSpinBox,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -19,6 +24,9 @@ import zhmm
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.settings.backup_settings import BackupSettings
 from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
+from zhmm.gui.texts import Account as AccountText
+from zhmm.gui.texts import Tooltip
+from zhmm.utils.log import logger
 
 # 统一的按钮尺寸，避免大小不一造成视觉混乱
 _BUTTON_MIN_WIDTH = 140
