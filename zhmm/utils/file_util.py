@@ -12,9 +12,50 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
-from PyQt6.QtCore import QStandardPaths
-
 logger = logging.getLogger(__name__)
+
+# 应用身份（对应 Qt 的 organizationName / applicationName）
+# CLI 下保持为 None，行为与历史一致（返回裸的 Application Support 路径）。
+# GUI 在 zhmm.init_app() 中通过 set_app_identity() 注入，得到
+# 与 QCoreApplication 相同的 per-app 子目录。
+_org_name: str | None = None
+_app_name: str | None = None
+
+
+def set_app_identity(org_name: str | None, app_name: str | None) -> None:
+    """注入组织名 / 应用名，用于拼接 AppDataLocation。仅 GUI 初始化时调用。"""
+    global _org_name, _app_name, data_dir
+    _org_name = org_name or None
+    _app_name = app_name or None
+    # 清空缓存，让下次调用基于新的 identity 重新计算
+    data_dir = None
+
+
+def _default_app_data_base() -> str:
+    """返回当前平台的 AppDataLocation 基础目录（不含 org/app 子目录）。"""
+    system = platform.system()
+    if system == "Darwin":
+        return str(Path.home() / "Library" / "Application Support")
+    if system == "Windows":
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            return appdata
+        return str(Path.home() / "AppData" / "Roaming")
+    # Linux / 其他 Unix：遵循 XDG 规范
+    xdg = os.environ.get("XDG_DATA_HOME")
+    if xdg:
+        return xdg
+    return str(Path.home() / ".local" / "share")
+
+
+def _compose_app_data_path() -> str:
+    """按 Qt AppDataLocation 的规则拼接完整路径。"""
+    base = _default_app_data_base()
+    if _org_name and _app_name:
+        return os.path.join(base, _org_name, _app_name)
+    if _app_name:
+        return os.path.join(base, _app_name)
+    return base
 
 
 def is_macos() -> bool:
@@ -101,9 +142,8 @@ def get_writable_dir() -> str:
     """获取平台合规的可写数据目录"""
     global data_dir
     if data_dir is None:
-        # 使用Qt的自动路径拼接功能，避免手动拼接目录名
-        data_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
-        # 删除原有的手动拼接 'zhmm' 操作
+        # 用原生实现替代 QStandardPaths，避免 CLI 场景引入 PyQt6
+        data_dir = _compose_app_data_path()
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
         print("数据目录:", data_dir)
@@ -115,11 +155,9 @@ def get_full_path(file_name: str) -> Path:
 
 
 def get_application_support_path() -> str | None:
-    # 获取Application Support目录
-    paths = QStandardPaths.standardLocations(QStandardPaths.StandardLocation.AppDataLocation)
-    if paths:
-        return str(paths[0])
-    return None
+    # 返回Application Support目录（等同于 Qt AppDataLocation 的首项）
+    path = _compose_app_data_path()
+    return path if path else None
 
 
 def open_directory(path: str | Path) -> None:

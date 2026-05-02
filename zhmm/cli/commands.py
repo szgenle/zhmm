@@ -7,14 +7,8 @@ import argparse
 import getpass
 import sys
 
-from zhmm.cli.interactive import CmdUI
-from zhmm.utils.log import logger, setup_logging
 
-
-def main() -> None:
-    # 初始化日志系统
-    setup_logging()
-
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Process some integers.")
     parser.add_argument("--input", "-i", type=str, help="要加载的加密文件路径")
     parser.add_argument("--out", "-o", type=str, help="输出的文件路径")
@@ -28,8 +22,23 @@ def main() -> None:
     parser.add_argument("--delete", "-d", type=str, help="要删除记录的ID")
     parser.add_argument("--simple", action="store_true", help="简单模式（仅允许查询功能）")
     parser.add_argument("--once", action="store_true", help="仅执行一次操作后退出")
+    return parser
 
-    user_input_args = parser.parse_args()
+
+def main() -> None:
+    # --help 快通道：避免做 setup_logging / 数据目录初始化等重操作
+    # argparse 在遇到 -h/--help 时会自行 sys.exit(0)
+    if any(arg in ("-h", "--help") for arg in sys.argv[1:]):
+        _build_parser().parse_args()
+        return
+
+    # 真正进入业务流程时再初始化日志 & 懒加载 CmdUI
+    from zhmm.cli.interactive import CmdUI
+    from zhmm.utils.log import logger, setup_logging
+
+    setup_logging()
+
+    user_input_args = _build_parser().parse_args()
     gl_ui = CmdUI(user_input_args)
 
     file_path = "zhmm.zmb"

@@ -78,6 +78,13 @@ build-cmd: clean-build update-version
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
+		--exclude-module PyQt6 \
+		--exclude-module PyQt6.QtCore \
+		--exclude-module PyQt6.QtGui \
+		--exclude-module PyQt6.QtWidgets \
+		--exclude-module PyQt6.QtSvg \
+		--exclude-module zhmm.gui \
+		--exclude-module zhmm.app.gui_app \
 		zhmm/cli/commands.py \
 		--paths zhmm/
 	@echo "命令行应用程序构建完成！"
@@ -99,6 +106,13 @@ build-all: clean-build update-version
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
+		--exclude-module PyQt6 \
+		--exclude-module PyQt6.QtCore \
+		--exclude-module PyQt6.QtGui \
+		--exclude-module PyQt6.QtWidgets \
+		--exclude-module PyQt6.QtSvg \
+		--exclude-module zhmm.gui \
+		--exclude-module zhmm.app.gui_app \
 		zhmm/cli/commands.py \
 		--paths zhmm/
 	@echo "所有应用程序构建完成！"
