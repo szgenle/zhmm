@@ -129,7 +129,7 @@ class BackupListDialog(QDialog):
             backup_type = "手动备份" if backup_path.name.startswith("manual") else "自动备份"
 
             # 检查是否有配置文件备份
-            config_backup = backup_path.parent / backup_path.name.replace(".gl", ".config")
+            config_backup = backup_path.parent / backup_path.name.replace(".zmb", ".config")
             has_config = "[含配置]" if config_backup.exists() else ""
 
             return f"[{backup_type}] {backup_path.name}  {has_config}  |  {size}  |  {mtime}"

@@ -18,7 +18,7 @@ def svc(tmp_path: Path) -> BackupService:
 
 @pytest.fixture
 def data_file(tmp_path: Path) -> Path:
-    f = tmp_path / "mm.gl"
+    f = tmp_path / "mm.zmb"
     f.write_bytes(b"encrypted-payload")
     return f
 
@@ -34,7 +34,7 @@ class TestCreate:
     def test_creates_data_backup(self, svc, data_file):
         now = datetime(2025, 1, 2, 3, 4, 5)
         path = svc.create(data_file, now=now)
-        assert path.name == "backup_mm_20250102_030405.gl"
+        assert path.name == "backup_mm_20250102_030405.zmb"
         assert path.read_bytes() == b"encrypted-payload"
 
     def test_creates_with_config(self, svc, data_file, config_file):
@@ -105,10 +105,10 @@ class TestCleanup:
 class TestRestore:
     def test_restore_creates_safety_backup(self, svc, data_file, tmp_path):
         b = svc.create(data_file, now=datetime(2025, 1, 1))
-        target = tmp_path / "mm.gl"
+        target = tmp_path / "mm.zmb"
         assert target.exists()
         svc.restore(b, target, now=datetime(2025, 6, 6, 6, 6, 6))
-        safety = tmp_path / "mm_before_restore_20250606_060606.gl"
+        safety = tmp_path / "mm_before_restore_20250606_060606.zmb"
         assert safety.exists()
 
     def test_restore_missing_backup_raises(self, svc, tmp_path):

@@ -26,12 +26,12 @@ class VaultFile:
     """负责把 `Vault` 与磁盘文件双向转换。"""
 
     @staticmethod
-    def load(path: str | os.PathLike[str], password: str) -> Vault:
+    def load(path: str | os.PathLike[str], account: str, password: str) -> Vault:
         """读取并解密密码库文件。
 
         Raises:
             StorageError: 文件不存在 / 读取失败 / JSON 无效
-            CryptoError:  密码错误 / 文件被篡改 / 版本不匹配（由 CryptoVault.open 抛出）
+            CryptoError:  账号或密码错误 / 文件被篡改 / 版本不匹配（由 CryptoVault.open 抛出）
         """
         p = Path(path)
         try:
@@ -41,7 +41,7 @@ class VaultFile:
         except OSError as e:
             raise StorageError(f"read failed: {p}: {e}") from e
 
-        plaintext = CryptoVault.open(password, blob)
+        plaintext = CryptoVault.open(account, password, blob)
 
         try:
             data = json.loads(plaintext.decode("utf-8"))
@@ -54,7 +54,7 @@ class VaultFile:
         return Vault.from_dict(data)
 
     @staticmethod
-    def save(path: str | os.PathLike[str], password: str, vault: Vault) -> None:
+    def save(path: str | os.PathLike[str], account: str, password: str, vault: Vault) -> None:
         """加密并原子性写入密码库文件。
 
         Raises:
@@ -62,7 +62,7 @@ class VaultFile:
         """
         p = Path(path)
         plaintext = json.dumps(vault.to_dict(), ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        blob = CryptoVault.seal(password, plaintext)
+        blob = CryptoVault.seal(account, password, plaintext)
 
         parent = p.parent if str(p.parent) else Path(".")
         parent.mkdir(parents=True, exist_ok=True)

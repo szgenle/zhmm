@@ -70,7 +70,7 @@ class LoginWindow(Dialog):
     login_success = pyqtSignal(dict)  # 保持信号声明不变
     hashpw: str | None = None
 
-    def __init__(self, openid: str | None = None, hashpw: str | None = None, parent=None):
+    def __init__(self, account: str | None = None, hashpw: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
         self.setFixedSize(400, 250)
@@ -94,17 +94,17 @@ class LoginWindow(Dialog):
         form_layout = QGridLayout()
 
         row = 0
-        # OpenID输入
-        openid_label = QLabel("OpenID:")
-        self.openid_input = QLineEdit()
-        self.openid_input.setPlaceholderText("请输入微信小程序中显示的OpenId")
-        self.openid_input.textEdited.connect(lambda _text: self._normalize_line_edit(self.openid_input))
-        if openid:
-            self.openid_input.setText(openid)
-            self.openid_input.hide()
+        # 账号输入
+        account_label = QLabel("账号名:")
+        self.account_input = QLineEdit()
+        self.account_input.setPlaceholderText("请输入账号名（与密码共同生成密钥）")
+        self.account_input.textEdited.connect(lambda _text: self._normalize_line_edit(self.account_input))
+        if account:
+            self.account_input.setText(account)
+            self.account_input.hide()
         else:
-            form_layout.addWidget(openid_label, row, 0)
-            form_layout.addWidget(self.openid_input, row, 1)
+            form_layout.addWidget(account_label, row, 0)
+            form_layout.addWidget(self.account_input, row, 1)
             row += 1
 
         # 密码输入
@@ -181,11 +181,11 @@ class LoginWindow(Dialog):
 
     def verify_login(self):
         """验证登录信息"""
-        openid = _to_halfwidth(self.openid_input.text()).strip()
+        account = _to_halfwidth(self.account_input.text()).strip()
         password = _to_halfwidth(self.password_input.text()).strip()
 
-        if not openid:
-            QMessageBox.warning(self, "警告", "OpenID不能为空")
+        if not account:
+            QMessageBox.warning(self, "警告", "账号名不能为空")
             return
 
         if not password:
@@ -201,11 +201,11 @@ class LoginWindow(Dialog):
             return
 
         # 登录成功
-        logger.info(f"用户 {openid} 登录成功")
+        logger.info(f"用户 {account} 登录成功")
         # 登录成功时需要显式指定字典类型
         hashpw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")
         info = {
-            "openid": openid,
+            "account": account,
             "password": password,
             "hashpw": hashpw,
         }

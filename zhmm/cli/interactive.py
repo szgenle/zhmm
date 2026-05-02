@@ -135,11 +135,11 @@ class CmdUI:
             self.args.delete = True
         return 0
 
-    def run(self, file_path: str, open_id: str, password: str) -> None:
+    def run(self, file_path: str, account: str, password: str) -> None:
         """加载文件并进入交互循环。"""
-        self.sm_data.init(open_id, password)
+        self.sm_data.init(account, password)
         if not self.sm_data.load(file_path):
-            print("账号文件打开失败或密码不对")
+            print("账号文件打开失败或账号/密码不对")
             return
         self.fix_id_is_None()
         try:

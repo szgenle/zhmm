@@ -4,9 +4,8 @@
 本类保留老 `SmData` 的公开接口（mm / file_path / init / load / save / add /
 delete / search / merge / set_mm / add_with_dict / fix_id_is_None），让现有 UI
 代码零改动即可使用。内部加解密已切换到 :mod:`zhmm.core.crypto`，文件格式为
-v3（PBKDF2-HMAC-SHA256 + SM4-CBC + HMAC-SM3）。
-
-老 `.gl` 文件（SM3+SM4 自制格式）不再支持，用户需通过 xlsx 导入重新建库。
+v4（PBKDF2-HMAC-SHA256 + SM4-CBC + HMAC-SM3，账号同密码一同参与密钥派生），
+文件后缀为 `.zmb`。
 """
 
 from __future__ import annotations
@@ -41,21 +40,25 @@ class SmData:
             "utime": 0,
         }
         self.file_path: str = ""
+        self._account: str = ""
         self._password: str = ""
 
     # ------------------------------------------------------------------
     # 初始化与 in-memory 状态
     # ------------------------------------------------------------------
-    def init(self, open_id: str, pwd: str) -> None:
-        """设置密码（用于后续 load/save）。
+    def init(self, account: str, password: str) -> None:
+        """设置账号与密码（用于后续 load/save）。
 
-        为保持老接口签名，仍接收 `open_id` 参数但不再参与密钥派生；新加密格式
-        使用随机 salt + PBKDF2 派生密钥。
+        ``account`` 和 ``password`` 一同作为 KDF 输入参与密钥派生，账号本身不
+        写入加密文件。业务层（UI/CLI）负责拒绝空账号；core.crypto 本身
+        允许空账号以保持通用性。
         """
-        del open_id  # 保留签名但不再使用
-        if not pwd:
+        if not isinstance(account, str):
+            raise ValueError("账号必须为字符串")
+        if not password:
             raise ValueError("密码不能为空")
-        self._password = pwd
+        self._account = account
+        self._password = password
 
     def set_mm(self, user_mm_data: ZhmmDataDict) -> None:
         """设置密码数据（补齐 roles / role 默认值）。"""
@@ -206,7 +209,7 @@ class SmData:
             return False
 
         try:
-            plaintext = CryptoVault.open(self._password, blob)
+            plaintext = CryptoVault.open(self._account, self._password, blob)
         except CryptoError as e:
             print(f"[错误] 解密失败: {file_path}, 原因: {e}")
             return False
@@ -234,7 +237,7 @@ class SmData:
 
         try:
             plaintext = json.dumps(self.mm, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-            blob = CryptoVault.seal(self._password, plaintext)
+            blob = CryptoVault.seal(self._account, self._password, plaintext)
         except (CryptoError, ValueError) as e:
             print(f"[错误] 加密失败: {file_path}, 原因: {e}")
             return False

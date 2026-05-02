@@ -1,4 +1,4 @@
-"""本地备份服务：数据文件（.gl）+ 可选配置文件一起备份。
+"""本地备份服务：数据文件（.zmb）+ 可选配置文件一起备份。
 
 相比老 `BackupManager`：
 - 不依赖 PyQt6 (file_util.get_full_path)，目录由调用方注入
@@ -14,7 +14,7 @@ from pathlib import Path
 
 from zhmm.core.errors import StorageError
 
-DATA_SUFFIX = ".gl"
+DATA_SUFFIX = ".zmb"
 CONFIG_SUFFIX = ".config"
 
 

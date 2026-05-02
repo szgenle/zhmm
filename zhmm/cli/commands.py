@@ -18,7 +18,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Process some integers.")
     parser.add_argument("--input", "-i", type=str, help="要加载的加密文件路径")
     parser.add_argument("--out", "-o", type=str, help="输出的文件路径")
-    parser.add_argument("--openId", type=str, default="", help="（可选）用户标识，仅作为签名兼容参数")
+    parser.add_argument("--account", type=str, default=None, help="账号名（与密码共同生成密钥，必填）")
     parser.add_argument("--pwd", type=str, help="密码，不设置将在随后提醒输入")
     parser.add_argument("--search", "-s", type=str, help="搜索")
     parser.add_argument("--find", "-f", action="store_true", help="查找")
@@ -32,16 +32,29 @@ def main() -> None:
     user_input_args = parser.parse_args()
     gl_ui = CmdUI(user_input_args)
 
-    file_path = "zhmm.gl"
+    file_path = "zhmm.zmb"
     if user_input_args.input:
         file_path = user_input_args.input
     else:
         user_input_args.input = file_path
 
+    # 账号：未提供时交互式读取，空值直接退出
+    account = user_input_args.account
+    if account is None:
+        try:
+            account = input("请输入账号名: ").strip()
+        except KeyboardInterrupt:
+            logger.warning("用户取消输入账号名")
+            sys.exit(130)
+    if not account:
+        logger.error("账号名不能为空")
+        sys.exit(3)
+    user_input_args.account = account
+
     try:
         if user_input_args.pwd:
             logger.info("开始执行命令行任务（已提供密码）")
-            gl_ui.run(file_path, user_input_args.openId, user_input_args.pwd)
+            gl_ui.run(file_path, account, user_input_args.pwd)
         else:
             # 提示用户输入密码
             try:
@@ -54,7 +67,7 @@ def main() -> None:
                 password = input("请输入密码: ")
             if len(password) > 0:
                 logger.info("开始执行命令行任务（用户输入密码）")
-                gl_ui.run(file_path, user_input_args.openId, password)
+                gl_ui.run(file_path, account, password)
             else:
                 logger.error("密码不能为空")
                 sys.exit(3)

@@ -12,6 +12,6 @@ class ZhmmFileInfo(TypedDict):
     """已打开的密码库会话信息。"""
 
     file_path: str
-    openid: str
+    account: str
     hashpw: str
     sm_data: SmData | None

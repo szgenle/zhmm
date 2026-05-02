@@ -41,8 +41,8 @@ class FileListWidget(QWidget):
 
         # 文件列表表格
         self.file_table = QTableWidget()
-        self.file_table.setColumnCount(5)  # 增加OpenID列
-        self.file_table.setHorizontalHeaderLabels(["文件名", "文件路径", "OpenID", "密码", "最近访问时间"])
+        self.file_table.setColumnCount(5)  # 文件名、文件路径、账号（隐藏）、密码、最近访问时间
+        self.file_table.setHorizontalHeaderLabels(["文件名", "文件路径", "账号", "密码", "最近访问时间"])
         self.file_table.setColumnHidden(0, True)
         self.file_table.setColumnHidden(2, True)
         self.file_table.setColumnHidden(3, True)
@@ -109,8 +109,8 @@ class FileListWidget(QWidget):
         if file_path:
             self.show_login_dialog(file_path)
 
-    def show_login_dialog(self, file_path: str, openid: str | None = None, hashpw: str | None = None):
-        login_dialog = LoginWindow(openid, hashpw)
+    def show_login_dialog(self, file_path: str, account: str | None = None, hashpw: str | None = None):
+        login_dialog = LoginWindow(account, hashpw)
         login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
         login_dialog.exec()
 
@@ -140,7 +140,7 @@ class FileListWidget(QWidget):
     def on_create_success(self, file_path: str, info: dict):
         import hashlib
 
-        file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
+        file_name = hashlib.md5(info["account"].encode("utf-8")).hexdigest()
         # 使用原始密码进行密钥派生（更安全）
         if zhmm.config.init(file_name, info["password"]) is False:
             QMessageBox.critical(self, "错误", "账号已存在，请输入正确的密码")
@@ -151,12 +151,12 @@ class FileListWidget(QWidget):
         """登录成功后解密并加载文件。"""
         import hashlib
 
-        file_name = hashlib.md5(info["openid"].encode("utf-8")).hexdigest()
+        file_name = hashlib.md5(info["account"].encode("utf-8")).hexdigest()
         if zhmm.config.init(file_name, info["password"]) is False:
             return
 
         decryptor = UIDecryptData()
-        sm_data = decryptor.decrypt_file(file_path, info["openid"], info["password"])
+        sm_data = decryptor.decrypt_file(file_path, info["account"], info["password"])
         if sm_data is None:
             QMessageBox.critical(self, "错误", "文件解密失败")
             return
@@ -170,18 +170,18 @@ class FileListWidget(QWidget):
 
         file_info: ZhmmFileInfo = {
             "file_path": file_path,
-            "openid": info["openid"],
+            "account": info["account"],
             "hashpw": info["hashpw"],
             "sm_data": sm_data,
         }
-        self.save_file_path_and_openid(file_info)
+        self.save_file_path_and_account(file_info)
         self.login_success.emit(file_info)
 
-    def save_file_path_and_openid(self, file_info: ZhmmFileInfo):
+    def save_file_path_and_account(self, file_info: ZhmmFileInfo):
         """保存文件信息"""
         saved_files = self.load_all_saved_files()
         saved_files[file_info["file_path"]] = {
-            "openid": file_info["openid"],
+            "account": file_info["account"],
             "hashpw": file_info["hashpw"],
             "filename": file_info["file_path"].split("/")[-1],
             "last_access_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -194,14 +194,14 @@ class FileListWidget(QWidget):
     def add_file_path(self, file_path, file_info):
         if not file_path or not file_info:
             return
-        openid = file_info.get("openid")
+        account = file_info.get("account")
         hashpw = file_info.get("hashpw")
         last_access_time = file_info.get("last_access_time")
         row = self.file_table.rowCount()
         self.file_table.insertRow(row)
         self.file_table.setItem(row, 0, QTableWidgetItem(file_path.split("/")[-1]))
         self.file_table.setItem(row, 1, QTableWidgetItem(file_path))
-        self.file_table.setItem(row, 2, QTableWidgetItem(openid or ""))
+        self.file_table.setItem(row, 2, QTableWidgetItem(account or ""))
         self.file_table.setItem(row, 3, QTableWidgetItem(hashpw or ""))
         self.file_table.setItem(row, 4, QTableWidgetItem(last_access_time or ""))
 
@@ -261,9 +261,9 @@ class FileListWidget(QWidget):
         """处理表格项点击"""
         row = item.row()
         file_path = self.file_table.item(row, 1).text()  # type: ignore
-        openid = self.file_table.item(row, 2).text()  # type: ignore
+        account = self.file_table.item(row, 2).text()  # type: ignore
         hashpw = self.file_table.item(row, 3).text()  # type: ignore
-        self.show_login_dialog(file_path, openid, hashpw)  # type: ignore
+        self.show_login_dialog(file_path, account, hashpw)  # type: ignore
 
     # 新增以下两个方法实现拖拽功能
     def dragEnterEvent(self, event):  # type: ignore
@@ -285,11 +285,11 @@ class FileListWidget(QWidget):
             self,
             "新建账号小本本文件",
             "",
-            "账号文件 (*.gl)",  # 初始路径设为空
+            "账号小本本 (*.zmb)",  # 初始路径设为空
         )
         if file_path:
             # 确保文件后缀正确
-            if not file_path.endswith(".gl"):
-                file_path += ".gl"
+            if not file_path.endswith(".zmb"):
+                file_path += ".zmb"
 
             self.show_create_dialog(file_path)

@@ -24,7 +24,7 @@ class CryptoError(ZhmmError):
 
 
 class AuthError(ZhmmError):
-    """用户身份认证失败（密码错误、openId 不匹配等）。
+    """用户身份认证失败（账号或密码错误等）。
 
     这是 :class:`CryptoError` 的一个高层语义，UI 层可据此给出友好提示。
     """
