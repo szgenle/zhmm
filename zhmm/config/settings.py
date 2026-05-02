@@ -81,3 +81,13 @@ class AppSetting(QSettings):
         """保存备份保留数量"""
         self.setValue("backup_keep_count", count)
         self.sync()
+
+    def get_anti_screenshot(self) -> bool:
+        """获取防截屏开关（默认开启）。"""
+        value: bool = self.value("anti_screenshot", True, type=bool)
+        return value
+
+    def save_anti_screenshot(self, enabled: bool) -> None:
+        """保存防截屏开关。"""
+        self.setValue("anti_screenshot", enabled)
+        self.sync()

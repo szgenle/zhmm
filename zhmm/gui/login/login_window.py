@@ -3,10 +3,12 @@
 # @LastEditTime: 2024-07-03
 import bcrypt
 from PyQt6.QtCore import QByteArray, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QIcon, QPainter, QPixmap
+from PyQt6.QtGui import QFont, QIcon, QPainter, QPixmap, QShowEvent
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
 
+import zhmm
+from zhmm.utils.anti_capture import apply_anti_capture
 from zhmm.utils.log import logger
 from zhmm.widgets.dialog import Dialog
 
@@ -178,6 +180,14 @@ class LoginWindow(Dialog):
         else:
             self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
             self.toggle_password_button.setIcon(self._icon_eye_closed)
+
+    def showEvent(self, event: QShowEvent):  # type: ignore[override]
+        super().showEvent(event)
+        # 登录框属于敏感入口，依照全局开关应用防截屏
+        enabled = True
+        if zhmm.setting is not None:
+            enabled = zhmm.setting.get_anti_screenshot()
+        apply_anti_capture(self, enabled=enabled)
 
     def verify_login(self):
         """验证登录信息"""

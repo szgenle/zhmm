@@ -51,6 +51,14 @@ class AppConfig:
         """保存备份保留数量"""
         self.setting.save_backup_keep_count(count)
 
+    def get_anti_screenshot(self) -> bool:
+        """获取防截屏开关"""
+        return self.setting.get_anti_screenshot()
+
+    def save_anti_screenshot(self, enabled: bool) -> None:
+        """保存防截屏开关"""
+        self.setting.save_anti_screenshot(enabled)
+
     def get(self, key: str, default_value: Any = None) -> Any:
         return self.config.get(key, default_value)
 

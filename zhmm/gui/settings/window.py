@@ -2,6 +2,7 @@
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QFormLayout,
     QGridLayout,
     QGroupBox,
@@ -116,6 +117,12 @@ class SettingWindow(QWidget):
             self.light_theme_radio.setChecked(True)
         self.theme_button_group.buttonClicked.connect(self.on_theme_changed)
 
+        # 防截屏开关
+        self.anti_screenshot_checkbox = QCheckBox("开启防截屏（阻止录屏/截图工具抓取窗口内容）")
+        self.anti_screenshot_checkbox.setChecked(zhmm.config.get_anti_screenshot())
+        self.anti_screenshot_checkbox.toggled.connect(self.on_anti_screenshot_toggled)
+        form.addRow("防截屏：", self.anti_screenshot_checkbox)
+
         group.setLayout(form)
         return group
 
@@ -203,3 +210,12 @@ class SettingWindow(QWidget):
         if app_instance and isinstance(app_instance, QApplication):
             stylesheet = ThemeManager.get_theme_stylesheet(theme)
             app_instance.setStyleSheet(stylesheet)
+
+    def on_anti_screenshot_toggled(self, checked: bool) -> None:
+        """防截屏开关切换：持久化 + 实时对顶层窗口生效。"""
+        from zhmm.utils.anti_capture import apply_anti_capture
+
+        zhmm.config.save_anti_screenshot(checked)
+        top = self.window()
+        if top is not None:
+            apply_anti_capture(top, enabled=checked)
