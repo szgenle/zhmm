@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """密码表格数据模型"""
 
+from datetime import datetime
+
 from PyQt6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, Qt
 
 from zhmm.core import totp as totp_mod
@@ -14,10 +16,31 @@ _PWD_COL = 3
 _REVEAL_COL = 4
 # “动态码”列索引（紧跟在显示列后面）
 _TOTP_COL = 5
+# “更新时间”列索引
+_UTIME_COL = 10
 # TOTP 计算失败时的占位符
 _TOTP_ERROR = "⚠"
 # 未启用 TOTP 的占位符
 _TOTP_DASH = "—"
+
+
+def _format_utime(value) -> str:
+    """把 utime（秒级 UNIX 时间戳）格式化为 YYYY-MM-DD；无效/为 0 返回空串。
+
+    之所以选择仅显示到「日」而非带时分秒：更新时间对用户是「上次什么时候改过」
+    的参考，精度到天足矣，也能让该列宽度稳定、表格更清爽。排序时 YYYY-MM-DD
+    字典序与时间序一致，不会引入错序。
+    """
+    try:
+        ts = int(value)
+    except (TypeError, ValueError):
+        return ""
+    if ts <= 0:
+        return ""
+    try:
+        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+    except (OSError, OverflowError, ValueError):
+        return ""
 
 
 class PasswordTableModel(QAbstractTableModel):
@@ -84,6 +107,9 @@ class PasswordTableModel(QAbstractTableModel):
             # 动态码列：根据 totp_secret 实时计算
             if col == _TOTP_COL:
                 return self._compute_totp_display(item)
+            # 更新时间列：把 UNIX 时间戳格式化为 YYYY-MM-DD
+            if col == _UTIME_COL:
+                return _format_utime(item.get("utime"))
             # 其他列：原样返回
             key = self.keys[col]
             return str(item.get(key, ""))
