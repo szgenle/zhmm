@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """备份设置管理模块"""
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
+    QHBoxLayout,
     QMessageBox,
     QPushButton,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -22,20 +23,29 @@ class BackupSettings(QWidget):
 
     def setup_ui(self):
         """设置备份界面"""
-        backup_layout = QVBoxLayout(self)
+        backup_layout = QHBoxLayout(self)
         backup_layout.setContentsMargins(0, 0, 0, 0)
+        backup_layout.setSpacing(10)
 
         # 手动备份按钮
-        manual_backup_button = QPushButton("立即备份")
-        manual_backup_button.clicked.connect(self.manual_backup)
-        manual_backup_button.setMaximumWidth(200)
+        manual_backup_button = self._make_button("立即备份", self.manual_backup)
         backup_layout.addWidget(manual_backup_button)
 
         # 查看备份按钮
-        view_backups_button = QPushButton("管理备份")
-        view_backups_button.clicked.connect(self.view_backups)
-        view_backups_button.setMaximumWidth(200)
+        view_backups_button = self._make_button("管理备份", self.view_backups)
         backup_layout.addWidget(view_backups_button)
+
+        backup_layout.addStretch()
+
+    @staticmethod
+    def _make_button(text: str, slot) -> QPushButton:
+        """创建统一尺寸的按钮"""
+        btn = QPushButton(text)
+        btn.setMinimumWidth(140)
+        btn.setMinimumHeight(32)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.clicked.connect(slot)
+        return btn
 
     def manual_backup(self):
         """手动备份"""

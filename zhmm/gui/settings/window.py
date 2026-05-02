@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QButtonGroup,
+    QFormLayout,
+    QGridLayout,
     QGroupBox,
-    QLabel,
+    QHBoxLayout,
     QPushButton,
     QRadioButton,
+    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -16,6 +19,10 @@ from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.settings.backup_settings import BackupSettings
 from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
 from zhmm.utils import file_util
+
+# 统一的按钮尺寸，避免大小不一造成视觉混乱
+_BUTTON_MIN_WIDTH = 140
+_BUTTON_MIN_HEIGHT = 32
 
 
 class SettingWindow(QWidget):
@@ -34,36 +41,76 @@ class SettingWindow(QWidget):
 
     def setup_ui(self):
         """初始化界面"""
-        layout = QVBoxLayout(self)
+        # 外层使用滚动区域，避免窗口较小时内容被压缩
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
 
-        # 自动锁定时间设置
-        self.lock_time_label = QLabel("自动锁定时间（分钟）:")
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        outer_layout.addWidget(scroll)
+
+        container = QWidget()
+        scroll.setWidget(container)
+
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(12)
+
+        # ---------- 常规设置 ----------
+        layout.addWidget(self._build_general_group())
+
+        # ---------- 数据备份 ----------
+        layout.addWidget(self._build_backup_group())
+
+        # ---------- 数据导入导出 ----------
+        layout.addWidget(self._build_import_export_group())
+
+        # ---------- 其他 ----------
+        layout.addWidget(self._build_misc_group())
+
+        layout.addStretch()
+
+    # ------------------------------------------------------------------
+    # 分组构建
+    # ------------------------------------------------------------------
+    def _build_general_group(self) -> QGroupBox:
+        """常规设置：自动锁定时间 + 主题"""
+        group = QGroupBox("常规")
+        form = QFormLayout()
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        form.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        form.setHorizontalSpacing(12)
+        form.setVerticalSpacing(10)
+
+        # 自动锁定时间
         self.lock_time_spinbox = QSpinBox()
         self.lock_time_spinbox.setRange(1, 60)
         self.lock_time_spinbox.setValue(zhmm.config.get_lock_time())
+        self.lock_time_spinbox.setSuffix(" 分钟")
+        self.lock_time_spinbox.setFixedWidth(120)
         self.lock_time_spinbox.valueChanged.connect(zhmm.config.save_lock_time)
-        self.lock_time_spinbox.setMaximumWidth(200)
+        form.addRow("自动锁定时间：", self.lock_time_spinbox)
 
-        # 主题设置
-        theme_group = QGroupBox("主题设置")
-        theme_layout = QVBoxLayout()
-
+        # 主题
         self.theme_button_group = QButtonGroup(self)
-        self.light_theme_radio = QRadioButton("浅色主题")
-        self.dark_theme_radio = QRadioButton("深色主题")
+        self.light_theme_radio = QRadioButton("浅色")
+        self.dark_theme_radio = QRadioButton("深色")
         self.auto_theme_radio = QRadioButton("跟随系统")
+        for btn in (self.light_theme_radio, self.dark_theme_radio, self.auto_theme_radio):
+            self.theme_button_group.addButton(btn)
 
-        self.theme_button_group.addButton(self.light_theme_radio)
-        self.theme_button_group.addButton(self.dark_theme_radio)
-        self.theme_button_group.addButton(self.auto_theme_radio)
+        theme_row = QHBoxLayout()
+        theme_row.setSpacing(16)
+        theme_row.addWidget(self.light_theme_radio)
+        theme_row.addWidget(self.dark_theme_radio)
+        theme_row.addWidget(self.auto_theme_radio)
+        theme_row.addStretch()
+        theme_row_widget = QWidget()
+        theme_row_widget.setLayout(theme_row)
+        form.addRow("主题：", theme_row_widget)
 
-        theme_layout.addWidget(self.light_theme_radio)
-        theme_layout.addWidget(self.dark_theme_radio)
-        theme_layout.addWidget(self.auto_theme_radio)
-        theme_group.setLayout(theme_layout)
-        theme_group.setMaximumWidth(300)
-
-        # 从配置加载当前主题
+        # 加载当前主题
         current_theme = zhmm.config.get_theme()
         if current_theme == "dark":
             self.dark_theme_radio.setChecked(True)
@@ -71,49 +118,65 @@ class SettingWindow(QWidget):
             self.auto_theme_radio.setChecked(True)
         else:
             self.light_theme_radio.setChecked(True)
-
-        # 连接主题切换信号
         self.theme_button_group.buttonClicked.connect(self.on_theme_changed)
 
-        # 导入xlsx文件
-        self.import_xlsx_button = QPushButton("导入xlsx文件")
-        self.import_xlsx_button.clicked.connect(self.import_xlsx)
-        self.import_xlsx_button.setMaximumWidth(200)
+        group.setLayout(form)
+        return group
 
-        # 下载xlsx模版
-        self.download_xlsx_button = QPushButton("下载xlsx模版")
-        self.download_xlsx_button.clicked.connect(self.download_xlsx_template)
-        self.download_xlsx_button.setMaximumWidth(200)
-
-        export_button = QPushButton("导出xlsx文件")
-        export_button.clicked.connect(self.export_passwords)
-        export_button.setMaximumWidth(200)
-
-        layout.addWidget(self.lock_time_label)
-        layout.addWidget(self.lock_time_spinbox)
-
-        # 数据备份组件
+    def _build_backup_group(self) -> QGroupBox:
+        """数据备份组"""
+        group = QGroupBox("数据备份")
+        v = QVBoxLayout()
+        v.setContentsMargins(4, 8, 4, 8)
         self.backup_settings_widget = BackupSettings(self.info, self)
-        backup_group = QGroupBox("数据备份")
-        backup_group_layout = QVBoxLayout()
-        backup_group_layout.addWidget(self.backup_settings_widget)
-        backup_group.setLayout(backup_group_layout)
-        backup_group.setMaximumWidth(400)
-        layout.addWidget(backup_group)
+        v.addWidget(self.backup_settings_widget)
+        group.setLayout(v)
+        return group
 
-        layout.addWidget(theme_group)
-        layout.addWidget(self.import_xlsx_button)
-        layout.addWidget(self.download_xlsx_button)
-        layout.addWidget(export_button)
+    def _build_import_export_group(self) -> QGroupBox:
+        """数据导入导出组：按钮采用网格布局，等宽整齐"""
+        group = QGroupBox("数据导入导出")
+        grid = QGridLayout()
+        grid.setContentsMargins(4, 8, 4, 8)
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(10)
 
-        # 打开日志目录按钮
-        open_log_button = QPushButton("打开日志目录")
-        open_log_button.clicked.connect(self.open_log_dir)
-        open_log_button.setMaximumWidth(200)
-        layout.addWidget(open_log_button)
+        self.import_xlsx_button = self._make_button("导入 xlsx 文件", self.import_xlsx)
+        self.download_xlsx_button = self._make_button("下载 xlsx 模版", self.download_xlsx_template)
+        self.export_button = self._make_button("导出 xlsx 文件", self.export_passwords)
 
-        layout.addStretch()
+        grid.addWidget(self.import_xlsx_button, 0, 0)
+        grid.addWidget(self.download_xlsx_button, 0, 1)
+        grid.addWidget(self.export_button, 0, 2)
+        grid.setColumnStretch(3, 1)  # 右侧留白
 
+        group.setLayout(grid)
+        return group
+
+    def _build_misc_group(self) -> QGroupBox:
+        """其他"""
+        group = QGroupBox("其他")
+        h = QHBoxLayout()
+        h.setContentsMargins(4, 8, 4, 8)
+        self.open_log_button = self._make_button("打开日志目录", self.open_log_dir)
+        h.addWidget(self.open_log_button)
+        h.addStretch()
+        group.setLayout(h)
+        return group
+
+    @staticmethod
+    def _make_button(text: str, slot) -> QPushButton:
+        """创建统一尺寸的按钮"""
+        btn = QPushButton(text)
+        btn.setMinimumWidth(_BUTTON_MIN_WIDTH)
+        btn.setMinimumHeight(_BUTTON_MIN_HEIGHT)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.clicked.connect(slot)
+        return btn
+
+    # ------------------------------------------------------------------
+    # 事件处理
+    # ------------------------------------------------------------------
     def export_passwords(self):
         """导出密码列表"""
         self.import_export_handlers.export_passwords()

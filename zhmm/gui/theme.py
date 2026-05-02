@@ -116,11 +116,21 @@ class ThemeManager:
         QRadioButton::indicator { border-radius: 9px; }
 
         QGroupBox {
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            margin-top: 10px;
-            padding-top: 10px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            margin-top: 14px;
+            padding: 14px 10px 10px 10px;
             background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            left: 10px;
+            padding: 0 6px;
+            background-color: #f8f9fa;
+            color: #2c3e50;
         }
 
         QScrollBar:vertical {
@@ -247,10 +257,20 @@ class ThemeManager:
 
         QGroupBox {
             border: 1px solid #34495e;
-            border-radius: 4px;
-            margin-top: 10px;
-            padding-top: 10px;
+            border-radius: 6px;
+            margin-top: 14px;
+            padding: 14px 10px 10px 10px;
             background-color: #2c3e50;
+            font-weight: bold;
+            color: #ecf0f1;
+        }
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            left: 10px;
+            padding: 0 6px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
         }
 
         QScrollBar:vertical {
