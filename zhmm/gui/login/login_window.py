@@ -2,7 +2,7 @@
 # @Date: 2024-07-03
 # @LastEditTime: 2024-07-03
 import bcrypt
-from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont, QShowEvent
 from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
 
@@ -39,6 +39,13 @@ class LoginWindow(Dialog):
     login_success = pyqtSignal(dict)  # 保持信号声明不变
     hashpw: str | None = None
 
+    # 失败次数限速（UI 层退避）：
+    # - 仅用于本对话框会话内连续失败的手动重试限速；
+    # - 不防离线暴力（攻击者可直接调用 core.vault 绕过 GUI），离线暴力由 Argon2id 承担。
+    _FAIL_THRESHOLD = 3  # 达到此次失败后开始退避
+    _BASE_LOCK_SECONDS = 2  # 首次锁定秒数
+    _MAX_LOCK_SECONDS = 60  # 单次锁定上限
+
     def __init__(self, account: str | None = None, hashpw: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
@@ -46,6 +53,13 @@ class LoginWindow(Dialog):
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint)
         self.setModal(True)
         self.hashpw = hashpw
+
+        # 失败计数与锁定状态（进程内，重启清零）
+        self._fail_count = 0
+        self._lock_remaining = 0
+        self._lock_timer = QTimer(self)
+        self._lock_timer.setInterval(1000)
+        self._lock_timer.timeout.connect(self._on_lock_tick)
 
         # 创建布局
         layout = QVBoxLayout()
@@ -158,6 +172,10 @@ class LoginWindow(Dialog):
 
     def verify_login(self):
         """验证登录信息"""
+        # 处于锁定期时按钮本应已禁用，此处做二次保护
+        if self._lock_remaining > 0:
+            return
+
         account = _to_halfwidth(self.account_input.text()).strip()
         password = _to_halfwidth(self.password_input.text()).strip()
 
@@ -171,13 +189,15 @@ class LoginWindow(Dialog):
 
         try:
             if self.hashpw and not bcrypt.checkpw(password.encode(), self.hashpw.encode()):
-                self.show_error("密码错误")
+                self._fail_count += 1
+                self._handle_failed_attempt()
                 return
         except ValueError as e:
             self.show_error(f"认证失败: {str(e)}")
             return
 
-        # 登录成功
+        # 登录成功，重置失败计数
+        self._fail_count = 0
         logger.info(f"用户 {account} 登录成功")
         # 登录成功时需要显式指定字典类型
         hashpw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")
@@ -189,6 +209,48 @@ class LoginWindow(Dialog):
 
         self.login_success.emit(info)  # 直接传递强类型对象
         self.accept()
+
+    def _handle_failed_attempt(self) -> None:
+        """处理一次密码错误：未达阈值则提示，达到阈值后进入指数退避锁定。"""
+        if self._fail_count < self._FAIL_THRESHOLD:
+            self.show_error("密码错误")
+            return
+        exponent = self._fail_count - self._FAIL_THRESHOLD
+        lock_seconds = min(self._BASE_LOCK_SECONDS * (2**exponent), self._MAX_LOCK_SECONDS)
+        logger.warning(f"连续登录失败 {self._fail_count} 次，锁定 {lock_seconds}s")
+        QMessageBox.critical(
+            self,
+            "错误",
+            f"密码错误\n\n连续失败 {self._fail_count} 次，请等待 {lock_seconds} 秒后重试",
+        )
+        self._start_lockout(lock_seconds)
+
+    def _start_lockout(self, seconds: int) -> None:
+        """开始锁定：禁用登录按钮与密码输入框，启动秒级倒计时。"""
+        self._lock_remaining = seconds
+        self.login_button.setEnabled(False)
+        self.password_input.setEnabled(False)
+        self._update_lock_button_text()
+        self._lock_timer.start()
+
+    def _on_lock_tick(self) -> None:
+        self._lock_remaining -= 1
+        if self._lock_remaining <= 0:
+            self._end_lockout()
+        else:
+            self._update_lock_button_text()
+
+    def _end_lockout(self) -> None:
+        self._lock_timer.stop()
+        self._lock_remaining = 0
+        self.login_button.setEnabled(True)
+        self.password_input.setEnabled(True)
+        self.login_button.setText("登录")
+        # 聚焦到密码框，便于继续尝试
+        self.password_input.setFocus()
+
+    def _update_lock_button_text(self) -> None:
+        self.login_button.setText(f"登录（{self._lock_remaining}s）")
 
     def show_error(self, msg):
         QMessageBox.critical(self, "错误", msg)
