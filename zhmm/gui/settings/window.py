@@ -65,6 +65,9 @@ class SettingWindow(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
+        # ---------- 账户信息 ----------
+        layout.addWidget(self._build_account_info_group())
+
         # ---------- 常规设置 ----------
         layout.addWidget(self._build_general_group())
 
@@ -79,6 +82,71 @@ class SettingWindow(QWidget):
     # ------------------------------------------------------------------
     # 分组构建
     # ------------------------------------------------------------------
+    def _build_account_info_group(self) -> QGroupBox:
+        """账户信息：明文展示登录账号并提醒其参与加密。
+
+        登录账号作为 KDF 输入一部分参与密钥派生，若用户遗忘将无法解密已有数据，
+        因此需要在设置页持续可见地回显该账号，并附上牢记提示。
+
+        布局采用 QGridLayout：第 0 行放「标签 + 只读输入框 + 复制按钮」，
+        第 1 行让提醒文案从第 2 列（即输入框所在列）起跨列展示，这样提醒的
+        左边缘会自动对齐到输入框左边缘，而非标签左边缘，视觉上更像是对
+        「账号值」的补充说明。
+        """
+        group = QGroupBox(AccountText.GROUP_TITLE)
+        grid = QGridLayout()
+        grid.setContentsMargins(4, 8, 4, 8)
+        grid.setHorizontalSpacing(8)
+        grid.setVerticalSpacing(8)
+
+        # ---- 第 0 行：账号明文行 ----
+        account_label = QLabel(AccountText.LABEL_ACCOUNT)
+        self.account_display = QLineEdit(self.info.get("account", ""))
+        self.account_display.setReadOnly(True)
+        self.account_display.setCursorPosition(0)
+        # 背景透明的展示式样式，但保留选中复制能力；
+        # 显式设定 color 为 palette(text)，避免深色主题下回退黑色导致看不清
+        self.account_display.setStyleSheet(
+            "QLineEdit { background: transparent; color: palette(text);"
+            " border: 1px solid palette(mid); border-radius: 4px; padding: 4px 6px; }"
+        )
+
+        copy_btn = QPushButton(AccountText.BTN_COPY)
+        copy_btn.setMinimumHeight(_BUTTON_MIN_HEIGHT)
+        copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        copy_btn.clicked.connect(self._copy_account)
+
+        grid.addWidget(account_label, 0, 0)
+        grid.addWidget(self.account_display, 0, 1)
+        grid.addWidget(copy_btn, 0, 2)
+
+        # ---- 第 1 行：提醒文案，从第 2 列起跨到末列，左边缘对齐输入框 ----
+        hint = QLabel(AccountText.HINT)
+        hint.setWordWrap(True)
+        # 用 placeholder-text 角色（专为「淡化提示文字」设计），在深/浅色主题下都能区分于正文
+        hint.setStyleSheet("color: palette(placeholder-text); font-size: 12px;")
+        grid.addWidget(hint, 1, 1, 1, 2)
+
+        # 让输入框所在列吸收多余宽度，标签列与按钮列保持内容宽度
+        grid.setColumnStretch(0, 0)
+        grid.setColumnStretch(1, 1)
+        grid.setColumnStretch(2, 0)
+
+        group.setLayout(grid)
+        return group
+
+    def _copy_account(self) -> None:
+        """复制登录账号到剪贴板，10 秒后自动清空。"""
+        account = self.info.get("account", "")
+        if not account:
+            return
+        clipboard = QApplication.clipboard()
+        if clipboard is None:
+            return
+        clipboard.setText(str(account))
+        QToolTip.showText(QCursor.pos(), Tooltip.ACCOUNT_COPIED, self)
+        QTimer.singleShot(10000, lambda: QApplication.clipboard().clear() if QApplication.clipboard() else None)
+
     def _build_general_group(self) -> QGroupBox:
         """常规设置：自动锁定时间 + 主题"""
         group = QGroupBox("常规")
