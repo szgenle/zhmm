@@ -31,6 +31,7 @@ from zhmm.gui.password.add_dialog import AddPasswordDialog
 from zhmm.gui.password.operations import PasswordOperations
 from zhmm.gui.password.reveal_delegate import RevealColumnDelegate
 from zhmm.gui.password.table_models import CustomProxyModel, PasswordTableModel
+from zhmm.gui.texts import Status, Tooltip
 from zhmm.utils.log import logger
 from zhmm.widgets.combo_box import WideComboBox
 
@@ -238,12 +239,12 @@ class PasswordWindow(QWidget):
         if self.show_all_checkbox.isChecked():
             # 仅显示搜索结果
             if not self.proxy_model._has_filter:
-                self.status_changed.emit("请输入关键字以显示结果", "normal")
+                self.status_changed.emit(Status.FILTER_EMPTY, "normal")
             else:
-                self.status_changed.emit(f"已按“{search_text}”筛选", "normal")
+                self.status_changed.emit(Status.filter_by(search_text), "normal")
         else:
             # 显示全部数据（仍受类别筛选影响）
-            self.status_changed.emit("显示全部数据", "normal")
+            self.status_changed.emit(Status.FILTER_ALL, "normal")
 
     def toggle_show_all(self, checked):
         """复选框状态切换处理"""
@@ -352,8 +353,8 @@ class PasswordWindow(QWidget):
         if not text:
             return
         QApplication.clipboard().setText(text)  # type: ignore
-        QToolTip.showText(QCursor.pos(), f"✅ 已复制{label}", self.table_view)
-        self._show_status(f"✅ 已复制{label}", highlight=True)
+        QToolTip.showText(QCursor.pos(), Tooltip.copied_plain(label), self.table_view)
+        self._show_status(Status.copied_plain(label), highlight=True)
 
     def _open_url(self, url: str) -> None:
         """调用系统浏览器打开 URL。支持多 URL 字段（取第一个），缺失 scheme 时补 https://。"""
@@ -466,15 +467,15 @@ class PasswordWindow(QWidget):
         QApplication.clipboard().setText(str(text))  # type: ignore
 
         # 1) 鼠标位置气泡提示（最显眼）
-        QToolTip.showText(QCursor.pos(), "✅ 已复制密码到剪贴板", self.table_view)
+        QToolTip.showText(QCursor.pos(), Tooltip.PWD_COPIED, self.table_view)
 
         # 2) 底部状态栏高亮提示（绿色加粗， success 级别）
-        self.status_changed.emit("✅ 已复制密码到剪贴板（10 秒后自动清空）", "success")
+        self.status_changed.emit(Status.PWD_COPIED_WITH_HINT, "success")
 
         # 定时清空剪贴板，避免残留敏感信息
         QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
         # 2.5s 后清空状态栏（但如期间文案已被别的操作替换，则不覆盖）
-        self._schedule_status_reset("✅ 已复制密码到剪贴板（10 秒后自动清空）")
+        self._schedule_status_reset(Status.PWD_COPIED_WITH_HINT)
 
     # ------------------------------------------------------------------
     # 密码明文显示切换
@@ -511,9 +512,9 @@ class PasswordWindow(QWidget):
             timer.timeout.connect(lambda _rid=rid: self._auto_hide_reveal(_rid))
             timer.start(duration * 1000)
             self._reveal_timers[rid] = timer
-            self._show_status(f"👁 密码已显示，{duration} 秒后自动隐藏", highlight=True)
+            self._show_status(Status.pwd_reveal_visible(duration), highlight=True)
         else:
-            self._show_status("🔒 密码已隐藏", highlight=False)
+            self._show_status(Status.PWD_REVEAL_HIDDEN, highlight=False)
 
     def _auto_hide_reveal(self, rid: int) -> None:
         """到期自动隐藏指定行的密码。"""
@@ -523,7 +524,7 @@ class PasswordWindow(QWidget):
             return
         if self.table_model.is_revealed(source_row):
             self.table_model.set_revealed(source_row, False)
-            self._show_status("🔒 密码已自动隐藏", highlight=False)
+            self._show_status(Status.PWD_REVEAL_AUTO_HIDDEN, highlight=False)
 
     # 底部状态栏由 MainWindow 接收 status_changed 信号后渲染，这里只负责 emit 和自动清空。
 
@@ -575,13 +576,13 @@ class PasswordWindow(QWidget):
         try:
             code = PasswordTableModel.compute_totp_code(item)
         except ValidationError as ex:
-            QToolTip.showText(QCursor.pos(), f"⚠ TOTP 配置无效: {ex}", self.table_view)
-            self._show_status("⚠ TOTP 配置无效", highlight=True)
+            QToolTip.showText(QCursor.pos(), Tooltip.totp_invalid(str(ex)), self.table_view)
+            self._show_status(Status.TOTP_INVALID, highlight=True)
             return
         if not code:
-            QToolTip.showText(QCursor.pos(), "该条目未启用 TOTP", self.table_view)
+            QToolTip.showText(QCursor.pos(), Tooltip.TOTP_NOT_ENABLED, self.table_view)
             return
         QApplication.clipboard().setText(code)  # type: ignore
-        QToolTip.showText(QCursor.pos(), f"✅ 已复制动态码 {code}", self.table_view)
-        self._show_status(f"✅ 已复制动态码 {code}（10 秒后自动清空剪贴板）", highlight=True)
+        QToolTip.showText(QCursor.pos(), Tooltip.totp_copied(code), self.table_view)
+        self._show_status(Status.totp_copied_with_hint(code), highlight=True)
         QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
