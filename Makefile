@@ -69,12 +69,12 @@ build-app: clean-build update-version
 		--paths zhmm/
 	@echo "GUI应用程序构建完成！"
 
-# 构建命令行应用程序
+# 构建命令行应用程序（--onedir：避免 --onefile 每次启动的自解压耗时，启动更快）
 build-cmd: clean-build update-version
 	@echo "构建命令行应用程序..."
 	poetry add pyinstaller --group dev
 	poetry run pip install certifi $(PIP_INDEX_ARG)
-	poetry run pyinstaller --onefile --name "zhmm_cmd" \
+	poetry run pyinstaller --onedir --name "zhmm_cmd" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
@@ -87,7 +87,7 @@ build-cmd: clean-build update-version
 		--exclude-module zhmm.app.gui_app \
 		zhmm/cli/commands.py \
 		--paths zhmm/
-	@echo "命令行应用程序构建完成！"
+	@echo "命令行应用程序构建完成！产物目录：dist/zhmm_cmd/"
 
 # 构建所有应用程序
 build-all: clean-build update-version
@@ -102,7 +102,7 @@ build-all: clean-build update-version
 		zhmm/__main__.py \
 		--paths zhmm/
 	@echo "构建命令行应用程序..."
-	poetry run pyinstaller --onefile --name "zhmm_cmd" \
+	poetry run pyinstaller --onedir --name "zhmm_cmd" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
