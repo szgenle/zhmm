@@ -8,8 +8,18 @@ import getpass
 import sys
 
 
-def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Process some integers.")
+def _build_parser(include_data_dir: bool = False) -> argparse.ArgumentParser:
+    epilog: str | None = None
+    if include_data_dir:
+        # 仅在 --help 场景展示数据目录，避免走到业务流程时刷屏
+        from zhmm.utils.file_util import get_writable_dir
+
+        epilog = f"数据目录: {get_writable_dir()}"
+    parser = argparse.ArgumentParser(
+        description="Process some integers.",
+        epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("--input", "-i", type=str, help="要加载的加密文件路径")
     parser.add_argument("--out", "-o", type=str, help="输出的文件路径")
     parser.add_argument("--account", type=str, default=None, help="账号名（与密码共同生成密钥，必填）")
@@ -26,10 +36,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    # --help 快通道：避免做 setup_logging / 数据目录初始化等重操作
+    # --help 快通道：避免做 setup_logging / 入业务的重操作，仅此时展示数据目录
     # argparse 在遇到 -h/--help 时会自行 sys.exit(0)
     if any(arg in ("-h", "--help") for arg in sys.argv[1:]):
-        _build_parser().parse_args()
+        _build_parser(include_data_dir=True).parse_args()
         return
 
     # 真正进入业务流程时再初始化日志 & 懒加载 CmdUI

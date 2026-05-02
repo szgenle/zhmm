@@ -146,7 +146,6 @@ def get_writable_dir() -> str:
         data_dir = _compose_app_data_path()
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
-        print("数据目录:", data_dir)
     return data_dir
 
 
