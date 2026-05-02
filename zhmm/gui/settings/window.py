@@ -27,7 +27,7 @@ from zhmm.gui.settings.backup_settings import BackupSettings
 from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
 from zhmm.gui.settings.rekey_dialog import RekeyDialog
 from zhmm.gui.texts import Account as AccountText
-from zhmm.gui.texts import Account as RekeyText
+from zhmm.gui.texts import Rekey as RekeyText
 from zhmm.gui.texts import Tooltip
 from zhmm.utils.log import logger
 

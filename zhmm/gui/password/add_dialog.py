@@ -21,6 +21,7 @@ from zhmm.gui.password.random_dialog import RandomPasswordDialog
 from zhmm.utils import date_util
 from zhmm.utils.log import logger
 from zhmm.widgets.combo_box import WideComboBox
+from zhmm.widgets.strength_bar import PasswordStrengthBar
 
 
 class AddPasswordDialog(QDialog):
@@ -97,6 +98,11 @@ class AddPasswordDialog(QDialog):
         pwd_layout.addWidget(self.random_pwd_btn, stretch=1)
 
         form_layout.addRow("密码:", pwd_layout)
+
+        # 密码强度条：实时评估 password_input 内容
+        self.password_strength_bar = PasswordStrengthBar()
+        self.password_input.textChanged.connect(self.password_strength_bar.set_password)
+        form_layout.addRow("", self.password_strength_bar)
 
         # 手机输入
         self.phone_input = QLineEdit()

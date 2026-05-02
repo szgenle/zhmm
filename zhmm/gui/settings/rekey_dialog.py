@@ -42,6 +42,7 @@ from zhmm.utils.anti_capture import apply_anti_capture
 from zhmm.utils.log import logger
 from zhmm.widgets.dialog import Dialog
 from zhmm.widgets.eye_icon import EYE_CLOSED_SVG, EYE_OPEN_SVG, svg_to_icon
+from zhmm.widgets.strength_bar import PasswordStrengthBar
 
 
 def _to_halfwidth(text: str) -> str:
@@ -186,6 +187,12 @@ class RekeyDialog(Dialog):
         for row, (label_text, line_row) in enumerate(rows):
             form.addWidget(QLabel(label_text), row, 0)
             form.addLayout(line_row, row, 1)
+
+        # 新密码强度条：跟随「新密码」输入框实时更新
+        self.password_strength_bar = PasswordStrengthBar()
+        new_line_edit: QLineEdit = self.new_input.line_edit  # type: ignore[attr-defined]
+        new_line_edit.textChanged.connect(self.password_strength_bar.set_password)
+        form.addWidget(self.password_strength_bar, len(rows), 1)
 
         layout.addLayout(form)
         layout.addSpacing(12)

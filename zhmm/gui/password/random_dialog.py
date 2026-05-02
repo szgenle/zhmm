@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
+from zhmm.widgets.strength_bar import PasswordStrengthBar
+
 
 class RandomPasswordDialog(QDialog):
     def __init__(self, parent=None):
@@ -47,6 +49,10 @@ class RandomPasswordDialog(QDialog):
         self.password_edit = QLineEdit()
         self.password_edit.setReadOnly(True)
 
+        # 强度条：setText 也会触发 textChanged，所以直接连即可
+        self.password_strength_bar = PasswordStrengthBar()
+        self.password_edit.textChanged.connect(self.password_strength_bar.set_password)
+
         # 底部按钮行：样式与 AddPasswordDialog / AddRoleDialog 对齐
         # （100x36、水平居中、间距 15）。
         # 这里语义上是“采纳该随机密码”，文案用“确认使用”比“确认添加”更贴切。
@@ -72,6 +78,7 @@ class RandomPasswordDialog(QDialog):
         layout.addLayout(length_layout)
         layout.addWidget(generate_btn)
         layout.addWidget(self.password_edit)
+        layout.addWidget(self.password_strength_bar)
         layout.addLayout(button_layout)
         self.setLayout(layout)
 
