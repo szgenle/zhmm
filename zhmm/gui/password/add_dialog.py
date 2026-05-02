@@ -20,6 +20,7 @@ from zhmm.core.errors import ValidationError
 from zhmm.gui.password.random_dialog import RandomPasswordDialog
 from zhmm.utils import date_util
 from zhmm.utils.log import logger
+from zhmm.widgets.combo_box import WideComboBox
 
 
 class AddPasswordDialog(QDialog):
@@ -55,7 +56,7 @@ class AddPasswordDialog(QDialog):
         form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
 
         # 类别选择
-        self.role_combo = QComboBox()
+        self.role_combo = WideComboBox()
         self.role_combo.setFixedHeight(36)  # 增加控件高度
         self.role_combo.setEditable(True)
         self.role_combo.addItems(self.roles)

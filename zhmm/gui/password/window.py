@@ -29,6 +29,7 @@ from zhmm.gui.password.operations import PasswordOperations
 from zhmm.gui.password.reveal_delegate import RevealColumnDelegate
 from zhmm.gui.password.table_models import CustomProxyModel, PasswordTableModel
 from zhmm.utils.log import logger
+from zhmm.widgets.combo_box import WideComboBox
 
 
 class PasswordWindow(QWidget):
@@ -187,7 +188,7 @@ class PasswordWindow(QWidget):
 
     def ini_role_ui(self, search_layout):  # 添加类别筛选下拉框
         role_filter_label = QLabel("类别:")
-        self.role_filter_combo = QComboBox()
+        self.role_filter_combo = WideComboBox()
         self.reset_roles_option()
         self.role_filter_combo.currentIndexChanged.connect(self.filter_role)
 
