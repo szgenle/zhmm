@@ -58,8 +58,21 @@ class LoginWindow(Dialog):
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setPlaceholderText("请输入密码")
 
+        # 显示/隐藏密码切换按钮
+        self.toggle_password_button = QPushButton("显示")
+        self.toggle_password_button.setCheckable(True)
+        self.toggle_password_button.setFixedWidth(48)
+        self.toggle_password_button.setToolTip("显示/隐藏密码")
+        self.toggle_password_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.toggle_password_button.toggled.connect(self._toggle_password_visibility)
+
+        password_row_layout = QHBoxLayout()
+        password_row_layout.setContentsMargins(0, 0, 0, 0)
+        password_row_layout.addWidget(self.password_input)
+        password_row_layout.addWidget(self.toggle_password_button)
+
         form_layout.addWidget(password_label, row, 0)
-        form_layout.addWidget(self.password_input, row, 1)
+        form_layout.addLayout(password_row_layout, row, 1)
 
         layout.addLayout(form_layout)
 
@@ -82,6 +95,15 @@ class LoginWindow(Dialog):
         layout.addLayout(button_layout)
 
         self.setLayout(layout)
+
+    def _toggle_password_visibility(self, checked: bool) -> None:
+        """切换密码明文/密文显示"""
+        if checked:
+            self.password_input.setEchoMode(QLineEdit.EchoMode.Normal)
+            self.toggle_password_button.setText("隐藏")
+        else:
+            self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+            self.toggle_password_button.setText("显示")
 
     def verify_login(self):
         """验证登录信息"""
