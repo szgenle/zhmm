@@ -99,6 +99,8 @@ class CmdUI:
             "url": en_infos.get("url", ""),
             "desc": en_infos.get("desc", ""),
             "utime": date_util.timestamp_int(),
+            "tags": None,
+            "history": None,
         }
 
     def confirm_and_save(self, en_infos: dict[str, str], cn_infos: dict[str, str]) -> None:
