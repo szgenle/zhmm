@@ -122,6 +122,8 @@ open /Applications/zhmm.app
 2. 选择或创建 `.zmb` 密库文件，进入主界面后新增条目（站点名、账号、密码、备注）
 3. 可在「设置」中配置备份策略
 
+> 👀 想先看看效果？使用 [`docs/demo_data.xlsx`](docs/demo_data.xlsx) 里的 15 条演示数据一键导入即可（全假数据，无需真实账号）。打开 GUI → 「数据管理 → 导入」选择该文件即可。
+
 ### CLI 模式
 
 ```bash
