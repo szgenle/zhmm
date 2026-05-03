@@ -14,7 +14,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable, Iterable
 
-from zhmm.core.models import DEFAULT_ROLE, DEFAULT_ROLES, PasswordEntry, Vault
+from zhmm.core.models import DEFAULT_ROLE, DEFAULT_ROLES, HISTORY_MAX, PasswordEntry, PasswordHistoryItem, Vault
 
 Clock = Callable[[], int]
 
@@ -76,18 +76,53 @@ class PasswordService:
         return False
 
     def update(self, entry_id: int, **changes: object) -> PasswordEntry | None:
-        """按 id 就地更新指定字段。返回更新后的对象；未找到返回 None。"""
+        """按 id 就地更新指定字段。返回更新后的对象；未找到返回 None。
+
+        密码历史规则：当且仅当 ``pwd`` 实际发生变化且旧密码非空时，将旧密码
+        连同当前时间戳压入 ``history`` 栈顶，最多保留 ``HISTORY_MAX`` 条。调用方不
+        需显式传 ``history``；如显式传入会被历史注写覆盖，避免绕过记录。
+        """
         for idx, e in enumerate(self.vault.entries):
             if e.id == entry_id:
                 now = self._clock()
                 updated_changes = dict(changes)
                 updated_changes.setdefault("utime", now)
+                # 密码变更→自动注入历史→截断。仅当 pwd 传入且与现值不同。
+                new_pwd = updated_changes.get("pwd")
+                if "pwd" in updated_changes and isinstance(new_pwd, str) and new_pwd != e.pwd and e.pwd:
+                    history = [PasswordHistoryItem(pwd=e.pwd, utime=now), *e.history]
+                    updated_changes["history"] = history[:HISTORY_MAX]
                 new_entry = e.clone(**updated_changes)
                 if new_entry.role and new_entry.role not in self.vault.roles:
                     self.vault.roles.append(new_entry.role)
                 self.vault.entries[idx] = new_entry
                 self.vault.utime = now
                 return new_entry
+        return None
+
+    def rollback(self, entry_id: int, history_index: int = 0) -> PasswordEntry | None:
+        """把 ``history[history_index]`` 的旧密码恢复为当前密码；当前密码同时压回栈顶。
+
+        - 回滚本身也算一次“历史事件”：两次回滚能还原原始状态
+        - 条目不存在或索引越界→返回 None
+        - 目标历史密码为空（脏数据）→返回 None
+        """
+        for idx, e in enumerate(self.vault.entries):
+            if e.id != entry_id:
+                continue
+            if history_index < 0 or history_index >= len(e.history):
+                return None
+            target = e.history[history_index]
+            if not target.pwd:
+                return None
+            now = self._clock()
+            # 用一次性重建的 history：移除 target 下标，并将当前 pwd 压入栈顶
+            remaining = [h for i, h in enumerate(e.history) if i != history_index]
+            new_history = [PasswordHistoryItem(pwd=e.pwd, utime=now), *remaining]
+            new_entry = e.clone(pwd=target.pwd, utime=now, history=new_history[:HISTORY_MAX])
+            self.vault.entries[idx] = new_entry
+            self.vault.utime = now
+            return new_entry
         return None
 
     def get(self, entry_id: int) -> PasswordEntry | None:

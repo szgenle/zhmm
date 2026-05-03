@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **密码历史版本（同条目内）**：`PasswordEntry` 新增 `history: list[PasswordHistoryItem]`，每次更新密码时自动将旧密码和时间戳压入栈顶，FIFO 上限 5 条（`core.models.HISTORY_MAX`）。
+  - **写入策略**：仅当 `pwd` 实际变化且旧密码非空时压栈；修改备注 / 标签等非 `pwd` 字段不会污染历史；尽量由 `PasswordService.update` / `PasswordOperations.update_password` 统一拦截注写，调用方显式传 `history` 也会被覆盖，避免绕过记录。
+  - **回滚能力**：`PasswordService.rollback(entry_id, index)` / `PasswordOperations.rollback_password(row, index)` 以「交换 + 压栈」语义将某条历史恢复为当前密码，当前密码同时压回栈顶以保留审计性（两次回滚能还原原始状态）。
+  - **GUI**：密码表格右键菜单新增「查看历史密码…」（无历史时自动灰显）；历史对话框（`zhmm/gui/password/history_dialog.py`）支持按条明文切换 / 复制（10s 后自动清空剪贴板）/ 以指定历史密码恢复为当前密码（「恢复」按钮带二次确认）。回滚操作有意不做成右键快捷菜单项，统一收在对话框内部，避免误操作。
+  - **存储与导出边界**：history 仅随 `.zmb` 随 SM4 加密落盘，**Excel 导出 / 导入通道刻意不承载**（避免明文历史密码扩散，导入后该条目 history 为空）；旧 `.zmb` 无该字段时反序列化得空列表，零迁移成本。
+  - 新增 11 个单元测试覆盖：压栈 / 截断 / 同值不压栈 / 非 pwd 变更不污染 / 显式传入无法绕过 / 回滚交换 / 两次回滚还原 / 越界 / 旧数据缺字段 / 历史内脏数据容错 / `to_dict` 序列化。
 - **条目标签（Tags）**：`PasswordEntry` 新增 `tags: list[str]` 字段，用于给密码条目贴「工作 / 家人 / 重要」等弱分类，与 `role` 互相独立（一个条目可贴 0~16 个标签，单标签 ≤ 32 字符；全局归一化走 `core.models.normalize_tags()`：`strip` / 去空 / 去重保序 / 超长截断 / 超数安静丢弃）。
   - **GUI**：添加 / 编辑对话框新增「标签」行，提供 Chip 可视化编辑器（`zhmm/widgets/tag_editor.py`）：回车 / 空格 / 分号提交、空输入框时 Backspace 删除最后一个 chip、QCompleter 联想当前库已有标签。
   - **侧边栏**：密码窗口左侧新增「标签」侧边栏（`zhmm/gui/password/tag_sidebar.py`），多选 **AND 语义** 筛选（选中「工作 + 重要」只显同时含这两个标签的条目）；标签按条目出现频次倒序展示，右侧表格通过 `QSplitter` 可拖拽调整宽度；侧边栏填充按钮一键清除筛选。

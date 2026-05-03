@@ -29,6 +29,7 @@ from zhmm.config.constants import ZhmmFileInfo
 from zhmm.core.errors import ValidationError
 from zhmm.data.sm_data_manager import SmData
 from zhmm.gui.password.add_dialog import AddPasswordDialog
+from zhmm.gui.password.history_dialog import PasswordHistoryDialog
 from zhmm.gui.password.operations import PasswordOperations
 from zhmm.gui.password.reveal_delegate import RevealColumnDelegate
 from zhmm.gui.password.table_models import CustomProxyModel, PasswordTableModel
@@ -409,6 +410,17 @@ class PasswordWindow(QWidget):
 
         menu.addSeparator()
 
+        # 密码历史版本：条目有历史时才激活。
+        # 只暴露「查看历史密码」一个入口；回滚操作统一放在历史对话框内部，
+        # 通过「恢复 + 二次确认」触发，避免右键菜单误操作。
+        history = item.get("history") or []
+        has_history = isinstance(history, list) and len(history) > 0
+        act_history = menu.addAction("查看历史密码…")
+        act_history.setEnabled(has_history)
+        act_history.triggered.connect(lambda _=False, r=source_row: self._show_password_history(r))
+
+        menu.addSeparator()
+
         act_delete = menu.addAction("删除")
         act_delete.triggered.connect(self.delete_selected_password)
 
@@ -433,6 +445,32 @@ class PasswordWindow(QWidget):
         if not re.match(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://", first):
             first = "https://" + first
         QDesktopServices.openUrl(QUrl(first))
+
+    # ------------------------------------------------------------------
+    # 密码历史版本
+    # ------------------------------------------------------------------
+    def _show_password_history(self, source_row: int) -> None:
+        """弹出同条目密码历史对话框，用户确认后可将某条历史回滚为当前密码。"""
+        if source_row < 0 or source_row >= len(self.gl_data.mm["data"]):
+            return
+        item = self.gl_data.mm["data"][source_row]
+        raw_history = item.get("history") or []
+        history: list[dict] = [h for h in raw_history if isinstance(h, dict)] if isinstance(raw_history, list) else []
+        if not history:
+            QMessageBox.information(self, "提示", "该账号暂无历史密码。")
+            return
+        dlg = PasswordHistoryDialog(self, str(item.get("userID") or ""), history)
+        if dlg.exec() == PasswordHistoryDialog.DialogCode.Accepted and dlg.selected_index >= 0:
+            self._rollback_at(source_row, dlg.selected_index)
+
+    def _rollback_at(self, source_row: int, history_index: int) -> None:
+        """调用 operations 执行回滚并刷新表格。"""
+        success, message = self.operations.rollback_password(source_row, history_index)
+        if success:
+            self.table_model.setZhData(self.gl_data.mm["data"])
+            self._show_status(message, highlight=True)
+        else:
+            QMessageBox.critical(self, "错误", message)
 
     def delete_selected_password(self):
         """删除选中的密码项"""

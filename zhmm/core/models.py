@@ -20,6 +20,39 @@ DEFAULT_ROLE: str = "个人"
 TAG_MAX_LEN: int = 32
 TAGS_MAX_COUNT: int = 16
 
+# 同条目内密码历史版本最大保留条数（FIFO，旧密码替换时插入栈顶）。
+# 设计约束：只保存密码本身与被替换时间，不保存其它字段；仅随 .zmb 加密落盘，
+# Excel 导出/导入链路刻意不承载，避免明文扩散。
+HISTORY_MAX: int = 5
+
+
+def _normalize_history(raw: Any) -> list[PasswordHistoryItem]:
+    """归一化历史密码输入（容忍旧 .zmb 无该字段 / 字段异常）。
+
+    - 非 list → 空列表
+    - 元素为 ``PasswordHistoryItem`` 直接复用
+    - 元素为 dict：取 ``pwd`` / ``utime``，pwd 必须为非空字符串
+    - 其它元素静默丢弃
+    - 最终截断到 ``HISTORY_MAX`` 条
+    """
+    if not isinstance(raw, list):
+        return []
+    out: list[PasswordHistoryItem] = []
+    for it in raw:
+        if isinstance(it, PasswordHistoryItem):
+            out.append(it)
+            continue
+        if isinstance(it, dict):
+            pwd = it.get("pwd", "")
+            utime_raw = it.get("utime", 0)
+            if not isinstance(pwd, str) or not pwd:
+                continue
+            utime = int(utime_raw) if isinstance(utime_raw, int | float) else 0
+            out.append(PasswordHistoryItem(pwd=pwd, utime=utime))
+        if len(out) >= HISTORY_MAX:
+            break
+    return out[:HISTORY_MAX]
+
 
 def normalize_tags(raw: Any) -> list[str]:
     """归一化标签输入。
@@ -62,6 +95,30 @@ def normalize_tags(raw: Any) -> list[str]:
 
 
 @dataclass(slots=True)
+class PasswordHistoryItem:
+    """同条目内的一条历史密码。
+
+    - ``pwd``：被替换掉的旧密码原文（随 SM4 一起加密落盘）
+    - ``utime``：该旧密码被替换的秒级 UNIX 时间戳
+    """
+
+    pwd: str = ""
+    utime: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PasswordHistoryItem:
+        pwd = data.get("pwd", "")
+        utime = data.get("utime", 0)
+        return cls(
+            pwd=pwd if isinstance(pwd, str) else "",
+            utime=int(utime) if isinstance(utime, int | float) else 0,
+        )
+
+
+@dataclass(slots=True)
 class PasswordEntry:
     """一条密码记录。
 
@@ -85,6 +142,9 @@ class PasswordEntry:
     totp_period: int = 30  # 步长（秒）
     # 标签：弱分类，一个条目可贴 0~N 个，独立于 role
     tags: list[str] = field(default_factory=list)
+    # 同条目内密码历史版本（最新在前，最多 HISTORY_MAX 条）。
+    # 仅随 .zmb 加密落盘，Excel 通道不导出也不导入。
+    history: list[PasswordHistoryItem] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """导出为普通 dict（用于 JSON 序列化 / Excel 导出）。"""
@@ -100,6 +160,8 @@ class PasswordEntry:
                 clean[key] = data[key]
         # tags 统一交给 normalize_tags 处理，容忍旧数据中的 None / 非 list / 字符串 形态
         clean["tags"] = normalize_tags(clean.get("tags"))
+        # history 统一归一化，容忍旧 .zmb 无该字段 / 结构异常
+        clean["history"] = _normalize_history(clean.get("history"))
         entry = cls(**clean)
         if not entry.role:
             entry.role = DEFAULT_ROLE

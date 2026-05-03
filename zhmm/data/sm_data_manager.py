@@ -200,6 +200,7 @@ class SmData:
                 "desc": info.get("desc", ""),
                 "utime": info.get("utime", date_util.timestamp_int()),
                 "tags": info.get("tags"),
+                "history": info.get("history"),
             }
         )
 

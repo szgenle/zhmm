@@ -54,6 +54,8 @@ _CORE_CN_HEADS: tuple[str, ...] = CN_HEADS[:9]
 _INT_FIELDS = {"id", "utime", "totp_digits", "totp_period"}
 # 标签在 Excel 单元格内的分隔符；与 UI Chip 编辑器和 normalize_tags 约定一致。
 _TAG_SEP: str = ";"
+# 注意：``PasswordEntry.history``（密码历史版本）刻意不列入 CN_HEADS / EN_HEADS。
+# Excel 通道不导出（避免明文历史密码落盘扩散），也不导入（导入后 history 为空）。
 
 
 def _escape(value: str) -> str:

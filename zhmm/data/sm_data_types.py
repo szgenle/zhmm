@@ -6,6 +6,13 @@
 from typing import TypedDict
 
 
+class ZhmmHistoryItem(TypedDict):
+    """同条目内一条历史密码的字典视图（与 PasswordHistoryItem 对应）。"""
+
+    pwd: str
+    utime: int
+
+
 class ZhmmDict(TypedDict):
     """单条密码数据的类型定义"""
 
@@ -19,6 +26,8 @@ class ZhmmDict(TypedDict):
     desc: str
     utime: int | None
     tags: list[str] | None
+    # 可选：同条目内密码历史版本。旧 .zmb 并不存在该键，读取侧要容忍缺失。
+    history: list[ZhmmHistoryItem] | None
 
 
 class ZhmmDataDict(TypedDict):

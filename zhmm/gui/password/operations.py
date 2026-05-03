@@ -3,8 +3,10 @@
 
 from zhmm.core import totp as totp_mod
 from zhmm.core.errors import ValidationError
+from zhmm.core.models import HISTORY_MAX
 from zhmm.data.sm_data_manager import SmData
 from zhmm.data.sm_data_types import ZhmmDict
+from zhmm.utils import date_util
 from zhmm.utils.log import logger
 
 
@@ -93,10 +95,11 @@ class PasswordOperations:
         Returns:
             (成功标志, 消息)
         """
+        old_data = self.gl_data.mm["data"][row]
         # 保留原始ID和创建时间
-        new_data["id"] = self.gl_data.mm["data"][row]["id"]
-        if "ctime" in self.gl_data.mm["data"][row]:
-            new_data["ctime"] = self.gl_data.mm["data"][row]["ctime"]  # type: ignore
+        new_data["id"] = old_data["id"]
+        if "ctime" in old_data:
+            new_data["ctime"] = old_data["ctime"]  # type: ignore
 
         # 验证必填字段
         if not new_data.get("userID"):
@@ -106,6 +109,28 @@ class PasswordOperations:
         ok, msg = self._check_totp(new_data)
         if not ok:
             return False, msg
+
+        # 密码历史维护：仅当 pwd 实际变化且旧密码非空时压栈，保留上限 HISTORY_MAX 条。
+        # 覆盖调用方可能传入的 history，避免绕过记录。
+        old_pwd = str(old_data.get("pwd") or "")
+        new_pwd = str(new_data.get("pwd") or "")
+        if old_pwd and new_pwd != old_pwd:
+            prev_history = old_data.get("history") or []  # type: ignore[typeddict-item]
+            if not isinstance(prev_history, list):
+                prev_history = []
+            now = date_util.timestamp_int()
+            merged: list[dict] = [{"pwd": old_pwd, "utime": now}]
+            for item in prev_history:
+                if isinstance(item, dict) and isinstance(item.get("pwd"), str) and item.get("pwd"):
+                    merged.append({"pwd": item["pwd"], "utime": int(item.get("utime") or 0)})
+                if len(merged) >= HISTORY_MAX:
+                    break
+            new_data["history"] = merged[:HISTORY_MAX]  # type: ignore[typeddict-item]
+        else:
+            # 密码未变或旧密码为空：保持原有历史（如有）
+            prev_history = old_data.get("history")  # type: ignore[typeddict-item]
+            if prev_history is not None:
+                new_data["history"] = prev_history  # type: ignore[typeddict-item]
 
         try:
             # 更新数据
@@ -117,6 +142,49 @@ class PasswordOperations:
         except Exception as e:
             logger.error(f"编辑账号出错: {str(e)}")
             return False, f"修改失败: {str(e)}"
+
+    def rollback_password(self, row: int, history_index: int = 0) -> tuple[bool, str]:
+        """将指定行的历史密码恢复为当前密码；当前密码压回栈顶（回滚也计一次历史）。
+
+        Args:
+            row: 要回滚的行索引
+            history_index: 历史条目下标（0 = 上一个密码，最新）
+
+        Returns:
+            (成功标志, 消息)
+        """
+        try:
+            item = self.gl_data.mm["data"][row]
+        except (IndexError, KeyError):
+            return False, "回滚失败：行不存在"
+
+        history = item.get("history") or []  # type: ignore[typeddict-item]
+        if not isinstance(history, list) or history_index < 0 or history_index >= len(history):
+            return False, "回滚失败：没有可回滚的历史密码"
+        target = history[history_index]
+        if not isinstance(target, dict) or not target.get("pwd"):
+            return False, "回滚失败：历史密码为空"
+
+        now = date_util.timestamp_int()
+        current_pwd = str(item.get("pwd") or "")
+        remaining = [h for i, h in enumerate(history) if i != history_index]
+        new_history: list[dict] = []
+        if current_pwd:
+            new_history.append({"pwd": current_pwd, "utime": now})
+        for h in remaining:
+            if isinstance(h, dict) and isinstance(h.get("pwd"), str) and h.get("pwd"):
+                new_history.append({"pwd": h["pwd"], "utime": int(h.get("utime") or 0)})
+            if len(new_history) >= HISTORY_MAX:
+                break
+
+        item["pwd"] = target["pwd"]
+        item["utime"] = now
+        item["history"] = new_history[:HISTORY_MAX]  # type: ignore[typeddict-item]
+        self.gl_data.mm["utime"] = now
+
+        if not self.save():
+            return False, "回滚失败，无法保存数据"
+        return True, "密码已回滚到历史版本"
 
     def add_role(self, new_role: str) -> bool:
         """

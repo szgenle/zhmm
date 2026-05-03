@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from zhmm.core.models import PasswordEntry
+from zhmm.core.models import HISTORY_MAX, PasswordEntry, PasswordHistoryItem
 from zhmm.core.password_service import PasswordService
 
 
@@ -157,3 +157,103 @@ class TestMerge:
     def test_ignore_no_id(self, svc):
         a, u = svc.merge([PasswordEntry(id=0, userID="a", pwd="x")])
         assert (a, u) == (0, 0)
+
+
+class TestPasswordHistory:
+    """密码历史版本：写入 / 截断 / 回滚 / 旧数据兼容。"""
+
+    def test_update_pwd_pushes_old_to_history(self, svc):
+        svc.add(PasswordEntry(id=1, userID="a", pwd="old"))
+        svc._fake_clock.tick(10)
+        res = svc.update(1, pwd="new")
+        assert res is not None and res.pwd == "new"
+        assert len(res.history) == 1
+        assert res.history[0].pwd == "old"
+        assert res.history[0].utime == 1010
+
+    def test_update_non_pwd_field_keeps_history_untouched(self, svc):
+        svc.add(PasswordEntry(id=1, userID="a", pwd="x"))
+        svc.update(1, pwd="y")  # 种一条历史
+        before = list(svc.get(1).history)
+        svc.update(1, desc="just notes")
+        after = svc.get(1).history
+        assert [h.pwd for h in after] == [h.pwd for h in before]
+
+    def test_update_same_pwd_does_not_push(self, svc):
+        svc.add(PasswordEntry(id=1, userID="a", pwd="x"))
+        svc.update(1, pwd="x")
+        assert svc.get(1).history == []
+
+    def test_update_truncates_to_history_max(self, svc):
+        svc.add(PasswordEntry(id=1, userID="a", pwd="p0"))
+        for i in range(1, HISTORY_MAX + 3):
+            svc._fake_clock.tick(1)
+            svc.update(1, pwd=f"p{i}")
+        hist = svc.get(1).history
+        assert len(hist) == HISTORY_MAX
+        # 最新在前：最新压入的旧值是 p{HISTORY_MAX + 1}
+        assert hist[0].pwd == f"p{HISTORY_MAX + 1}"
+        # 最旧压入的旧值（已被丢出后）：history[-1] 应当是倒数第 HISTORY_MAX 次压栈的旧值
+        assert hist[-1].pwd == f"p{(HISTORY_MAX + 2) - HISTORY_MAX}"
+
+    def test_caller_cannot_bypass_history_via_explicit_field(self, svc):
+        """调用方显式传 history 无法绕过记录，仍会被自动覆盖。"""
+        svc.add(PasswordEntry(id=1, userID="a", pwd="old"))
+        svc.update(1, pwd="new", history=[])
+        assert len(svc.get(1).history) == 1
+        assert svc.get(1).history[0].pwd == "old"
+
+    def test_rollback_restores_and_swaps(self, svc):
+        svc.add(PasswordEntry(id=1, userID="a", pwd="v1"))
+        svc._fake_clock.tick(5)
+        svc.update(1, pwd="v2")  # history: [v1]
+        svc._fake_clock.tick(5)
+        res = svc.rollback(1, 0)
+        assert res is not None
+        assert res.pwd == "v1"
+        # 回滚算一次历史事件：当前密码 v2 被压回栈顶
+        assert [h.pwd for h in res.history] == ["v2"]
+
+    def test_rollback_twice_restores_original(self, svc):
+        svc.add(PasswordEntry(id=1, userID="a", pwd="v1"))
+        svc._fake_clock.tick(5)
+        svc.update(1, pwd="v2")
+        svc._fake_clock.tick(5)
+        svc.rollback(1, 0)
+        svc._fake_clock.tick(5)
+        svc.rollback(1, 0)
+        assert svc.get(1).pwd == "v2"
+
+    def test_rollback_missing_entry_or_empty_history(self, svc):
+        assert svc.rollback(999) is None
+        svc.add(PasswordEntry(id=1, userID="a", pwd="v1"))
+        assert svc.rollback(1, 0) is None  # 无历史
+        assert svc.rollback(1, 5) is None  # 越界
+
+    def test_from_dict_tolerates_missing_history(self):
+        """旧 .zmb 数据无 history 字段 → 反序列化得空 list。"""
+        e = PasswordEntry.from_dict({"id": 1, "userID": "a", "pwd": "x"})
+        assert e.history == []
+
+    def test_from_dict_tolerates_invalid_history_elements(self):
+        """历史列表内脏数据被静默过滤，有效条目被保留且截断。"""
+        payload = {
+            "id": 1,
+            "userID": "a",
+            "pwd": "x",
+            "history": [
+                {"pwd": "a", "utime": 1},
+                None,
+                {"pwd": ""},  # 空 pwd 应丢弃
+                "junk",
+                {"pwd": "b", "utime": "not-int"},  # utime 容错为 0
+            ],
+        }
+        e = PasswordEntry.from_dict(payload)
+        assert [h.pwd for h in e.history] == ["a", "b"]
+        assert e.history[1].utime == 0
+
+    def test_history_serializes_through_to_dict(self):
+        e = PasswordEntry(id=1, userID="a", pwd="x", history=[PasswordHistoryItem(pwd="old", utime=99)])
+        d = e.to_dict()
+        assert d["history"] == [{"pwd": "old", "utime": 99}]
