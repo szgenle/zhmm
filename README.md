@@ -37,6 +37,45 @@
 
 ---
 
+## 📸 界面预览
+
+### 主界面：密码列表 + 标签侧边栏
+
+![主界面](docs/screenshots/01-main-window.png)
+
+<sub>左侧标签侧边栏多选（AND 语义）筛选 + 分组 / 搜索 / TOTP 动态码 / 网址 / 备注 / 更新时间一完整展示。截图中数据均为演示用假数据。</sub>
+
+### 其他常用页面
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/02-add-password-dialog.png" alt="添加账号"/></td>
+    <td width="50%"><img src="docs/screenshots/03-data-management.png" alt="数据管理"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>添加账号：支持 TOTP 双因素、多标签、密码强度可视化</sub></td>
+    <td align="center"><sub>数据管理：备份 / 导入导出 / 标签管理 / 网站词典</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/04-settings.png" alt="系统设置"/></td>
+    <td><img src="docs/screenshots/05-site-catalog.png" alt="网站词典"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>系统设置：防截屏 / 自动锁定 / 主题切换 / 更换主密码</sub></td>
+    <td align="center"><sub>内置网站词典：约 400 条中文站点，纯离线标签建议</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/06-create-vault-empty.png" alt="新建密库"/></td>
+    <td><img src="docs/screenshots/07-create-vault-filled.png" alt="新建密库演示"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>首次启动：新建 .zmb 密库文件</sub></td>
+    <td align="center"><sub>主密码创建：实时强度评估 + 二次确认</sub></td>
+  </tr>
+</table>
+
+---
+
 ## 📦 安装
 
 ### 方式一：下载预编译二进制（推荐普通用户）

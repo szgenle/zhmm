@@ -37,6 +37,45 @@
 
 ---
 
+## 📸 Screenshots
+
+### Main window: password list + tag sidebar
+
+![Main window](docs/screenshots/01-main-window.png)
+
+<sub>Left-side tag sidebar with multi-select AND filtering, plus category / search / TOTP code / URL / notes / update-time in one view. All data shown is demo/fake data.</sub>
+
+### Other screens
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/02-add-password-dialog.png" alt="Add entry"/></td>
+    <td width="50%"><img src="docs/screenshots/03-data-management.png" alt="Data management"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Add entry: TOTP 2FA, multi-tag, password strength meter</sub></td>
+    <td align="center"><sub>Data management: backup / import-export / tags / site catalog</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/04-settings.png" alt="Settings"/></td>
+    <td><img src="docs/screenshots/05-site-catalog.png" alt="Site catalog"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Settings: screen-capture block / auto-lock / theme / master-password re-key</sub></td>
+    <td align="center"><sub>Built-in site catalog: ~400 Chinese sites, fully offline tag suggestions</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/06-create-vault-empty.png" alt="New vault"/></td>
+    <td><img src="docs/screenshots/07-create-vault-filled.png" alt="New vault filled"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>First run: create a new .zmb vault file</sub></td>
+    <td align="center"><sub>Master password: realtime strength + confirm</sub></td>
+  </tr>
+</table>
+
+---
+
 ## 📦 Installation
 
 ### Option 1 — Prebuilt binaries (recommended for end users)
