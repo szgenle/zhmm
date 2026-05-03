@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-03
+
+### Fixed
+- **打包产物缺失 `bcrypt` 运行时依赖导致启动崩溃**：`pyproject.toml` 的 `dependencies` 原本未声明 `bcrypt`，但 `gui/login/login_window.py`、`gui/settings/rekey_dialog.py`、`gui/settings/window.py` 三处直接 `import bcrypt`。本地 poetry 环境恰好从其他路径拿到该模块，`poetry install` 在 CI 干净环境下不会安装它，PyInstaller 也就无从探测，导致 v0.4.0 的 GUI 二进制启动即 `ModuleNotFoundError: No module named 'bcrypt'`。补齐 `bcrypt (>=4.0.0,<5.0.0)` 声明并同步 `poetry.lock`。
+
 ## [0.4.0] - 2026-05-03
 
 ### Added
@@ -171,7 +176,8 @@ Initial public version, carried over from the pre-open-source tree:
 - Light / dark theme switching.
 - PyInstaller packaging for macOS / Windows / Linux.
 
-[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/szgenle/zhmm/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/szgenle/zhmm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/szgenle/zhmm/compare/v0.2.8...v0.3.0
 [0.2.0]: https://github.com/szgenle/zhmm/compare/v0.1.4...v0.2.0

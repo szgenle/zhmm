@@ -30,10 +30,8 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-# NOTE: zhmm.spec 是项目打包需要用到的 PyInstaller 配置，已纳入版本管理；
-# 这里仅忽略其它自动生成的 spec 文件。
+# PyInstaller 自动生成的 .spec 文件一律忽略（本项目不使用 .spec，统一走命令行参数打包）
 *.spec
-!zhmm.spec
 
 # Installer logs
 pip-log.txt
