@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QTabWidget, QVBoxL
 
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.password.window import PasswordWindow
+from zhmm.gui.settings.data_management_window import DataManagementWindow
 from zhmm.gui.settings.window import SettingWindow
 
 # 底部状态栏样式（常驻上边分隔线 + 内边距，综合考虑深色主题下的可辨识度）
@@ -27,10 +28,11 @@ class MainWindow(QWidget):
         super().__init__()
         self.info = info
         self.data_manager_widget = PasswordWindow(info)
+        self.data_management_widget = DataManagementWindow(info)
         self.setting_widget = SettingWindow(info)
-        self.setting_widget.imported_xlsx.connect(self.imported_xlsx_data)
-        # 标签批量重命名 / 删除后，必须刷新密码表格与侧边栏以保持一致
-        self.setting_widget.tags_changed.connect(self.imported_xlsx_data)
+        # 「数据管理」Tab 接管了导入/标签等会变更密码集的操作，信号统一向主窗口刷新
+        self.data_management_widget.imported_xlsx.connect(self.imported_xlsx_data)
+        self.data_management_widget.tags_changed.connect(self.imported_xlsx_data)
 
         self.setup_ui()
 
@@ -44,6 +46,7 @@ class MainWindow(QWidget):
 
         # 添加标签页
         self.tab_widget.addTab(self.data_manager_widget, "账号管理")
+        self.tab_widget.addTab(self.data_management_widget, "数据管理")
         self.tab_widget.addTab(self.setting_widget, "系统设置")
         # 切换 tab 时清空状态栏（当前只有账号管理 tab 会向状态栏发消息）
         self.tab_widget.currentChanged.connect(lambda _i: self._set_status("", "normal"))

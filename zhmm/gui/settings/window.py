@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import (
     QApplication,
@@ -23,13 +23,9 @@ from PyQt6.QtWidgets import (
 import zhmm
 from zhmm.config import saved_files as saved_files_store
 from zhmm.config.constants import ZhmmFileInfo
-from zhmm.gui.settings.backup_settings import BackupSettings
-from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
 from zhmm.gui.settings.rekey_dialog import RekeyDialog
-from zhmm.gui.settings.tag_management_dialog import TagManagementDialog
 from zhmm.gui.texts import Account as AccountText
 from zhmm.gui.texts import Rekey as RekeyText
-from zhmm.gui.texts import Tags as TagsText
 from zhmm.gui.texts import Tooltip
 from zhmm.utils.log import logger
 
@@ -41,17 +37,9 @@ _BUTTON_MIN_HEIGHT = 32
 class SettingWindow(QWidget):
     """设置界面组件"""
 
-    imported_xlsx = pyqtSignal()  # 登录成功信号
-    # 标签批量变更（重命名 / 删除）后发射，供主窗口刷新密码表与标签侧边栏。
-    # 与 imported_xlsx 语义不同：数据结构未新增条目，仅某些条目的 tags 字段被修改。
-    tags_changed = pyqtSignal()
-
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
         self.info = info
-
-        # 初始化功能处理器
-        self.import_export_handlers = ImportExportHandlers(self, info)
 
         self.setup_ui()
 
@@ -81,15 +69,6 @@ class SettingWindow(QWidget):
 
         # ---------- 主密码 ----------
         layout.addWidget(self._build_master_password_group())
-
-        # ---------- 数据备份 ----------
-        layout.addWidget(self._build_backup_group())
-
-        # ---------- 数据导入导出 ----------
-        layout.addWidget(self._build_import_export_group())
-
-        # ---------- 标签管理 ----------
-        layout.addWidget(self._build_tag_management_group())
 
         layout.addStretch()
 
@@ -226,16 +205,6 @@ class SettingWindow(QWidget):
         group.setLayout(form)
         return group
 
-    def _build_backup_group(self) -> QGroupBox:
-        """数据备份组"""
-        group = QGroupBox("数据备份")
-        v = QVBoxLayout()
-        v.setContentsMargins(4, 8, 4, 8)
-        self.backup_settings_widget = BackupSettings(self.info, self)
-        v.addWidget(self.backup_settings_widget)
-        group.setLayout(v)
-        return group
-
     def _build_master_password_group(self) -> QGroupBox:
         """主密码分组：更换主密码按钮。"""
         group = QGroupBox("主密码")
@@ -246,42 +215,6 @@ class SettingWindow(QWidget):
         v.addWidget(self.rekey_button)
         v.addStretch()
         group.setLayout(v)
-        return group
-
-    def _build_tag_management_group(self) -> QGroupBox:
-        """标签管理分组：入口按钮打开 TagManagementDialog。
-
-        标签数据是 PasswordEntry.tags 的并集，没有独立存储，批量重命名 / 删除
-        统一走 SmData.rename_tag / delete_tag 并立即落盘。
-        """
-        group = QGroupBox(TagsText.GROUP_TITLE)
-        v = QHBoxLayout()
-        v.setContentsMargins(4, 8, 4, 8)
-        v.setSpacing(10)
-        self.tag_manage_button = self._make_button(TagsText.BTN_OPEN, self.open_tag_management_dialog)
-        v.addWidget(self.tag_manage_button)
-        v.addStretch()
-        group.setLayout(v)
-        return group
-
-    def _build_import_export_group(self) -> QGroupBox:
-        """数据导入导出组：按钮采用网格布局，等宽整齐"""
-        group = QGroupBox("数据导入导出")
-        grid = QGridLayout()
-        grid.setContentsMargins(4, 8, 4, 8)
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(10)
-
-        self.import_xlsx_button = self._make_button("导入 xlsx 文件", self.import_xlsx)
-        self.download_xlsx_button = self._make_button("下载 xlsx 模版", self.download_xlsx_template)
-        self.export_button = self._make_button("导出 xlsx 文件", self.export_passwords)
-
-        grid.addWidget(self.import_xlsx_button, 0, 0)
-        grid.addWidget(self.download_xlsx_button, 0, 1)
-        grid.addWidget(self.export_button, 0, 2)
-        grid.setColumnStretch(3, 1)  # 右侧留白
-
-        group.setLayout(grid)
         return group
 
     @staticmethod
@@ -297,23 +230,6 @@ class SettingWindow(QWidget):
     # ------------------------------------------------------------------
     # 事件处理
     # ------------------------------------------------------------------
-    def export_passwords(self):
-        """导出密码列表"""
-        self.import_export_handlers.export_passwords()
-
-    def import_xlsx(self):
-        """导入xlsx文件"""
-
-        def on_success():
-            # 发送信号通知界面刷新
-            self.imported_xlsx.emit()
-
-        self.import_export_handlers.import_xlsx(on_success)
-
-    def download_xlsx_template(self):
-        """下载xlsx模版文件"""
-        self.import_export_handlers.download_xlsx_template()
-
     def on_theme_changed(self, button):
         """主题切换事件处理"""
         from PyQt6.QtWidgets import QApplication
@@ -356,22 +272,6 @@ class SettingWindow(QWidget):
         dlg = RekeyDialog(self.info, parent=self)
         dlg.finished_ok.connect(self._on_rekey_success)
         dlg.exec()
-
-    # ------------------------------------------------------------------
-    # 标签管理
-    # ------------------------------------------------------------------
-    def open_tag_management_dialog(self) -> None:
-        """打开「标签管理」对话框；若有变更，通知主窗口刷新 UI。"""
-        from PyQt6.QtWidgets import QMessageBox
-
-        sm_data = self.info.get("sm_data")
-        if not sm_data:
-            QMessageBox.warning(self, TagsText.TITLE, "数据管理器未初始化")
-            return
-        dlg = TagManagementDialog(sm_data, parent=self)
-        dlg.exec()
-        if dlg.has_changes():
-            self.tags_changed.emit()
 
     def _on_rekey_success(self, new_password: str, backup_path: str) -> None:
         """Re-key 成功后的后续操作：
