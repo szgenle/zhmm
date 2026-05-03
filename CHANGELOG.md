@@ -27,13 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 新增 5 个单元测试覆盖：新密码可解 / 旧密码被拒 / 错误旧密码时原文件未被破坏 / 无临时文件残留 / 目标文件缺失抛 `StorageError`。
 - **账户信息设置分组**：设置页顶部新增「账户信息」分组，明文展示当前登录账号（作为 KDF 常量盐参与密钥派生，遗忘后无法解密）并提供复制按钮；复制后 10 秒自动清空剪贴板，与密码 / TOTP 的剪贴板策略保持一致。
 - **登录失败限速与锁定（UI 层退避）**：登录对话框连续失败 ≥ 3 次后进入指数退避锁定（2s → 4s → 8s …，单次上限 60s）；锁定期间禁用登录按钮与密码输入框，按钮文字实时显示剩余秒数，倒计时结束后自动恢复并聚焦密码框；登录成功时计数清零。仅用于手动 GUI 重试节流，**不防御离线暴力**（攻击者可绕过 GUI 直接调用 `core.vault`，离线破解成本仍由 Argon2id 承担）。
+- **密码强度可视化**：新增 `zhmm.core.password_strength` 纯函数模块 `assess_strength()`，输出 0-100 分与 5 档等级（极弱 / 弱 / 一般 / 强 / 极强），内置常见弱密码库、顺序 / 倒序序列检测、重复字符惩罚等启发式规则；新增 `PasswordStrengthBar` 控件（`zhmm/widgets/strength_bar.py`），已接入登录 / 新增密码 / 随机密码生成 / 更换主密码四处对话框，输入实时刷新颜色与提示文本。**纯离线算法，不发起任何网络请求**，与项目本地优先约束一致。
+- **「数据管理」标签页**：主窗口新增顶层 Tab（`zhmm/gui/settings/data_management_window.py`），集中放置数据备份 / 导入导出 / 标签管理三个模块；设置页 `SettingWindow` 相应移除这些块，减少系统设置页视觉负担；导入完成与标签变更信号改由 `DataManagementWindow` 统一发射并传给 `MainWindow` 刷新密码表格与侧边栏。
+- **标签批量重命名与删除**：「数据管理 → 标签管理」新增对话框（`zhmm/gui/settings/tag_management_dialog.py`），按使用次数倒序列出全部标签，支持重命名（与已有标签合并时自动去重 / 保序）与删除（带影响条目数二次确认）；失败时回滚内存数据避免状态不一致。`SmData` 新增 `count_tag_usages / rename_tag / delete_tag` 三个批量接口。
 - `zhmm/config/saved_files.py`：集中管理 `~/.zhmm/.zhmm_files.json` 索引文件的读写（`load_all / save_all / update_entry`），原先散落在 `FileListWidget` 中的逻辑被抽出，便于更换主密码等功能复用。
 - `zhmm/gui/texts.py` 新增 `Account` / `Rekey` 文案类，集中管理账户信息分组与主密码更换流程中的中文提示、阶段标签与结果消息。
 
 ### Fixed
 - 备份列表对话框：在时间字段前补充「数据」前缀（形如 `数据 yyyy-MM-dd HH:mm:ss`），避免与后续文件名 / 大小列混在一起难以阅读。
+- 侧边栏标签筛选与「仅显示搜索结果」复选框的交互：选择标签时自动取消「仅显示搜索结果」勾选，避免无关键字时清空标签筛选结果；复选框状态通过信号同步到代理模型并触发刷新。
 
 ### Changed
+- **标签列表整行点击切换勾选**：新增 `RowToggleListWidget` 组件，标签侧边栏（`zhmm/gui/password/tag_sidebar.py`）与标签多选弹窗（`zhmm/widgets/tag_editor.py`）全部替换为该组件，点击整行即可切换勾选；禁用项不响应点击；列表样式下沉到 `zhmm/gui/theme.py` 的主题定义，统一亮色 / 深色主题下的视觉风格，去除硬编码颜色。
+- **搜索输入防抖**：密码表格搜索框从 `textChanged` 即时触发改为 150 ms `QTimer` 防抖触发，减少快速输入时的无效过滤与 UI 抖动；`filter_passwords` 调用会主动取消未完成的防抖定时器避免冲突。
 - `make build-app` / `build-cmd` / `build-all` 不再隐式依赖 `update-version`，避免每次构建都自动递增版本号造成版本污染；版本号改为由 `make update-version` 按需手动递增 patch，Makefile help 补充了该命令的用法说明。
 - `scripts/update_version.py` 字符串引号与格式统一，便于 ruff format 稳定输出。
 

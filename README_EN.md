@@ -20,10 +20,16 @@
 
 - 🔒 **Chinese SM crypto**: Argon2id key derivation (memory-hard, defaults m=64 MiB/t=3/p=1, account + password dual-factor input) + SM4-CBC encryption + HMAC-SM3 integrity tag. Master key never touches disk.
 - 🖼 **Anti-screenshot**: windows are excluded from system screen capture (macOS `NSWindowSharingNone` / Windows `WDA_EXCLUDE_FROM_CAPTURE`); on by default, toggleable in **Settings**.
+- ⏱ **Auto-lock + clipboard auto-clear**: the GUI returns to the login screen and releases in-memory plaintext entries once the window has been inactive for the configured minutes; copied passwords / TOTP codes are wiped from the clipboard after 10 seconds.
 - 💻 **Dual form factor**: one core, two UIs — **PyQt6 GUI** and **CLI (argparse)**.
 - 📦 **Single-file vault**: one `.zmb` file *is* your vault (binary format v5 with magic, version, embedded Argon2 parameters, auth tag) — easy to back up and migrate.
-- 📝 **Import / export**: full Excel (xlsx) round-tripping (TOTP secrets are stripped on export; only the encrypted `.zmb` backup preserves them).
+- 📝 **Import / export**: full Excel (xlsx) round-tripping (TOTP secrets and password history are stripped on export; only the encrypted `.zmb` backup preserves them in full).
 - 🔐 **TOTP 2FA**: built-in one-time passwords — RFC 6238 with SHA1/256/512, plus a Chinese **SM3-TOTP** extension. Supports both Base32 paste and one-click `otpauth://` URI parsing; table refreshes every second. End-user guide: [docs/TOTP使用指南.md](docs/TOTP使用指南.md).
+- 🏷 **Multi-tag + sidebar filter**: each entry can carry 0–16 tags (≤ 32 chars each); the left-hand tag sidebar filters entries with **AND semantics**. The Data Management tab ships a bulk rename / delete dialog.
+- 🕘 **Password history + rollback**: each entry auto-retains its last 5 old passwords. Right-click “View password history…” to reveal / copy / roll back (with a second confirmation). History is stored inside the `.zmb` only — Excel round-tripping intentionally does *not* carry it.
+- 🔑 **In-place master password change**: Settings → “Change master password”. The process auto-backs up and then swaps atomically via `fsync + os.replace`; no export / re-import needed.
+- 📊 **Password strength meter**: offline heuristic scoring (0–100, 5 tiers) embedded live in the login, add-entry, random-generator and re-key dialogs.
+- 🛡 **Login rate-limit**: 3+ consecutive failures trigger exponential backoff (2s → 4s → 8s …, capped at 60s) with a countdown on the login button — GUI retry throttling only.
 - 🎨 **Themes**: built-in light / dark themes.
 - 🧰 **Batteries included**: PyInstaller recipes for macOS / Windows / Linux.
 - 🛡 **CI quality gates**: ruff lint / mypy type check / pytest must all pass before merge.
@@ -112,12 +118,13 @@ zhmm-cli -i ~/zhmm.zmb --account you@example.com --simple -s github
 
 ```
 zhmm/
-├── core/           # crypto engine, data models, business services (password/backup/export)
-├── config/         # app configuration, QSettings, constants
+├── core/           # crypto engine, data models, business services (password / backup / export / strength)
+├── config/         # app configuration, QSettings, constants, saved_files index
 ├── cli/            # argparse sub-commands and interactive loop
 ├── app/            # GUI / CLI entry assembly
-├── gui/            # PyQt6 views (login / password / settings / theme …)
-├── widgets/        # reusable Qt widgets (BaseWindow / Dialog / DragDropButton …)
+├── gui/            # PyQt6 views (login / password / settings / data management / theme …)
+├── widgets/        # reusable Qt widgets (BaseWindow / Dialog / tag editor / strength bar …)
+├── browser_bridge/ # browser autofill bridge (POC, off by default; enable with ZHMM_BROWSER_BRIDGE=1)
 ├── data/           # data management (SmData / SmDataTypes)
 ├── utils/          # utilities (logging, dates, network, tables, JSON, …)
 ├── __init__.py     # version and package metadata

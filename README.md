@@ -23,8 +23,13 @@
 - ⏱ **自动锁定 + 剪贴板自动清除**：窗口失活达到设定分钟数自动回到登录页并释放内存中的明文条目；复制密码 / TOTP 动态码后 10 秒自动清空剪贴板
 - 💻 **双形态**：同一套核心，提供 **GUI（PyQt6）** 与 **CLI（argparse）** 两种使用方式
 - 📦 **单文件密库**：一个 `.zmb` 文件即完整密库（二进制格式 v5，含 magic / 版本号 / Argon2 参数 / 认证标签），便于备份与迁移
-- 📝 **支持导入/导出**：支持 Excel（xlsx）导入导出（导出自动抹除 TOTP Secret，仅 `.zmb` 加密备份保留）
+- 📝 **支持导入/导出**：支持 Excel（xlsx）导入导出（导出自动抹除 TOTP Secret 与历史密码，仅 `.zmb` 加密备份完整保留）
 - 🔐 **TOTP 2FA**：内置动态口令（RFC 6238 标准 SHA1/256/512 + 国密 **SM3-TOTP** 扩展），支持 Base32 手动粘贴与 `otpauth://` URI 一键解析，表格每秒刷新。使用指南详见 [docs/TOTP使用指南.md](docs/TOTP使用指南.md)
+- 🏷 **多标签 + 侧边栏筛选**：条目可贴 0~16 个标签（单标签 ≤ 32 字符），左侧标签侧边栏多选按 **AND 语义** 筛选；「数据管理」页内置标签批量重命名 / 删除对话框
+- 🕘 **密码历史 + 回滚**：每个条目自动保留最近 5 次旧密码（右键「查看历史密码…」可明文查看 / 复制 / 一键回滚，带二次确认）；历史仅随 `.zmb` 加密落盘，Excel 通道刻意不承载
+- 🔑 **主密码原地更换**：设置页「更换主密码」一键完成，内部先自动备份再以 `fsync + os.replace` 原子替换，无需导出/重导入
+- 📊 **密码强度可视化**：纯离线启发式评估（0-100 分 / 5 档），登录、新增密码、随机生成、换主密码对话框均内嵌实时强度条
+- 🛡 **登录失败限速**：连续失败 ≥ 3 次后指数退避锁定（2s → 4s → 8s …，上限 60s），按钮倒计时；用于 GUI 手动重试节流
 - 🎨 **主题切换**：内置浅色/深色主题
 - 🧰 **开箱即用**：提供 PyInstaller 打包脚本，一键构建 macOS / Windows / Linux 发行版
 - 🛡 **CI 质量门禁**：ruff lint / mypy 类型检查 / pytest 全绿才可合并
@@ -111,12 +116,13 @@ zhmm-cli -i ~/zhmm.zmb --account you@example.com --simple -s github
 
 ```
 zhmm/
-├── core/           # 加密引擎、数据模型、业务服务（密码/备份/导出）
-├── config/         # 应用配置、QSettings、常量
+├── core/           # 加密引擎、数据模型、业务服务（密码/备份/导出/密码强度）
+├── config/         # 应用配置、QSettings、常量、saved_files 索引
 ├── cli/            # argparse 子命令与交互循环
 ├── app/            # GUI/CLI 入口装配
-├── gui/            # PyQt6 界面（login / password / settings / theme …）
-├── widgets/        # 通用 Qt 组件（BaseWindow / Dialog / DragDropButton …）
+├── gui/            # PyQt6 界面（login / password / settings / 数据管理 / theme …）
+├── widgets/        # 通用 Qt 组件（BaseWindow / Dialog / 标签编辑器 / 强度条 …）
+├── browser_bridge/ # 浏览器填充桥（POC，默认关闭，ZHMM_BROWSER_BRIDGE=1 开启）
 ├── data/           # 数据管理（SmData / SmDataTypes）
 ├── utils/          # 工具函数（日志/日期/网络/表格/JSON …）
 ├── __init__.py     # 版本号与包元信息
