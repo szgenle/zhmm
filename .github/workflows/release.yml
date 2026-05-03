@@ -53,7 +53,17 @@ jobs:
       - name: Build GUI (PyInstaller)
         shell: bash
         run: |
+          ICON_ARG=""
+          BUNDLE_ID_ARG=""
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            ICON_ARG="--icon=myicon.icns"
+            BUNDLE_ID_ARG="--osx-bundle-identifier com.szgenle.zhmm"
+          elif [ "${{ runner.os }}" = "Windows" ] && [ -f "myicon.ico" ]; then
+            ICON_ARG="--icon=myicon.ico"
+          fi
           poetry run pyinstaller --onefile --windowed --name "zhmm" \
+            $BUNDLE_ID_ARG \
+            $ICON_ARG \
             --collect-all certifi \
             zhmm/main.py \
             --paths zhmm/

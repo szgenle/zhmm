@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-05-03
+
+### Fixed
+- **打包产物图标丢失**：CI 的 `release.yml` 中 PyInstaller 命令未传入 `--icon` / `--osx-bundle-identifier`，导致 v0.4.0 / v0.4.1 二进制显示 Python 默认图标。补齐平台条件参数：macOS 用 `myicon.icns` + `com.szgenle.zhmm` bundle id；Windows 新增多分辨率 `myicon.ico`（6 个尺寸，含 256×256 @32bit）并指定 `--icon=myicon.ico`。
+
 ## [0.4.1] - 2026-05-03
 
 ### Fixed
@@ -176,7 +181,8 @@ Initial public version, carried over from the pre-open-source tree:
 - Light / dark theme switching.
 - PyInstaller packaging for macOS / Windows / Linux.
 
-[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/szgenle/zhmm/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/szgenle/zhmm/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/szgenle/zhmm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/szgenle/zhmm/compare/v0.2.8...v0.3.0
