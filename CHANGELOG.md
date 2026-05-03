@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-03
+
+### Added
+- **新建账号小本本向导（一站式弹窗）**：`zhmm/gui/login/create_vault_dialog.py` 新增 `CreateVaultDialog`，将原先三步流程（选保存位置 → QMessageBox 确认是否创建 → 复用空 `LoginWindow` 补账号密码）整合为单一模态弹窗，一次性采集保存路径 / 账号名 / 主密码 / 确认密码；内置特性：
+  - **「浏览...」按钮** + 路径可手动编辑，`.zmb` 后缀自动补齐，父目录不存在时提示错误，目标文件已存在时弹出二次确认避免误覆盖；
+  - **密码强度条**（`PasswordStrengthBar`）实时反馈评级与改进建议，鼓励用户在创建阶段就选择强密码；
+  - **两次密码一致性**实时校验（✓ 一致 / ✗ 不一致），必填项未完成时「创建」按钮保持灰态，避免无效提交；
+  - **全角 → 半角自动纠错**（复用登录窗 `_to_halfwidth`），防止 IME 误输的全角「：@」等字符进入密钥派生，导致以后解密失败；
+  - **账号不可修改提示**：账号输入框下方灰色小字强调「账号将与密码共同参与密钥派生，创建后无法修改」，降低事后遗忘风险；
+  - **遵从防截屏设置**：弹窗开启时按 `zhmm.setting.get_anti_screenshot()` 应用 `apply_anti_capture`，与主窗一致从系统录屏 / 截图中排除。
+
+### Changed
+- **`FileListWidget` 新建流程重构（关注点分离）**：`zhmm/gui/file_list_widget.py` 删除已废弃的 `show_create_dialog()`（原先先弹问号 `QMessageBox` 再复用 `LoginWindow("")` 作为创建表单，语义扭曲），`create_new_file()` 改为直接调用 `CreateVaultDialog`；登录窗只负责登录、新建向导只负责新建。
+- **登录窗口轻度瘦身**：`zhmm/gui/login/login_window.py` 移除未使用的 `PasswordStrengthBar` 导入，补齐 placeholder 提示（「请输入账号名 / 主密码」），输入框最小高度统一为 32px 与新建向导对齐。
+
+### Docs
+- **README / README\_EN 新增 「📸 界面预览」段**：放在「特性」与「安装」之间，主界面全宽大图 + 其余 6 张 2×3 表格布局，每张配一行说明；并在图说中主动声明「数据均为演示用假数据」，避免读者误以为是真实账号。
+- **新增 `docs/screenshots/` 目录**：统一托管项目截图（7 张 PNG，英文语义化命名 01-07），替代临时的中文目录名。
+- **新增 `docs/demo_data.xlsx` 演示数据文件**：Sheet 名 `密码模版` + 10 列表头，15 条全假数据（`@example.com` / `13800138000` / `6222****1234` / 密码含 `D3mo` 标记），覆盖 7 个分组 + 12+ 个标签；新用户可在 GUI「数据管理 → 导入」直接试用。README 「快速开始 → GUI 模式」新增一行引导链接。
+
 ## [0.4.2] - 2026-05-03
 
 ### Fixed
@@ -181,7 +201,8 @@ Initial public version, carried over from the pre-open-source tree:
 - Light / dark theme switching.
 - PyInstaller packaging for macOS / Windows / Linux.
 
-[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/szgenle/zhmm/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/szgenle/zhmm/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/szgenle/zhmm/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/szgenle/zhmm/compare/v0.3.0...v0.4.0

@@ -1,6 +1,6 @@
 [project]
 name = "zhmm"
-version = "0.4.2"
+version = "0.5.0"
 description = "A cross-platform local-first password manager with Chinese SM crypto (SM3/SM4) — PyQt6 GUI + CLI"
 authors = [
     {name = "Lioesquieu"}
