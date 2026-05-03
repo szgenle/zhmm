@@ -4,7 +4,6 @@
 from datetime import datetime
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -22,6 +21,7 @@ import zhmm
 from zhmm.config import saved_files as saved_files_store
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.decrypt_data_view import UIDecryptData
+from zhmm.gui.login.create_vault_dialog import CreateVaultDialog
 from zhmm.gui.login.login_window import LoginWindow
 
 
@@ -113,29 +113,6 @@ class FileListWidget(QWidget):
         login_dialog = LoginWindow(account, hashpw)
         login_dialog.login_success.connect(lambda info: self.on_login_success(file_path, info))
         login_dialog.exec()
-
-    def show_create_dialog(self, file_path: str):
-        """
-        显示创建提示对话框，并在用户确认后显示登录对话框
-        """
-        font = QFont()
-        font.setPointSize(12)
-        font.setBold(True)
-
-        message_box = QMessageBox()
-        message_box.setWindowTitle("提示")
-        message_box.setFont(font)
-        message_box.setText("该文件不存在或未登录，是否创建新账号小本本？")
-        message_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        message_box.setDefaultButton(QMessageBox.StandardButton.No)
-        message_box.setIcon(QMessageBox.Icon.Question)
-        result = message_box.exec()
-        if result == QMessageBox.StandardButton.Yes:
-            login_dialog = LoginWindow("")
-            login_dialog.login_success.connect(lambda info: self.on_create_success(file_path, info))
-            login_dialog.exec()
-        else:
-            print("用户取消了创建操作")
 
     def on_create_success(self, file_path: str, info: dict):
         import hashlib
@@ -277,16 +254,7 @@ class FileListWidget(QWidget):
         event.acceptProposedAction()
 
     def create_new_file(self):
-        """新建密码本文件"""
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "新建账号小本本文件",
-            "",
-            "账号小本本 (*.zmb)",  # 初始路径设为空
-        )
-        if file_path:
-            # 确保文件后缀正确
-            if not file_path.endswith(".zmb"):
-                file_path += ".zmb"
-
-            self.show_create_dialog(file_path)
+        """新建账号小本本（密码库）：弹出整合向导弹窗收集路径/账号/主密码。"""
+        dialog = CreateVaultDialog(self)
+        dialog.vault_create_requested.connect(lambda file_path, info: self.on_create_success(file_path, info))
+        dialog.exec()

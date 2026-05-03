@@ -11,7 +11,6 @@ from zhmm.utils.anti_capture import apply_anti_capture
 from zhmm.utils.log import logger
 from zhmm.widgets.dialog import Dialog
 from zhmm.widgets.eye_icon import EYE_CLOSED_SVG, EYE_OPEN_SVG, svg_to_icon
-from zhmm.widgets.strength_bar import PasswordStrengthBar
 
 
 def _to_halfwidth(text: str) -> str:
@@ -126,11 +125,6 @@ class LoginWindow(Dialog):
         form_layout.addWidget(password_label, row, 0)
         form_layout.addLayout(password_row_layout, row, 1)
         row += 1
-
-        # 密码强度条：仅在「首次设置主密码」与「登录核对」时都能给到参考
-        self.password_strength_bar = PasswordStrengthBar()
-        self.password_input.textChanged.connect(self.password_strength_bar.set_password)
-        form_layout.addWidget(self.password_strength_bar, row, 1)
 
         layout.addLayout(form_layout)
 
