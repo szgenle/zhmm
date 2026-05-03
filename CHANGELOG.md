@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-03
+
 ### Added
 - **密码历史版本（同条目内）**：`PasswordEntry` 新增 `history: list[PasswordHistoryItem]`，每次更新密码时自动将旧密码和时间戳压入栈顶，FIFO 上限 5 条（`core.models.HISTORY_MAX`）。
   - **写入策略**：仅当 `pwd` 实际变化且旧密码非空时压栈；修改备注 / 标签等非 `pwd` 字段不会污染历史；尽量由 `PasswordService.update` / `PasswordOperations.update_password` 统一拦截注写，调用方显式传 `history` 也会被覆盖，避免绕过记录。
@@ -169,7 +171,8 @@ Initial public version, carried over from the pre-open-source tree:
 - Light / dark theme switching.
 - PyInstaller packaging for macOS / Windows / Linux.
 
-[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/szgenle/zhmm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/szgenle/zhmm/compare/v0.2.8...v0.3.0
 [0.2.0]: https://github.com/szgenle/zhmm/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/szgenle/zhmm/releases/tag/v0.1.4
