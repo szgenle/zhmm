@@ -7,6 +7,10 @@ hiddenimports = []
 tmp_ret = collect_all('certifi')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
+# 随包发行的离线资源（当前：站点词典）——
+# 放到冻结目录的 ``resources/`` 下，runtime 由 ``sys._MEIPASS/resources`` 读取。
+datas += [('zhmm/resources', 'resources')]
+
 
 a = Analysis(
     ['zhmm/__main__.py'],

@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
 
 from zhmm.core import totp as totp_mod
 from zhmm.core.errors import ValidationError
+from zhmm.core.site_catalog import suggest as suggest_site
 from zhmm.gui.password.add_role_dialog import AddRoleDialog
 from zhmm.gui.password.random_dialog import RandomPasswordDialog
 from zhmm.utils import date_util
@@ -120,12 +121,23 @@ class AddPasswordDialog(QDialog):
         self.email_input.setPlaceholderText("请输入邮箱（可选）")
         form_layout.addRow("邮箱:", self.email_input)
 
-        # 网站输入
+        # 网站输入（失焦时触发离线站点识别：匹配成功则建议中文名与标签）
         self.url_input = QLineEdit()
         self.url_input.setMinimumWidth(300)
         self.url_input.setFixedHeight(30)
         self.url_input.setPlaceholderText("请输入网站地址（可选）")
-        form_layout.addRow("网站:", self.url_input)
+        self.url_input.editingFinished.connect(self._apply_site_suggestion)
+        # 紧随 URL 行下方的提示：仅在识别到已知站点时显示（默认隐藏）
+        self.site_hint_label = QLabel("")
+        self.site_hint_label.setObjectName("site_hint_label")
+        self.site_hint_label.setStyleSheet("color: #1565c0; font-size: 12px; padding-left: 2px;")
+        self.site_hint_label.setVisible(False)
+        url_box = QVBoxLayout()
+        url_box.setContentsMargins(0, 0, 0, 0)
+        url_box.setSpacing(2)
+        url_box.addWidget(self.url_input)
+        url_box.addWidget(self.site_hint_label)
+        form_layout.addRow("网站:", url_box)
 
         # 备注输入
         self.desc_input = QTextEdit()
@@ -216,6 +228,46 @@ class AddPasswordDialog(QDialog):
         picked = dlg.selected_tags()
         if picked:
             self.tag_editor.add_tags(picked)
+
+    def _apply_site_suggestion(self) -> None:
+        """网址失焦时触发离线站点识别。
+
+        策略（避免骚扰）：
+        - 仅在标签编辑器当前为空时，才自动追加建议标签；
+          已有标签表示用户已自定义，不覆盖。
+        - 仅用来自本地词典的建议，整个过程不访问网络。
+        - 识别到的中文名仅在提示标签中展示，不自动写入其他字段。
+        """
+        url = self.url_input.text().strip()
+        if not url:
+            self.site_hint_label.setVisible(False)
+            self.site_hint_label.setText("")
+            return
+        try:
+            s = suggest_site(url)
+        except Exception as ex:  # noqa: BLE001 - 建议逻辑不得阻塞对话框
+            logger.debug(f"站点识别异常：{ex}")
+            return
+        if s.is_empty():
+            self.site_hint_label.setVisible(False)
+            self.site_hint_label.setText("")
+            return
+        # 只在用户尚未输入任何标签时才自动追加，避免覆盖用户选择
+        applied: list[str] = []
+        if s.tags and not self.tag_editor.tags():
+            self.tag_editor.add_tags(list(s.tags))
+            applied = list(s.tags)
+        # 提示文案：优先展示中文名 + 已应用标签
+        pieces: list[str] = []
+        if s.name:
+            pieces.append(f"已识别：{s.name}")
+        if applied:
+            pieces.append(f"已添加标签 {'、'.join(applied)}")
+        elif s.tags:
+            pieces.append(f"建议标签 {'、'.join(s.tags)}（已有标签，未自动追加）")
+        text = " · ".join(pieces) if pieces else ""
+        self.site_hint_label.setText(text)
+        self.site_hint_label.setVisible(bool(text))
 
     def _populate_data(self, data):
         """填充编辑数据"""
