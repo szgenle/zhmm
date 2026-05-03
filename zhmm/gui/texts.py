@@ -151,3 +151,50 @@ class Account:
     # ---- 说明文字 ----
     # 不内置换行，交给 QLabel.setWordWrap 根据容器宽度自适应
     HINT = "⚠ 该账号与登录密码共同参与数据加密，未写入加密文件。\n" "如遗忘或输错，将无法解密已有数据，请务必牢记。"
+
+
+class Tags:
+    """标签管理相关文案。
+
+    设置页新增的「标签管理」分组以及其模态对话框的文案收敛在此，
+    跟随 RekeyText、AccountText 使用「静态字段 + 带参 @staticmethod」风格。
+    """
+
+    # ---- 分组与按钮 ----
+    GROUP_TITLE = "标签管理"
+    BTN_OPEN = "管理标签"
+
+    # ---- 对话框 ----
+    TITLE = "标签管理"
+    HINT = "重命名或删除任一标签，会立即同步到所有关联条目并落盘。"
+    EMPTY = "当前库暂无任何标签。\n可在「账号管理」编辑条目时添加标签。"
+    BTN_RENAME = "重命名…"
+    BTN_DELETE = "删除"
+    BTN_CLOSE = "关闭"
+
+    # ---- 重命名输入 ----
+    INPUT_TITLE = "重命名标签"
+    INPUT_LABEL = "请输入新的标签名："
+
+    # ---- 校验 / 失败提示 ----
+    ERR_EMPTY = "标签名不能为空。"
+    ERR_SAME = "新标签名与原名相同。"
+    ERR_SAVE_FAILED = "保存失败，已还原数据。请稍后再试或检查文件权限。"
+
+    @staticmethod
+    def confirm_delete(tag: str, count: int) -> str:
+        """删除确认文案。"""
+        return f"确定删除标签 “#{tag}” 吗？\n将从 {count} 条记录中移除，此操作不可撤销。"
+
+    @staticmethod
+    def confirm_merge(old: str, new: str) -> str:
+        """重命名到已有标签时的合并确认文案。"""
+        return f"标签 “#{new}” 已存在。\n\n继续将合并：#{old} → #{new}，原 “#{old}” 将消失。\n\n是否继续？"
+
+    @staticmethod
+    def success_renamed(old: str, new: str, count: int) -> str:
+        return f"已将 {count} 条记录中的 “#{old}” 重命名为 “#{new}”。"
+
+    @staticmethod
+    def success_deleted(tag: str, count: int) -> str:
+        return f"已从 {count} 条记录中删除标签 “#{tag}”。"

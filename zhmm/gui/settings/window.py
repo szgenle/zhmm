@@ -26,8 +26,10 @@ from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.settings.backup_settings import BackupSettings
 from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
 from zhmm.gui.settings.rekey_dialog import RekeyDialog
+from zhmm.gui.settings.tag_management_dialog import TagManagementDialog
 from zhmm.gui.texts import Account as AccountText
 from zhmm.gui.texts import Rekey as RekeyText
+from zhmm.gui.texts import Tags as TagsText
 from zhmm.gui.texts import Tooltip
 from zhmm.utils.log import logger
 
@@ -40,6 +42,9 @@ class SettingWindow(QWidget):
     """设置界面组件"""
 
     imported_xlsx = pyqtSignal()  # 登录成功信号
+    # 标签批量变更（重命名 / 删除）后发射，供主窗口刷新密码表与标签侧边栏。
+    # 与 imported_xlsx 语义不同：数据结构未新增条目，仅某些条目的 tags 字段被修改。
+    tags_changed = pyqtSignal()
 
     def __init__(self, info: ZhmmFileInfo, parent=None):
         super().__init__(parent)
@@ -82,6 +87,9 @@ class SettingWindow(QWidget):
 
         # ---------- 数据导入导出 ----------
         layout.addWidget(self._build_import_export_group())
+
+        # ---------- 标签管理 ----------
+        layout.addWidget(self._build_tag_management_group())
 
         layout.addStretch()
 
@@ -240,6 +248,22 @@ class SettingWindow(QWidget):
         group.setLayout(v)
         return group
 
+    def _build_tag_management_group(self) -> QGroupBox:
+        """标签管理分组：入口按钮打开 TagManagementDialog。
+
+        标签数据是 PasswordEntry.tags 的并集，没有独立存储，批量重命名 / 删除
+        统一走 SmData.rename_tag / delete_tag 并立即落盘。
+        """
+        group = QGroupBox(TagsText.GROUP_TITLE)
+        v = QHBoxLayout()
+        v.setContentsMargins(4, 8, 4, 8)
+        v.setSpacing(10)
+        self.tag_manage_button = self._make_button(TagsText.BTN_OPEN, self.open_tag_management_dialog)
+        v.addWidget(self.tag_manage_button)
+        v.addStretch()
+        group.setLayout(v)
+        return group
+
     def _build_import_export_group(self) -> QGroupBox:
         """数据导入导出组：按钮采用网格布局，等宽整齐"""
         group = QGroupBox("数据导入导出")
@@ -332,6 +356,22 @@ class SettingWindow(QWidget):
         dlg = RekeyDialog(self.info, parent=self)
         dlg.finished_ok.connect(self._on_rekey_success)
         dlg.exec()
+
+    # ------------------------------------------------------------------
+    # 标签管理
+    # ------------------------------------------------------------------
+    def open_tag_management_dialog(self) -> None:
+        """打开「标签管理」对话框；若有变更，通知主窗口刷新 UI。"""
+        from PyQt6.QtWidgets import QMessageBox
+
+        sm_data = self.info.get("sm_data")
+        if not sm_data:
+            QMessageBox.warning(self, TagsText.TITLE, "数据管理器未初始化")
+            return
+        dlg = TagManagementDialog(sm_data, parent=self)
+        dlg.exec()
+        if dlg.has_changes():
+            self.tags_changed.emit()
 
     def _on_rekey_success(self, new_password: str, backup_path: str) -> None:
         """Re-key 成功后的后续操作：

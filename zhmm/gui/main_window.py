@@ -29,6 +29,8 @@ class MainWindow(QWidget):
         self.data_manager_widget = PasswordWindow(info)
         self.setting_widget = SettingWindow(info)
         self.setting_widget.imported_xlsx.connect(self.imported_xlsx_data)
+        # 标签批量重命名 / 删除后，必须刷新密码表格与侧边栏以保持一致
+        self.setting_widget.tags_changed.connect(self.imported_xlsx_data)
 
         self.setup_ui()
 

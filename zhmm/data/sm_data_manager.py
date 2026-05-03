@@ -205,6 +205,83 @@ class SmData:
         )
 
     # ------------------------------------------------------------------
+    # 标签批量操作
+    # ------------------------------------------------------------------
+    def collect_tag_counts(self) -> dict[str, int]:
+        """统计当前库所有标签的使用次数。
+
+        Returns:
+            dict[tag, count]，不保证顺序（UI 层自行排序）。
+        """
+        counts: dict[str, int] = {}
+        for item in self.mm.get("data") or []:
+            tags = item.get("tags") if isinstance(item, dict) else None
+            if not isinstance(tags, list):
+                continue
+            for t in tags:
+                if isinstance(t, str) and t:
+                    counts[t] = counts.get(t, 0) + 1
+        return counts
+
+    def rename_tag(self, old: str, new: str) -> int:
+        """把所有条目中的 ``old`` 标签替换为 ``new``（含去重合并）。
+
+        - ``old`` / ``new`` 先走 :func:`normalize_tags` 归一化
+        - 归一化后为空 或 二者相等 → 不做任何改动，返回 0
+        - 若条目同时带有 ``old`` 和 ``new``，去重后只保留一个 ``new``
+        - 受影响条目的 ``utime`` 会刷新
+
+        Returns:
+            受影响的条目数（未调用 :meth:`save`，由调用方决定落盘时机）。
+        """
+        old_n = normalize_tags([old])
+        new_n = normalize_tags([new])
+        if not old_n or not new_n:
+            return 0
+        old_tag = old_n[0]
+        new_tag = new_n[0]
+        if old_tag == new_tag:
+            return 0
+
+        affected = 0
+        now = date_util.timestamp_int()
+        for item in self.mm.get("data") or []:
+            tags = item.get("tags") if isinstance(item, dict) else None
+            if not isinstance(tags, list) or old_tag not in tags:
+                continue
+            replaced = [new_tag if t == old_tag else t for t in tags]
+            item["tags"] = normalize_tags(replaced)  # type: ignore[typeddict-item]
+            item["utime"] = now
+            affected += 1
+        if affected:
+            self.mm["utime"] = now
+        return affected
+
+    def delete_tag(self, tag: str) -> int:
+        """从所有条目的 tags 列表中删除指定标签。
+
+        Returns:
+            受影响的条目数（未调用 :meth:`save`）。
+        """
+        n = normalize_tags([tag])
+        if not n:
+            return 0
+        target = n[0]
+
+        affected = 0
+        now = date_util.timestamp_int()
+        for item in self.mm.get("data") or []:
+            tags = item.get("tags") if isinstance(item, dict) else None
+            if not isinstance(tags, list) or target not in tags:
+                continue
+            item["tags"] = [t for t in tags if t != target]  # type: ignore[typeddict-item]
+            item["utime"] = now
+            affected += 1
+        if affected:
+            self.mm["utime"] = now
+        return affected
+
+    # ------------------------------------------------------------------
     # 加密读写（切到 core.crypto.Vault）
     # ------------------------------------------------------------------
     def load(self, file_path: str | None = None) -> bool:
