@@ -74,7 +74,13 @@ class PasswordWindow(QWidget):
         search_label = QLabel("搜索:")
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("输入关键字搜索账号、网站、备注等")
-        self.search_input.textChanged.connect(self.filter_passwords)
+        # 搜索防抖：连续输入时只在停顿 150ms 后触发一次过滤，
+        # 避免逐字符刷新导致的 UI 抖动与不必要的全表扫描。
+        self._search_debounce = QTimer(self)
+        self._search_debounce.setSingleShot(True)
+        self._search_debounce.setInterval(150)
+        self._search_debounce.timeout.connect(self.filter_passwords)
+        self.search_input.textChanged.connect(self._on_search_text_changed)
         QTimer.singleShot(0, self.search_input.setFocus)  # 延迟聚焦到密码输入框
 
         # 在搜索区域添加复选框
@@ -228,8 +234,15 @@ class PasswordWindow(QWidget):
         # 触发过滤刷新
         self.filter_passwords()
 
+    def _on_search_text_changed(self, _text: str = "") -> None:
+        """搜索框文本变化：重启防抖定时器，等待用户停顿后再真正过滤。"""
+        self._search_debounce.start()
+
     def filter_passwords(self):
         """过滤密码列表"""
+        # 若因 show_all / 类别切换等直接调用，提前取消尚未触发的防抖
+        if hasattr(self, "_search_debounce") and self._search_debounce.isActive():
+            self._search_debounce.stop()
         search_text = self.search_input.text()
 
         # 设置通配符过滤
