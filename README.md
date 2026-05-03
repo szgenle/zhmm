@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Lioesquieu/zhmm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Lioesquieu/zhmm/ci.yml?branch=main&label=CI" alt="CI"></a>
-  <a href="https://github.com/Lioesquieu/zhmm/releases"><img src="https://img.shields.io/github/v/release/Lioesquieu/zhmm?include_prereleases" alt="Release"></a>
+  <a href="https://github.com/szgenle/zhmm/actions"><img src="https://img.shields.io/github/actions/workflow/status/szgenle/zhmm/ci.yml?branch=main&label=CI" alt="CI"></a>
+  <a href="https://github.com/szgenle/zhmm/releases"><img src="https://img.shields.io/github/v/release/szgenle/zhmm?include_prereleases" alt="Release"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python"></a>
   <a href="https://pypi.org/project/PyQt6/"><img src="https://img.shields.io/badge/GUI-PyQt6-41CD52?logo=qt&logoColor=white" alt="PyQt6"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg" alt="License"></a>
@@ -41,7 +41,7 @@
 
 ### 方式一：下载预编译二进制（推荐普通用户）
 
-到 [Releases](https://github.com/Lioesquieu/zhmm/releases) 页面下载对应平台的安装包：
+到 [Releases](https://github.com/szgenle/zhmm/releases) 页面下载对应平台的安装包：
 
 - macOS：`zhmm.app.zip`
 - Windows：`zhmm.exe`
@@ -50,7 +50,7 @@
 ### 方式二：从源码运行（推荐开发者）
 
 ```bash
-git clone https://github.com/Lioesquieu/zhmm.git
+git clone https://github.com/szgenle/zhmm.git
 cd zhmm
 poetry install
 poetry run python -m zhmm                # 启动 GUI
@@ -62,7 +62,7 @@ poetry run python -m zhmm cli ...        # 启动 CLI
 ```bash
 pip install zhmm                         # 从 PyPI（待发布）
 # 或从 GitHub 最新版：
-pip install git+https://github.com/Lioesquieu/zhmm.git
+pip install git+https://github.com/szgenle/zhmm.git
 ```
 
 ---

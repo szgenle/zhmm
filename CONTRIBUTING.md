@@ -7,7 +7,7 @@
 
 ## 🐛 报告 Bug
 
-1. 先在 [Issues](https://github.com/Lioesquieu/zhmm/issues) 搜索是否已有相同问题
+1. 先在 [Issues](https://github.com/szgenle/zhmm/issues) 搜索是否已有相同问题
 2. 若无，使用 **Bug Report** 模板新建 Issue，清楚给出：
    - 复现步骤、期望 vs 实际
    - 操作系统、Python 版本、zhmm 版本
@@ -25,7 +25,7 @@
 ### 环境准备
 
 ```bash
-git clone https://github.com/Lioesquieu/zhmm.git
+git clone https://github.com/szgenle/zhmm.git
 cd zhmm
 poetry install
 poetry run pre-commit install      # 首次必做

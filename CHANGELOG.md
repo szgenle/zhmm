@@ -169,7 +169,7 @@ Initial public version, carried over from the pre-open-source tree:
 - Light / dark theme switching.
 - PyInstaller packaging for macOS / Windows / Linux.
 
-[Unreleased]: https://github.com/Lioesquieu/zhmm/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/Lioesquieu/zhmm/compare/v0.2.8...v0.3.0
-[0.2.0]: https://github.com/Lioesquieu/zhmm/compare/v0.1.4...v0.2.0
-[0.1.4]: https://github.com/Lioesquieu/zhmm/releases/tag/v0.1.4
+[Unreleased]: https://github.com/szgenle/zhmm/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/szgenle/zhmm/compare/v0.2.8...v0.3.0
+[0.2.0]: https://github.com/szgenle/zhmm/compare/v0.1.4...v0.2.0
+[0.1.4]: https://github.com/szgenle/zhmm/releases/tag/v0.1.4

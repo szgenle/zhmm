@@ -6,7 +6,7 @@ authors = [
     {name = "Lioesquieu"}
 ]
 maintainers = [
-    {name = "Lioesquieu"}
+    {name = "szgenle", email = "dev@szgenle.com"}
 ]
 license = {text = "GPL-3.0-or-later"}
 readme = "README.md"
@@ -60,10 +60,10 @@ zhmm = "zhmm.__main__:main"
 zhmm-cli = "zhmm.app.cli_app:main"
 
 [project.urls]
-Homepage = "https://github.com/Lioesquieu/zhmm"
-Repository = "https://github.com/Lioesquieu/zhmm"
-Issues = "https://github.com/Lioesquieu/zhmm/issues"
-Changelog = "https://github.com/Lioesquieu/zhmm/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/szgenle/zhmm"
+Repository = "https://github.com/szgenle/zhmm"
+Issues = "https://github.com/szgenle/zhmm/issues"
+Changelog = "https://github.com/szgenle/zhmm/blob/main/CHANGELOG.md"
 
 
 [build-system]
