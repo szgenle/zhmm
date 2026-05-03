@@ -104,6 +104,15 @@ class TestSearch:
         results = svc.search("bank alice")
         assert len(results) == 1
 
+    def test_search_matches_tag(self, svc):
+        # 标签文本也应进入搜索范围
+        svc.add(PasswordEntry(id=1, userID="alice", tags=["work", "prod"]))
+        svc.add(PasswordEntry(id=2, userID="bob", tags=["personal"]))
+        results = svc.search("prod")
+        assert [e.id for e in results] == [1]
+        results = svc.search("PERSONAL")
+        assert [e.id for e in results] == [2]
+
 
 class TestFixMissingIds:
     def test_fills_missing(self, svc):

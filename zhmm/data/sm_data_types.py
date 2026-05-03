@@ -18,6 +18,7 @@ class ZhmmDict(TypedDict):
     url: str
     desc: str
     utime: int | None
+    tags: list[str] | None
 
 
 class ZhmmDataDict(TypedDict):
@@ -42,13 +43,14 @@ class SmDataConstants:
         "url": "网站",
         "desc": "备注",
         "utime": "更新时间",
+        "tags": "标签",
     }
 
     # 字段键列表
-    KEYS = ["id", "role", "userID", "pwd", "phone", "email", "url", "desc", "utime"]
+    KEYS = ["id", "role", "userID", "pwd", "phone", "email", "url", "desc", "utime", "tags"]
 
     # 表头列表
-    HEADS = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
+    HEADS = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间", "标签"]
 
     # 加密相关常量
     HASH_SUFFIX_LENGTH = 64  # 验证哈希长度（字符数）

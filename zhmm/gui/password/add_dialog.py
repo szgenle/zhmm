@@ -22,6 +22,7 @@ from zhmm.utils import date_util
 from zhmm.utils.log import logger
 from zhmm.widgets.combo_box import WideComboBox
 from zhmm.widgets.strength_bar import PasswordStrengthBar
+from zhmm.widgets.tag_editor import TagEditor, TagPickerDialog
 
 
 class AddPasswordDialog(QDialog):
@@ -29,7 +30,7 @@ class AddPasswordDialog(QDialog):
 
     added_role = pyqtSignal(str)  # 增加角色信息
 
-    def __init__(self, parent, roles: list[str], edit_data=None):
+    def __init__(self, parent, roles: list[str], edit_data=None, all_tags: list[str] | None = None):
         super().__init__(parent)
         self.setWindowTitle("添加账号密码")
         # 宽度固定，高度随 TOTP 折叠状态自适应（给一个初始高度方便首屏呈现）
@@ -37,6 +38,7 @@ class AddPasswordDialog(QDialog):
         self.resize(640, 640)
 
         self.roles = roles
+        self._all_tags: list[str] = list(all_tags or [])
         self._preview_timer: QTimer | None = None
 
         # 创建布局
@@ -133,6 +135,22 @@ class AddPasswordDialog(QDialog):
         self.desc_input.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         form_layout.addRow("备注:", self.desc_input)
 
+        # 标签输入（Chip 可视化）+ 「选择…」按钮：从已有标签中批量勾选追加
+        self.tag_editor = TagEditor(all_tags=self._all_tags)
+        self.tag_editor.setMinimumWidth(300)
+
+        self.tag_pick_btn = QPushButton("选择…")
+        self.tag_pick_btn.setObjectName("tag_pick_btn")
+        self.tag_pick_btn.setFixedHeight(30)
+        self.tag_pick_btn.setToolTip("从当前库已有标签中批量勾选")
+        self.tag_pick_btn.clicked.connect(self._open_tag_picker)
+
+        tag_row = QHBoxLayout()
+        tag_row.setSpacing(8)
+        tag_row.addWidget(self.tag_editor, 1)
+        tag_row.addWidget(self.tag_pick_btn)
+        form_layout.addRow("标签:", tag_row)
+
         layout.addLayout(form_layout)
 
         # TOTP 区域
@@ -182,6 +200,23 @@ class AddPasswordDialog(QDialog):
         if idx >= 0:
             self.role_combo.setCurrentIndex(idx)
 
+    def _open_tag_picker(self) -> None:
+        """弹出「选择标签」对话框，确认后把新勾选的标签追加到编辑器。
+
+        all_tags 优先使用宿主传入的全库标签（频次倒序）；当前编辑框内
+        已有的标签会被对话框自动合并到列表中（置灰），保证视觉上“看得到”。
+        """
+        dlg = TagPickerDialog(
+            all_tags=self._all_tags,
+            current=self.tag_editor.tags(),
+            parent=self,
+        )
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        picked = dlg.selected_tags()
+        if picked:
+            self.tag_editor.add_tags(picked)
+
     def _populate_data(self, data):
         """填充编辑数据"""
         index = self.role_combo.findText(data["role"])
@@ -193,6 +228,8 @@ class AddPasswordDialog(QDialog):
         self.email_input.setText(data.get("email", ""))
         self.url_input.setText(data.get("url", ""))
         self.desc_input.setText(data.get("desc", ""))
+        # 标签回填
+        self.tag_editor.set_tags(data.get("tags") or [])
         # TOTP 回填：已有 secret 才勾选并展开折叠区
         existing_secret = (data.get("totp_secret") or "").strip()
         self.totp_secret_input.setText(existing_secret)
@@ -240,6 +277,7 @@ class AddPasswordDialog(QDialog):
             "totp_algo": algo,
             "totp_digits": digits,
             "totp_period": period,
+            "tags": self.tag_editor.tags(),
         }
 
     # ------------------------------------------------------------------

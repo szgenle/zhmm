@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from zhmm.core.models import DEFAULT_ROLE, DEFAULT_ROLES, PasswordEntry, Vault
+from zhmm.core.models import (
+    DEFAULT_ROLE,
+    DEFAULT_ROLES,
+    TAG_MAX_LEN,
+    TAGS_MAX_COUNT,
+    PasswordEntry,
+    Vault,
+    normalize_tags,
+)
 
 
 class TestPasswordEntry:
@@ -67,6 +75,70 @@ class TestPasswordEntry:
         assert e.totp_algo == ""
         assert e.totp_digits == 6
         assert e.totp_period == 30
+
+    # ----------------------------- tags -----------------------------
+    def test_tags_default_empty_list(self):
+        e = PasswordEntry()
+        assert e.tags == []
+        # 默认值独立，不应共享列表实例
+        assert PasswordEntry().tags is not e.tags
+
+    def test_from_dict_missing_tags_uses_default(self):
+        e = PasswordEntry.from_dict({"id": 1, "userID": "u"})
+        assert e.tags == []
+
+    def test_from_dict_tags_none_becomes_empty(self):
+        e = PasswordEntry.from_dict({"id": 1, "userID": "u", "tags": None})
+        assert e.tags == []
+
+    def test_from_dict_tags_non_list_becomes_empty(self):
+        # 传入 dict / int 等非法形态，不能报错
+        e = PasswordEntry.from_dict({"id": 1, "userID": "u", "tags": {"a": 1}})
+        assert e.tags == []
+
+    def test_from_dict_tags_filters_non_str_and_blank(self):
+        e = PasswordEntry.from_dict({"id": 1, "userID": "u", "tags": ["work", " ", "", None, 42, "prod"]})
+        assert e.tags == ["work", "prod"]
+
+    def test_from_dict_tags_dedup_preserves_order(self):
+        e = PasswordEntry.from_dict({"id": 1, "userID": "u", "tags": ["a", "b", "a", " b ", "c"]})
+        assert e.tags == ["a", "b", "c"]
+
+    def test_to_from_dict_tags_roundtrip(self):
+        e = PasswordEntry(id=1, userID="u", pwd="p", tags=["work", "prod"])
+        d = e.to_dict()
+        assert d["tags"] == ["work", "prod"]
+        assert PasswordEntry.from_dict(d) == e
+
+    def test_from_dict_tags_truncates_long_tag(self):
+        long_tag = "x" * (TAG_MAX_LEN + 5)
+        e = PasswordEntry.from_dict({"id": 1, "userID": "u", "tags": [long_tag]})
+        assert e.tags == ["x" * TAG_MAX_LEN]
+
+    def test_from_dict_tags_caps_count(self):
+        tags = [f"t{i}" for i in range(TAGS_MAX_COUNT + 5)]
+        e = PasswordEntry.from_dict({"id": 1, "userID": "u", "tags": tags})
+        assert len(e.tags) == TAGS_MAX_COUNT
+        assert e.tags[0] == "t0" and e.tags[-1] == f"t{TAGS_MAX_COUNT - 1}"
+
+
+class TestNormalizeTags:
+    def test_none_empty(self):
+        assert normalize_tags(None) == []
+        assert normalize_tags([]) == []
+        assert normalize_tags("") == []
+
+    def test_string_semicolon_split(self):
+        # 兼容 Excel 场景：单元格直接进来的字符串按 ; 拆分
+        assert normalize_tags("a;b; c ") == ["a", "b", "c"]
+        assert normalize_tags(" ; ; ") == []
+
+    def test_tuple_input(self):
+        assert normalize_tags(("a", "b")) == ["a", "b"]
+
+    def test_unsupported_type(self):
+        assert normalize_tags(123) == []
+        assert normalize_tags({"a": 1}) == []
 
 
 class TestVault:

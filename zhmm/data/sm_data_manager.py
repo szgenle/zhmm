@@ -18,6 +18,7 @@ from pathlib import Path
 
 from zhmm.core.crypto import Vault as CryptoVault
 from zhmm.core.errors import CryptoError, StorageError
+from zhmm.core.models import normalize_tags
 from zhmm.core.vault import VaultFile
 from zhmm.data.sm_data_types import SmDataConstants, ZhmmDataDict, ZhmmDict
 from zhmm.utils import date_util, dict_util
@@ -62,7 +63,7 @@ class SmData:
         self._password = password
 
     def set_mm(self, user_mm_data: ZhmmDataDict) -> None:
-        """设置密码数据（补齐 roles / role 默认值）。"""
+        """设置密码数据（补齐 roles / role / tags 默认值）。"""
         self.mm = user_mm_data
         if "roles" not in user_mm_data or not user_mm_data["roles"]:
             user_mm_data["roles"] = list(DEFAULT_ROLES)
@@ -71,6 +72,8 @@ class SmData:
                 item["role"] = "个人"
             if item["role"] not in user_mm_data["roles"]:
                 user_mm_data["roles"].append(item["role"])
+            # tags 容错：缺失 / None / 非 list / 含非法元素 统一过 normalize
+            item["tags"] = normalize_tags(item.get("tags"))  # type: ignore[typeddict-item]
         user_mm_data.setdefault("utime", date_util.timestamp_int())
 
     # ------------------------------------------------------------------
@@ -99,7 +102,10 @@ class SmData:
         return all_fixed
 
     def search(self, words: str) -> list[ZhmmDict] | None:
-        """多关键字搜索（OR，忽略大小写，按 id 去重）。"""
+        """多关键字搜索（OR，忽略大小写，按 id 去重）。
+
+        除 ``SEARCHABLE_FIELDS`` 外，也包含标签（tags 拼接文本）。
+        """
         if not self.mm or not self.mm["data"]:
             return None
 
@@ -109,11 +115,18 @@ class SmData:
             for item in self.mm["data"]:
                 if not item.get("id") or item["id"] in hits:
                     continue
+                matched = False
                 for field in self.SEARCHABLE_FIELDS:
                     value = item.get(field)
                     if value and w in str(value).lower():
-                        hits[item["id"]] = item
+                        matched = True
                         break
+                if not matched:
+                    tags = item.get("tags") or []
+                    if isinstance(tags, list) and any(w in str(t).lower() for t in tags):
+                        matched = True
+                if matched:
+                    hits[item["id"]] = item
         return list(hits.values()) if hits else None
 
     def delete(self, id: int) -> bool:
@@ -186,6 +199,7 @@ class SmData:
                 "url": info.get("url", ""),
                 "desc": info.get("desc", ""),
                 "utime": info.get("utime", date_util.timestamp_int()),
+                "tags": info.get("tags"),
             }
         )
 

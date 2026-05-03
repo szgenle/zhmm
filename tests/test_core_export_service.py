@@ -145,3 +145,48 @@ class TestTotpExport:
         # TOTP 字段回默认
         assert loaded[0].totp_secret == ""
         assert loaded[0].totp_algo == ""
+
+
+class TestTagsExport:
+    def test_tags_roundtrip(self, tmp_path: Path):
+        """含 tags 的条目导出后导入应完全一致。"""
+        f = tmp_path / "with_tags.xlsx"
+        entry = PasswordEntry(id=1, userID="u", pwd="p", utime=1, tags=["work", "prod"])
+        ExportService.export_xlsx(f, [entry])
+        loaded = ExportService.import_xlsx(f)
+        assert loaded[0].tags == ["work", "prod"]
+
+    def test_empty_tags_export_as_blank(self, tmp_path: Path):
+        """空 tags 导出为空串，导入回空列表。"""
+        f = tmp_path / "blank_tags.xlsx"
+        entry = PasswordEntry(id=1, userID="u", pwd="p", utime=1, tags=[])
+        ExportService.export_xlsx(f, [entry])
+        loaded = ExportService.import_xlsx(f)
+        assert loaded[0].tags == []
+
+    def test_legacy_xlsx_without_tags_column_still_imports(self, tmp_path: Path):
+        """旧 xlsx 无「标签」列时应正常导入，tags 回空列表。"""
+        f = tmp_path / "legacy_no_tags.xlsx"
+        wb = Workbook()
+        ws = wb.active
+        legacy_heads = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
+        ws.append(legacy_heads)
+        ws.append([1, "个人", "u", "p", "", "", "", "", 1])
+        wb.save(str(f))
+        wb.close()
+        loaded = ExportService.import_xlsx(f)
+        assert loaded[0].tags == []
+
+    def test_import_tags_semicolon_split_and_normalize(self, tmp_path: Path):
+        """手写 xlsx 分号单元格能被拆分，空段被过滤。"""
+        f = tmp_path / "manual_tags.xlsx"
+        wb = Workbook()
+        ws = wb.active
+        ws.append(list(CN_HEADS))
+        row = [1, "个人", "u", "p", "", "", "", "", 1, "", 6, 30, "a;b; ;a; c"]
+        ws.append(row)
+        wb.save(str(f))
+        wb.close()
+        loaded = ExportService.import_xlsx(f)
+        # 去空 / 去重 / strip
+        assert loaded[0].tags == ["a", "b", "c"]

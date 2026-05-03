@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **条目标签（Tags）**：`PasswordEntry` 新增 `tags: list[str]` 字段，用于给密码条目贴「工作 / 家人 / 重要」等弱分类，与 `role` 互相独立（一个条目可贴 0~16 个标签，单标签 ≤ 32 字符；全局归一化走 `core.models.normalize_tags()`：`strip` / 去空 / 去重保序 / 超长截断 / 超数安静丢弃）。
+  - **GUI**：添加 / 编辑对话框新增「标签」行，提供 Chip 可视化编辑器（`zhmm/widgets/tag_editor.py`）：回车 / 空格 / 分号提交、空输入框时 Backspace 删除最后一个 chip、QCompleter 联想当前库已有标签。
+  - **侧边栏**：密码窗口左侧新增「标签」侧边栏（`zhmm/gui/password/tag_sidebar.py`），多选 **AND 语义** 筛选（选中「工作 + 重要」只显同时含这两个标签的条目）；标签按条目出现频次倒序展示，右侧表格通过 `QSplitter` 可拖拽调整宽度；侧边栏填充按钮一键清除筛选。
+  - **表格**：「网站」与「备注」之间新增「标签」列（索引 9），以 `#a  #b` 格式展示；关键字搜索覆盖标签文本。
+  - **Excel 导入导出**：表头追加「标签 / tags」列，多标签单元格用 `;` 分隔（例：`工作;重要`）；**旧 Excel 文件无此列仍可导入**（核心必填列仍为前 9 列），旧 `.zmb` 文件无 `tags` 字段默认为空列表。
+  - **搜索与服务层**：`core.password_service.search()` 与 `SmData.search()` 都将标签拼为空格分隔的 haystack 纳入大小写不敏感匹配；`SmData.set_mm()` 在读入时统一调用 `normalize_tags()` 兑底，旧数据即使混有非法值也不会报错。
 - **主密码更换（Re-key）**：设置页新增「更换主密码」入口，支持在不导出/重导入的前提下原地替换主密码。
   - 核心层：`core/vault.py` 新增 `VaultFile.rekey(path, account, old_password, new_password)`，流程为「用旧口令 `open` 校验 → 用新口令 `seal` 重新派生 Argon2id 密钥并加密 → 同目录临时文件 `fsync` + `os.replace` 原子替换」；任一步失败均不触碰原文件。
   - `data/sm_data_manager.py` 新增 `SmData.rekey()`，封装换密并同步更新内部 `_password`，保证后续 `save()` 使用新密钥。

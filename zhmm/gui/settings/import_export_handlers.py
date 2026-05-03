@@ -68,7 +68,8 @@ class ImportExportHandlers:
                 self.parent,
                 "导入失败",
                 f"无法读取 xlsx 文件：{e}\n\n"
-                "文件应包含以下列：\nID、类别、账号、密码、手机、邮箱、网站、备注、更新时间",
+                "文件应包含以下列：\nID、类别、账号、密码、手机、邮箱、网站、备注、更新时间\n"
+                "（可选列：标签，多个标签用分号 ; 分隔）",
             )
             return
         except Exception as e:
@@ -124,8 +125,21 @@ class ImportExportHandlers:
             if ws is None:
                 raise ValueError("工作表不存在")
             ws.title = "密码模版"
-            headers = ["ID", "类别", "账号", "密码", "手机", "邮箱", "网站", "备注", "更新时间"]
+            headers = [
+                "ID",
+                "类别",
+                "账号",
+                "密码",
+                "手机",
+                "邮箱",
+                "网站",
+                "备注",
+                "更新时间",
+                "标签",
+            ]
             ws.append(headers)
+            # 标签多值用分号 ; 分隔，详见导入失败提示
+            # （不放示例行：避免用户忘删后被当成空条目导入）
             wb.save(save_path)
         except Exception as e:
             QMessageBox.critical(self.parent, "下载失败", f"保存模版文件时发生错误：\n\n{e!s}")

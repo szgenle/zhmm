@@ -8,11 +8,57 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
 DEFAULT_ROLES: tuple[str, ...] = ("个人", "工作", "其它")
 DEFAULT_ROLE: str = "个人"
+
+# 标签形状限制：单个标签长度与每条目最多数量。
+# 弱约束：超出会被静默截断/丢弃，不抛异常，以免旧数据或 Excel 误导入时炸掉。
+TAG_MAX_LEN: int = 32
+TAGS_MAX_COUNT: int = 16
+
+
+def normalize_tags(raw: Any) -> list[str]:
+    """归一化标签输入。
+
+    接受 ``list | tuple | str | None``（字符串时按分号 ``;`` 拆分，
+    兼容从 Excel 单元格不放心 normalize 的场景）。规则：
+
+    - 非 str / None 元素丢弃
+    - ``strip()`` 后丢空串
+    - 去重（保持首次出现顺序）
+    - 截断超过 ``TAG_MAX_LEN`` 的字符
+    - 总数截断到 ``TAGS_MAX_COUNT``
+    """
+    if raw is None:
+        return []
+    items: Iterable[Any]
+    if isinstance(raw, str):
+        items = raw.split(";")
+    elif isinstance(raw, (list | tuple)):
+        items = raw
+    else:
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for it in items:
+        if not isinstance(it, str):
+            continue
+        t = it.strip()
+        if not t:
+            continue
+        if len(t) > TAG_MAX_LEN:
+            t = t[:TAG_MAX_LEN]
+        if t in seen:
+            continue
+        seen.add(t)
+        out.append(t)
+        if len(out) >= TAGS_MAX_COUNT:
+            break
+    return out
 
 
 @dataclass(slots=True)
@@ -37,6 +83,8 @@ class PasswordEntry:
     totp_algo: str = ""  # "SHA1" | "SHA256" | "SHA512" | "SM3"
     totp_digits: int = 6  # 一般 6 或 8
     totp_period: int = 30  # 步长（秒）
+    # 标签：弱分类，一个条目可贴 0~N 个，独立于 role
+    tags: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """导出为普通 dict（用于 JSON 序列化 / Excel 导出）。"""
@@ -50,6 +98,8 @@ class PasswordEntry:
         for key in fields:
             if key in data and data[key] is not None:
                 clean[key] = data[key]
+        # tags 统一交给 normalize_tags 处理，容忍旧数据中的 None / 非 list / 字符串 形态
+        clean["tags"] = normalize_tags(clean.get("tags"))
         entry = cls(**clean)
         if not entry.role:
             entry.role = DEFAULT_ROLE

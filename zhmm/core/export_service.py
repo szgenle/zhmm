@@ -15,7 +15,7 @@ from pathlib import Path
 from openpyxl import Workbook, load_workbook
 
 from zhmm.core.errors import StorageError, ValidationError
-from zhmm.core.models import PasswordEntry
+from zhmm.core.models import PasswordEntry, normalize_tags
 
 CN_HEADS: tuple[str, ...] = (
     "ID",
@@ -31,6 +31,8 @@ CN_HEADS: tuple[str, ...] = (
     "TOTP算法",
     "TOTP位数",
     "TOTP周期",
+    # 标签：多个标签以英文分号 `;` 分隔，空标签会被过滤
+    "标签",
 )
 EN_HEADS: tuple[str, ...] = (
     "id",
@@ -45,10 +47,13 @@ EN_HEADS: tuple[str, ...] = (
     "totp_algo",
     "totp_digits",
     "totp_period",
+    "tags",
 )
-# 核心列：导入时仅对这 9 列做必存校验，以兼容旧 xlsx。
+# 核心列：导入时仅对这 9 列做必存校验，以兼容旧 xlsx（TOTP / 标签 都是可选列）。
 _CORE_CN_HEADS: tuple[str, ...] = CN_HEADS[:9]
 _INT_FIELDS = {"id", "utime", "totp_digits", "totp_period"}
+# 标签在 Excel 单元格内的分隔符；与 UI Chip 编辑器和 normalize_tags 约定一致。
+_TAG_SEP: str = ";"
 
 
 def _escape(value: str) -> str:
@@ -82,6 +87,13 @@ class ExportService:
             d = e.to_dict()
             for key in EN_HEADS:
                 v = d.get(key, "")
+                if key == "tags":
+                    # tags 是 list，用分号分隔为字符串；空列表 → ""
+                    if isinstance(v, (list | tuple)):
+                        row.append(_escape(_TAG_SEP.join(str(t) for t in v)))
+                    else:
+                        row.append(_escape(str(v) if v is not None else ""))
+                    continue
                 row.append(_escape(str(v) if v is not None else ""))
             ws.append(row)
         try:
@@ -131,14 +143,20 @@ class ExportService:
                     col = index_map.get(cn, -1)
                     value = row[col] if 0 <= col < len(row) else None
                     if value is None:
-                        data[en] = 0 if en in _INT_FIELDS else ""
+                        if en == "tags":
+                            data[en] = []
+                        else:
+                            data[en] = 0 if en in _INT_FIELDS else ""
                         continue
                     text = str(value)
                     # openpyxl 对纯数字列常会返回 float，手机号需去掉小数尾
                     if en == "phone" and text.endswith(".0"):
                         text = text[:-2]
                     text = _unescape(text)
-                    if en in _INT_FIELDS:
+                    if en == "tags":
+                        # 标签：分号分隔文本 → list[str]（统一过 normalize 跟 PasswordEntry 对齐）
+                        data[en] = normalize_tags(text)
+                    elif en in _INT_FIELDS:
                         try:
                             data[en] = int(float(text)) if text else 0
                         except (ValueError, TypeError):

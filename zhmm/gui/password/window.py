@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QSplitter,
     QTableView,
     QToolTip,
     QVBoxLayout,
@@ -31,6 +32,7 @@ from zhmm.gui.password.add_dialog import AddPasswordDialog
 from zhmm.gui.password.operations import PasswordOperations
 from zhmm.gui.password.reveal_delegate import RevealColumnDelegate
 from zhmm.gui.password.table_models import CustomProxyModel, PasswordTableModel
+from zhmm.gui.password.tag_sidebar import TagSidebar
 from zhmm.gui.texts import Status, Tooltip
 from zhmm.utils.log import logger
 from zhmm.widgets.combo_box import WideComboBox
@@ -64,6 +66,27 @@ class PasswordWindow(QWidget):
         """设置界面"""
         # 创建主布局
         main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # 左右分栏：左侧标签侧边栏 + 右侧原有搜索与表格
+        self._splitter = QSplitter(Qt.Orientation.Horizontal)
+        self._splitter.setChildrenCollapsible(False)
+
+        self.tag_sidebar = TagSidebar()
+        self.tag_sidebar.setMinimumWidth(160)
+        self.tag_sidebar.tags_selection_changed.connect(self._on_tag_selection_changed)
+        self._splitter.addWidget(self.tag_sidebar)
+
+        right_container = QWidget()
+        right_layout = QVBoxLayout(right_container)
+        right_layout.setContentsMargins(6, 0, 0, 0)
+        self._splitter.addWidget(right_container)
+        self._splitter.setStretchFactor(0, 0)
+        self._splitter.setStretchFactor(1, 1)
+        # 初始分配：标签侧边栏约 200px，其余全给右侧
+        self._splitter.setSizes([200, 1000])
+
+        main_layout.addWidget(self._splitter)
 
         # 创建搜索区域
         search_layout = QHBoxLayout()
@@ -73,7 +96,7 @@ class PasswordWindow(QWidget):
 
         search_label = QLabel("搜索:")
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("输入关键字搜索账号、网站、备注等")
+        self.search_input.setPlaceholderText("输入关键字搜索账号、网站、备注、标签等")
         # 搜索防抖：连续输入时只在停顿 150ms 后触发一次过滤，
         # 避免逐字符刷新导致的 UI 抖动与不必要的全表扫描。
         self._search_debounce = QTimer(self)
@@ -98,7 +121,7 @@ class PasswordWindow(QWidget):
         # “添加”按钮与搜索同一行（最右侧），腾出窗口底部给状态栏
         self.setup_ui_button(search_layout)
 
-        main_layout.addLayout(search_layout)
+        right_layout.addLayout(search_layout)
 
         # 创建表格视图
         self.table_view = QTableView()
@@ -171,12 +194,14 @@ class PasswordWindow(QWidget):
             header.resizeSection(7, calculate_column_width("account@example.com"))
             # 8 网站
             header.resizeSection(8, calculate_column_width("https://auth.example.com"))
-            # 9 备注：给个默认宽度，不够时用户自行拉宽
-            header.resizeSection(9, 220)
-            # 10 更新时间：按 YYYY-MM-DD 宽度
-            header.resizeSection(10, calculate_column_width("2026-05-02"))
+            # 9 标签：默认 180px，可拖拽
+            header.resizeSection(PasswordTableModel.tags_column(), 180)
+            # 10 备注：给个默认宽度，不够时用户自行拉宽
+            header.resizeSection(10, 220)
+            # 11 更新时间：按 YYYY-MM-DD 宽度
+            header.resizeSection(PasswordTableModel.utime_column(), calculate_column_width("2026-05-02"))
 
-        main_layout.addWidget(self.table_view)
+        right_layout.addWidget(self.table_view)
 
         # 窗口底部状态栏上移到 MainWindow（跟“返回首页”同一行），
         # 这里只负责 emit status_changed 信号。
@@ -186,6 +211,9 @@ class PasswordWindow(QWidget):
         self._totp_refresh_timer.setInterval(1000)
         self._totp_refresh_timer.timeout.connect(self._refresh_totp_column)
         self._totp_refresh_timer.start()
+
+        # 初始化标签侧边栏
+        self.tag_sidebar.rebuild(self.gl_data.mm.get("data") or [])
 
         # 初始化一次状态提示
         self.filter_passwords()
@@ -268,7 +296,7 @@ class PasswordWindow(QWidget):
     def add_password(self):
         """添加密码"""
         roles = self.gl_data.mm.get("roles") or []
-        dialog = AddPasswordDialog(self, roles)
+        dialog = AddPasswordDialog(self, roles, all_tags=self._collect_all_tags())
         dialog.confirm_button.clicked.connect(lambda: self.confirm_add_password(dialog))
         dialog.added_role.connect(lambda new_role: self.add_role(new_role))
         dialog.exec()
@@ -288,6 +316,7 @@ class PasswordWindow(QWidget):
         if success:
             # 更新表格模型
             self.table_model.setZhData(self.gl_data.mm["data"])
+            self._refresh_tag_sidebar()
             QMessageBox.information(dialog, "成功", message)
             dialog.accept()
         else:
@@ -305,6 +334,32 @@ class PasswordWindow(QWidget):
     def refresh_data(self):
         """刷新数据"""
         self.table_model.setZhData(self.gl_data.mm["data"])
+        self._refresh_tag_sidebar()
+
+    # ------------------------------------------------------------------
+    # 标签联动
+    # ------------------------------------------------------------------
+    def _collect_all_tags(self) -> list[str]:
+        """汇集当前库所有条目的标签并集，供对话框联想使用（频次倒序）。"""
+        from collections import Counter
+
+        counter: Counter[str] = Counter()
+        for item in self.gl_data.mm.get("data") or []:
+            tags = item.get("tags") if isinstance(item, dict) else None
+            if isinstance(tags, list):
+                for t in tags:
+                    if isinstance(t, str) and t:
+                        counter[t] += 1
+        return [t for t, _ in sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))]
+
+    def _refresh_tag_sidebar(self) -> None:
+        """在数据变化后刷新左侧标签侧边栏。"""
+        if hasattr(self, "tag_sidebar"):
+            self.tag_sidebar.rebuild(self.gl_data.mm.get("data") or [])
+
+    def _on_tag_selection_changed(self, tags: list) -> None:
+        """侧边栏勾选变更 → 代理模型筛选。"""
+        self.proxy_model.set_selected_tags(list(tags))
 
     # ------------------------------------------------------------------
     # 右键上下文菜单
@@ -403,6 +458,7 @@ class PasswordWindow(QWidget):
             if success:
                 # 更新表格
                 self.table_model.setZhData(self.gl_data.mm["data"])
+                self._refresh_tag_sidebar()
             else:
                 QMessageBox.critical(self, "错误", message)
 
@@ -421,7 +477,7 @@ class PasswordWindow(QWidget):
 
         # 创建编辑对话框并传入数据
         roles = self.gl_data.mm.get("roles") or []
-        dialog = AddPasswordDialog(self, roles, edit_data=edit_data)
+        dialog = AddPasswordDialog(self, roles, edit_data=edit_data, all_tags=self._collect_all_tags())
         dialog.confirm_button.clicked.connect(lambda: self._process_edit_result(dialog, row))
         dialog.added_role.connect(lambda new_role: self.add_role(new_role))
         dialog.setWindowTitle("编辑账号信息")
@@ -437,6 +493,7 @@ class PasswordWindow(QWidget):
 
         if success:
             self.table_model.setZhData(self.gl_data.mm["data"])
+            self._refresh_tag_sidebar()
             QMessageBox.information(dialog, "成功", message)
             dialog.accept()
         else:
@@ -458,6 +515,7 @@ class PasswordWindow(QWidget):
             if self.save():
                 # 更新表格模型
                 self.table_model.setZhData(self.gl_data.mm["data"])
+                self._refresh_tag_sidebar()
                 QMessageBox.information(dialog, "成功", "账号密码添加成功")
                 dialog.accept()
             else:

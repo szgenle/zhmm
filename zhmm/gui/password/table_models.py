@@ -16,8 +16,10 @@ _PWD_COL = 3
 _REVEAL_COL = 4
 # “动态码”列索引（紧跟在显示列后面）
 _TOTP_COL = 5
-# “更新时间”列索引
-_UTIME_COL = 10
+# “标签”列索引（网站列后、备注列前）
+_TAGS_COL = 9
+# “更新时间”列索引（新增标签列后顺延一位）
+_UTIME_COL = 11
 # TOTP 计算失败时的占位符
 _TOTP_ERROR = "⚠"
 # 未启用 TOTP 的占位符
@@ -43,6 +45,13 @@ def _format_utime(value) -> str:
         return ""
 
 
+def _format_tags(value) -> str:
+    """把 tags 列表格式化为 "#a  #b" 可读形式；非法/空返回空串。"""
+    if not value or not isinstance(value, list):
+        return ""
+    return "  ".join(f"#{t}" for t in value if isinstance(t, str) and t)
+
+
 class PasswordTableModel(QAbstractTableModel):
     """密码表格数据模型"""
 
@@ -58,6 +67,7 @@ class PasswordTableModel(QAbstractTableModel):
             "手机",
             "邮箱",
             "网站",
+            "标签",
             "备注",
             "更新时间",
         ]
@@ -71,6 +81,7 @@ class PasswordTableModel(QAbstractTableModel):
             "phone",
             "email",
             "url",
+            "tags",  # 标签 list，display 下特殊渲染
             "desc",
             "utime",
         ]
@@ -107,6 +118,9 @@ class PasswordTableModel(QAbstractTableModel):
             # 动态码列：根据 totp_secret 实时计算
             if col == _TOTP_COL:
                 return self._compute_totp_display(item)
+            # 标签列：list[str] 渲染为 "#a  #b"
+            if col == _TAGS_COL:
+                return _format_tags(item.get("tags"))
             # 更新时间列：把 UNIX 时间戳格式化为 YYYY-MM-DD
             if col == _UTIME_COL:
                 return _format_utime(item.get("utime"))
@@ -122,6 +136,12 @@ class PasswordTableModel(QAbstractTableModel):
                 return ""
             if col == _TOTP_COL:
                 return self._compute_totp_display(item)
+            if col == _TAGS_COL:
+                # 复制时用分号分隔形式，跟 Excel 导出一致
+                tags = item.get("tags") or []
+                if isinstance(tags, list):
+                    return ";".join(str(t) for t in tags)
+                return str(tags)
             key = self.keys[col]
             return str(item.get(key, ""))
 
@@ -204,6 +224,14 @@ class PasswordTableModel(QAbstractTableModel):
     def totp_column() -> int:
         return _TOTP_COL
 
+    @staticmethod
+    def tags_column() -> int:
+        return _TAGS_COL
+
+    @staticmethod
+    def utime_column() -> int:
+        return _UTIME_COL
+
     def flags(self, index: QModelIndex):  # type: ignore[override]
         base = super().flags(index)
         # “显示”列与“动态码”列不可选中/不可编辑，但可交互左键点击
@@ -261,8 +289,14 @@ class CustomProxyModel(QSortFilterProxyModel):
         self.show_all_data = False  # 控制是否显示所有数据
         self.filter_role = ""  # 角色过滤值
         self.use_role_filter = False  # 是否使用角色过滤
+        self.selected_tags: list[str] = []  # 侧边栏选中的标签（AND 语义）
         self._has_filter = False
         self._filter_text = ""
+
+    def set_selected_tags(self, tags: list[str]) -> None:
+        """设置侧边栏选中的标签（AND 语义）并刷新筛选。"""
+        self.selected_tags = list(tags or [])
+        self.invalidateFilter()
 
     def setFilterRegularExpression(self, pattern):  # type: ignore
         # 退化为 fixed string 行为，避免正则副作用（并保持搜索字段精准）
@@ -289,12 +323,25 @@ class CustomProxyModel(QSortFilterProxyModel):
             if role_value != self.filter_role:
                 return False
 
+        # 标签筛选（AND）：选中的标签必须全部存在于条目中
+        if self.selected_tags:
+            try:
+                item = model._data[source_row]  # type: ignore[attr-defined]
+            except (AttributeError, IndexError):
+                return False
+            entry_tags = item.get("tags") or []
+            if not isinstance(entry_tags, list):
+                return False
+            entry_set = {str(t) for t in entry_tags if isinstance(t, str)}
+            if not all(t in entry_set for t in self.selected_tags):
+                return False
+
         # 搜索过滤
         if not self._has_filter:
             # 没有关键字：show_all_data 决定是否全显
             return bool(self.show_all_data)
 
-        # 有关键字：在 SEARCHABLE_FIELDS 上做子串匹配
+        # 有关键字：在 SEARCHABLE_FIELDS 上做子串匹配，以及 tags 文本
         try:
             item = model._data[source_row]  # type: ignore[attr-defined]
         except (AttributeError, IndexError):
@@ -303,5 +350,11 @@ class CustomProxyModel(QSortFilterProxyModel):
         for field in self._SEARCHABLE_FIELDS:
             val = str(item.get(field) or "").lower()
             if ft in val:
+                return True
+        # 标签文本也纳入关键字匹配
+        tags = item.get("tags") or []
+        if isinstance(tags, list):
+            joined = " ".join(str(t) for t in tags).lower()
+            if ft in joined:
                 return True
         return False

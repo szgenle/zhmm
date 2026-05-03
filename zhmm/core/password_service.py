@@ -104,6 +104,7 @@ class PasswordService:
         - 多个关键字用空白分隔
         - 空查询返回空列表
         - 结果按出现顺序去重
+        - ``tags`` 作为 list 字段，拼接成空格分隔文本一同参与匹配
         """
         tokens = [w.lower() for w in words.split() if w]
         if not tokens:
@@ -114,6 +115,10 @@ class PasswordService:
             if e.id in seen:
                 continue
             haystack_parts = [getattr(e, f, "") or "" for f in SEARCHABLE_FIELDS]
+            # tags 为 list，单独拼接后并入 haystack
+            tags = getattr(e, "tags", None) or []
+            if tags:
+                haystack_parts.append(" ".join(str(t) for t in tags))
             haystack = " ".join(haystack_parts).lower()
             if any(tok in haystack for tok in tokens):
                 out.append(e)
