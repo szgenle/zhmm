@@ -28,7 +28,7 @@ entry["tags"] = editor.tags()
 from __future__ import annotations
 
 from PyQt6.QtCore import QStringListModel, Qt, pyqtSignal
-from PyQt6.QtGui import QKeyEvent
+from PyQt6.QtGui import QKeyEvent, QMouseEvent
 from PyQt6.QtWidgets import (
     QCompleter,
     QDialog,
@@ -294,6 +294,35 @@ class TagEditor(QWidget):
         self._input.blockSignals(False)
 
 
+class RowToggleListWidget(QListWidget):
+    """点击整行即切换勾选状态的 QListWidget。
+
+    默认 QListWidget 仅在点击复选框图标时切换勾选，行其他区域只触发
+    itemClicked。此处通过重写 mousePressEvent 统一接管：无论点击行内
+    的哪个位置（包括复选框），都切换一次勾选，避免「点击复选框翻一次、
+    再由信号翻一次」的双重切换问题。
+
+    被禁用的 item（置灰的已绑定标签）跳过，不响应点击。
+
+    通用组件：供任意需要「点整行切换 check 态」的场景复用（标签选择弹窗、
+    标签筛选侧边栏等）。
+    """
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802 (Qt 签名)
+        if event.button() == Qt.MouseButton.LeftButton:
+            item = self.itemAt(event.pos())
+            if item is not None:
+                flags = item.flags()
+                if (flags & Qt.ItemFlag.ItemIsEnabled) and (flags & Qt.ItemFlag.ItemIsUserCheckable):
+                    new_state = (
+                        Qt.CheckState.Unchecked if item.checkState() == Qt.CheckState.Checked else Qt.CheckState.Checked
+                    )
+                    item.setCheckState(new_state)
+                    event.accept()
+                    return
+        super().mousePressEvent(event)
+
+
 class TagPickerDialog(QDialog):
     """从当前库已有标签中批量勾选的模态对话框。
 
@@ -348,13 +377,12 @@ class TagPickerDialog(QDialog):
         toolbar.addStretch(1)
         root.addLayout(toolbar)
 
-        self._list = QListWidget()
+        self._list = RowToggleListWidget()
+        self._list.setObjectName("tag_picker_list")
         self._list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
-        self._list.setStyleSheet(
-            "QListWidget { border: 1px solid #d0d7de; border-radius: 6px; padding: 2px; }"
-            "QListWidget::item { padding: 4px 6px; }"
-            "QListWidget::item:hover { background: #eef3f8; }"
-        )
+        self._list.setCursor(Qt.CursorShape.PointingHandCursor)
+        # 具体颜色（边框 / 背景 / hover / 置灰）由主题统一定义，避免硬编码导致深色失配
+        self._list.setToolTip("点击任意位置切换勾选")
         root.addWidget(self._list, 1)
 
         if ordered:
@@ -439,4 +467,4 @@ class TagPickerDialog(QDialog):
             it.setCheckState(Qt.CheckState.Unchecked)
 
 
-__all__ = ["TagChip", "TagEditor", "TagPickerDialog"]
+__all__ = ["RowToggleListWidget", "TagChip", "TagEditor", "TagPickerDialog"]

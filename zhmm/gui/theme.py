@@ -147,6 +147,27 @@ class ThemeManager:
         }
         QScrollBar::handle:vertical:hover { background-color: #95a5a6; }
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+
+        /* 标签列表（标签选择弹窗 / 侧边栏筛选）统一风格 */
+        QListWidget#tag_picker_list, QListWidget#tag_sidebar_list {
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 2px;
+            background-color: #ffffff;
+            color: #2c3e50;
+        }
+        QListWidget#tag_picker_list::item, QListWidget#tag_sidebar_list::item {
+            padding: 6px 6px;
+            color: #2c3e50;
+            border-radius: 3px;
+        }
+        QListWidget#tag_picker_list::item:hover, QListWidget#tag_sidebar_list::item:hover {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+        }
+        QListWidget#tag_picker_list::item:disabled, QListWidget#tag_sidebar_list::item:disabled {
+            color: #95a5a6;
+        }
     """
 
     # 深色主题样式
@@ -288,6 +309,27 @@ class ThemeManager:
         }
         QScrollBar::handle:vertical:hover { background-color: #465664; }
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+
+        /* 标签列表（标签选择弹窗 / 侧边栏筛选）统一风格 */
+        QListWidget#tag_picker_list, QListWidget#tag_sidebar_list {
+            border: 1px solid #34495e;
+            border-radius: 6px;
+            padding: 2px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
+        QListWidget#tag_picker_list::item, QListWidget#tag_sidebar_list::item {
+            padding: 6px 6px;
+            color: #ecf0f1;
+            border-radius: 3px;
+        }
+        QListWidget#tag_picker_list::item:hover, QListWidget#tag_sidebar_list::item:hover {
+            background-color: #3d566e;
+            color: #ffffff;
+        }
+        QListWidget#tag_picker_list::item:disabled, QListWidget#tag_sidebar_list::item:disabled {
+            color: #7f8c8d;
+        }
     """
 
     @staticmethod

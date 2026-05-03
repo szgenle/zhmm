@@ -32,6 +32,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from zhmm.widgets.tag_editor import RowToggleListWidget
+
 
 class TagSidebar(QWidget):
     """左侧「标签」侧边栏：多选 AND 筛选。"""
@@ -60,15 +62,13 @@ class TagSidebar(QWidget):
         header.addWidget(self._clear_btn)
         root.addLayout(header)
 
-        self._list = QListWidget()
+        self._list = RowToggleListWidget()
+        self._list.setObjectName("tag_sidebar_list")
         self._list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
         self._list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        # 紧凑外观，不用 setAlternatingRowColors 以免与主题冲突
-        self._list.setStyleSheet(
-            "QListWidget { border: 1px solid #d0d7de; border-radius: 6px; padding: 2px; }"
-            "QListWidget::item { padding: 4px 6px; }"
-            "QListWidget::item:hover { background: #eef3f8; }"
-        )
+        self._list.setCursor(Qt.CursorShape.PointingHandCursor)
+        # 具体颜色（边框 / 背景 / hover）由主题统一定义，避免硬编码导致深色下对比失配
+        self._list.setToolTip("点击任意位置切换勾选")
         self._list.itemChanged.connect(self._on_item_changed)
         root.addWidget(self._list, 1)
 
