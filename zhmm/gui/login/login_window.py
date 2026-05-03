@@ -50,7 +50,9 @@ class LoginWindow(Dialog):
     def __init__(self, account: str | None = None, hashpw: str | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("登录验证")
-        self.setFixedSize(400, 250)
+        # 不使用固定高度，避免输入框被挤压；保留合理的最小尺寸即可
+        self.setMinimumWidth(420)
+        self.resize(420, 320)
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint)
         self.setModal(True)
         self.hashpw = hashpw
@@ -78,10 +80,14 @@ class LoginWindow(Dialog):
         form_layout = QGridLayout()
 
         row = 0
+        # 输入框统一的最小高度，避免在紧凑布局下被压得过窄
+        input_min_height = 32
+
         # 账号输入
         account_label = QLabel("账号名:")
         self.account_input = QLineEdit()
         self.account_input.setPlaceholderText("请输入账号名（与密码共同生成密钥）")
+        self.account_input.setMinimumHeight(input_min_height)
         self.account_input.textEdited.connect(lambda _text: self._normalize_line_edit(self.account_input))
         if account:
             self.account_input.setText(account)
@@ -96,6 +102,7 @@ class LoginWindow(Dialog):
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setPlaceholderText("请输入密码（半角）")
+        self.password_input.setMinimumHeight(input_min_height)
         self.password_input.textEdited.connect(lambda _text: self._normalize_line_edit(self.password_input))
 
         # 显示/隐藏密码切换按钮（使用共享的内联 SVG 图标）
@@ -106,6 +113,7 @@ class LoginWindow(Dialog):
         self.toggle_password_button.setIconSize(QSize(18, 18))
         self.toggle_password_button.setCheckable(True)
         self.toggle_password_button.setFixedWidth(36)
+        self.toggle_password_button.setMinimumHeight(input_min_height)
         self.toggle_password_button.setToolTip("显示/隐藏密码")
         self.toggle_password_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.toggle_password_button.toggled.connect(self._toggle_password_visibility)
