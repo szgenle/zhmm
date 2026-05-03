@@ -195,4 +195,24 @@ def suggest(url_or_host: str | None) -> SiteSuggestion:
     return SiteSuggestion()
 
 
-__all__ = ["SiteSuggestion", "reload_catalog", "suggest"]
+def all_entries() -> list[dict[str, Any]]:
+    """返回词典全部条目（用于只读查看界面）。
+
+    每条形如 ``{"host": "mail.qq.com", "name": "QQ 邮箱", "tags": ["邮箱"]}``，
+    按 host 升序返回，保证 UI 列表稳定。
+    """
+    catalog = _load_catalog()
+    out: list[dict[str, Any]] = []
+    for host in sorted(catalog.keys()):
+        info = catalog[host]
+        out.append(
+            {
+                "host": host,
+                "name": info.get("name", ""),
+                "tags": list(info.get("tags") or []),
+            }
+        )
+    return out
+
+
+__all__ = ["SiteSuggestion", "all_entries", "reload_catalog", "suggest"]

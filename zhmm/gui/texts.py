@@ -198,3 +198,37 @@ class Tags:
     @staticmethod
     def success_deleted(tag: str, count: int) -> str:
         return f"已从 {count} 条记录中删除标签 “#{tag}”。"
+
+
+class SiteCatalog:
+    """「网站词典」相关文案（数据管理 Tab 中的新增分组）。
+
+    用于展示随包发行的离线常用网站 → 中文名 / 建议标签映射，
+    用户在「添加密码」录入网址时由其提供自动标签建议。
+    当前版本仅提供「只读查看」能力，未来可扩充用户自定义词典。
+    """
+
+    # ---- 分组与按钮 ----
+    GROUP_TITLE = "网站词典"
+    GROUP_HINT = "录入网址时，会根据内置词典自动建议中文名与标签。整个过程完全离线，不访问网络。"
+    BTN_OPEN = "查看内置词典"
+
+    # ---- 对话框 ----
+    TITLE = "网站词典（内置、只读）"
+    HINT = "该词典随程序发行，仅用于在添加密码时给出「建议标签」，不会修改任何存量条目。"
+    SEARCH_PLACEHOLDER = "搜索域名 / 中文名 / 标签…"
+    EMPTY = "词典为空或未成功加载。"
+    NO_MATCH = "没有匹配当前搜索的条目。"
+    BTN_CLOSE = "关闭"
+
+    # ---- 表头 ----
+    COL_HOST = "域名"
+    COL_NAME = "中文名"
+    COL_TAGS = "建议标签"
+
+    @staticmethod
+    def count_summary(total: int, shown: int) -> str:
+        """列表顶部标题行：展示匹配 / 总数。"""
+        if total == shown:
+            return f"共 {total} 条"
+        return f"匹配 {shown} / {total} 条"

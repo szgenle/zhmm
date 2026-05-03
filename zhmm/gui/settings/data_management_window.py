@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QLabel,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -25,7 +26,9 @@ from PyQt6.QtWidgets import (
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.gui.settings.backup_settings import BackupSettings
 from zhmm.gui.settings.import_export_handlers import ImportExportHandlers
+from zhmm.gui.settings.site_catalog_dialog import SiteCatalogViewerDialog
 from zhmm.gui.settings.tag_management_dialog import TagManagementDialog
+from zhmm.gui.texts import SiteCatalog as SiteCatalogText
 from zhmm.gui.texts import Tags as TagsText
 
 # 与 SettingWindow 保持一致的按钮尺寸，避免同一应用中按钮风格漂移
@@ -78,6 +81,9 @@ class DataManagementWindow(QWidget):
         # ---------- 标签管理 ----------
         layout.addWidget(self._build_tag_management_group())
 
+        # ---------- 网站词典（只读）----------
+        layout.addWidget(self._build_site_catalog_group())
+
         layout.addStretch()
 
     # ------------------------------------------------------------------
@@ -129,6 +135,34 @@ class DataManagementWindow(QWidget):
         group.setLayout(v)
         return group
 
+    def _build_site_catalog_group(self) -> QGroupBox:
+        """网站词典分组：只读查看内置离线词典。
+
+        词典用于在添加密码时根据网址给出「建议标签」。该入口仅展示，
+        不会修改任何存量条目，与「标签管理」的作用域严格区分：
+        - 标签管理：管理用户标签（直接写入密码文件）
+        - 网站词典：只影响新建条目时的「建议标签」（规则数据）
+        """
+        group = QGroupBox(SiteCatalogText.GROUP_TITLE)
+        v = QVBoxLayout()
+        v.setContentsMargins(4, 8, 4, 8)
+        v.setSpacing(8)
+
+        hint = QLabel(SiteCatalogText.GROUP_HINT)
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color: palette(placeholder-text); font-size: 12px;")
+        v.addWidget(hint)
+
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        self.site_catalog_button = self._make_button(SiteCatalogText.BTN_OPEN, self.open_site_catalog_dialog)
+        row.addWidget(self.site_catalog_button)
+        row.addStretch()
+        v.addLayout(row)
+
+        group.setLayout(v)
+        return group
+
     @staticmethod
     def _make_button(text: str, slot) -> QPushButton:
         """创建统一尺寸的按钮"""
@@ -174,3 +208,11 @@ class DataManagementWindow(QWidget):
         dlg.exec()
         if dlg.has_changes():
             self.tags_changed.emit()
+
+    # ------------------------------------------------------------------
+    # 网站词典（只读）
+    # ------------------------------------------------------------------
+    def open_site_catalog_dialog(self) -> None:
+        """打开「网站词典」只读查看对话框。不产生任何数据改动，无需发信号。"""
+        dlg = SiteCatalogViewerDialog(parent=self)
+        dlg.exec()
