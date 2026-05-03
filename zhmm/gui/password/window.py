@@ -359,7 +359,16 @@ class PasswordWindow(QWidget):
             self.tag_sidebar.rebuild(self.gl_data.mm.get("data") or [])
 
     def _on_tag_selection_changed(self, tags: list) -> None:
-        """侧边栏勾选变更 → 代理模型筛选。"""
+        """侧边栏勾选变更 → 代理模型筛选。
+
+        为避免“仅显示搜索结果”勾选态在用户未输入关键字时把标签筛选结果也清空（
+        参见 `CustomProxyModel.filterAcceptsRow`：无关键字时由 `show_all_data` 决定
+        是否显示），当用户选择了任意标签时自动取消该复选框。复选框的 `toggled` 信号
+        会负责同步 `proxy_model.show_all_data` 并刷新过滤。
+        """
+        if tags and self.show_all_checkbox.isChecked():
+            # 触发 toggle_show_all：show_all_data=True 且会调用一次 filter_passwords
+            self.show_all_checkbox.setChecked(False)
         self.proxy_model.set_selected_tags(list(tags))
 
     # ------------------------------------------------------------------
