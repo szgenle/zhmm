@@ -122,6 +122,8 @@ On first launch:
 2. Pick or create a `.zmb` vault file; then add entries (site, account, password, notes) in the main window.
 3. Configure backup strategy in **Settings** (optional).
 
+> 👀 Want to try it out first? Import the 15 demo entries in [`docs/demo_data.xlsx`](docs/demo_data.xlsx) — all fake data, no real accounts required. Just open the GUI → **Data Management → Import** and pick the file.
+
 ### CLI
 
 ```bash
