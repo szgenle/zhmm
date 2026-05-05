@@ -18,6 +18,15 @@ from zhmm.utils import date_util
 from zhmm.utils.table_printer import TablePrinter
 
 
+def _normalize_search_word(word: str) -> str:
+    """去除首尾空白及成对的引号（容错不同 shell 未剥离引号的场景）。"""
+    w = word.strip()
+    # 反复剥离首尾成对的单/双引号，兼容 '"abc"' / "'abc'" 等被转义后传入的情形
+    while len(w) >= 2 and w[0] == w[-1] and w[0] in ('"', "'"):
+        w = w[1:-1].strip()
+    return w
+
+
 class CmdUI:
     sm_data: SmData = SmData()
     fixed_id_is_None: bool = False
@@ -160,7 +169,7 @@ class CmdUI:
     def user_input_ui(self) -> None:
         while True:
             if self.args.search:
-                search_word = self.args.search
+                search_word = _normalize_search_word(self.args.search)
                 self.args.search = None
                 self.user_search(search_word)
                 if self.args.once:
