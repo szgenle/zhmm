@@ -32,7 +32,7 @@ class UIDecryptData:
                     {
                         "userID": account,
                         "pwd": password,
-                        "url": "https://szgenle.com",
+                        "url": "https://github.com/szgenle/zhmm",
                         "desc": "务必记住当前的账号和密码",
                     }
                 )

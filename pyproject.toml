@@ -6,7 +6,7 @@ authors = [
     {name = "Lioesquieu"}
 ]
 maintainers = [
-    {name = "szgenle", email = "dev@szgenle.com"}
+    {name = "szgenle", email = "leosquieuxia@gmail.com"}
 ]
 license = {text = "GPL-3.0-or-later"}
 readme = "README.md"

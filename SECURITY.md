@@ -14,7 +14,7 @@ Please do **not** disclose security vulnerabilities through public GitHub issues
 1. **GitHub Security Advisory（推荐）**：
    在本仓库 `Security` → `Report a vulnerability` 发起 private advisory
    → <https://github.com/szgenle/zhmm/security/advisories/new>
-2. 私下邮件联系维护者：`dev@szgenle.com`
+2. 私下邮件联系维护者：`leosquieuxia@gmail.com`
 
 请在报告中包含：
 
