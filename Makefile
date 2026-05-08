@@ -58,24 +58,28 @@ update-version:
 	poetry run python scripts/update_version.py
 
 # 构建GUI应用程序
+# 说明：必须使用 `poetry run python -m PyInstaller`，否则 `poetry run pyinstaller`
+# 在 venv 里没装 pyinstaller 时会回落到 PATH 上的系统 pyinstaller（如 Homebrew 版），
+# 其使用的 Python 解释器看不到 venv 里的 PyQt6，导致打出来的 .app 启动时
+# `ModuleNotFoundError: No module named 'PyQt6'`。
 build-app: clean-build
 	@echo "构建GUI应用程序..."
-	poetry add pyinstaller --group dev
-	poetry run pip install certifi $(PIP_INDEX_ARG)
-	poetry run pyinstaller --onefile --windowed --name "zhmm" \
+	poetry run pip install pyinstaller certifi $(PIP_INDEX_ARG)
+	poetry run python -m PyInstaller --onefile --windowed --name "zhmm" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
+		--collect-all PyQt6 \
+		--add-data "zhmm/resources:resources" \
 		zhmm/__main__.py \
-		--paths zhmm/
+		--paths .
 	@echo "GUI应用程序构建完成！"
 
 # 构建命令行应用程序（--onedir：避免 --onefile 每次启动的自解压耗时，启动更快）
 build-cmd: clean-build
 	@echo "构建命令行应用程序..."
-	poetry add pyinstaller --group dev
-	poetry run pip install certifi $(PIP_INDEX_ARG)
-	poetry run pyinstaller --onedir --name "zhmm_cmd" \
+	poetry run pip install pyinstaller certifi $(PIP_INDEX_ARG)
+	poetry run python -m PyInstaller --onedir --name "zhmm_cmd" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
@@ -87,23 +91,24 @@ build-cmd: clean-build
 		--exclude-module zhmm.gui \
 		--exclude-module zhmm.app.gui_app \
 		zhmm/cli/commands.py \
-		--paths zhmm/
+		--paths .
 	@echo "命令行应用程序构建完成！产物目录：dist/zhmm_cmd/"
 
 # 构建所有应用程序
 build-all: clean-build
 	@echo "构建所有应用程序..."
-	poetry add pyinstaller --group dev
-	poetry run pip install certifi $(PIP_INDEX_ARG)
+	poetry run pip install pyinstaller certifi $(PIP_INDEX_ARG)
 	@echo "构建GUI应用程序..."
-	poetry run pyinstaller --onefile --windowed --name "zhmm" \
+	poetry run python -m PyInstaller --onefile --windowed --name "zhmm" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
+		--collect-all PyQt6 \
+		--add-data "zhmm/resources:resources" \
 		zhmm/__main__.py \
-		--paths zhmm/
+		--paths .
 	@echo "构建命令行应用程序..."
-	poetry run pyinstaller --onedir --name "zhmm_cmd" \
+	poetry run python -m PyInstaller --onedir --name "zhmm_cmd" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
@@ -115,7 +120,7 @@ build-all: clean-build
 		--exclude-module zhmm.gui \
 		--exclude-module zhmm.app.gui_app \
 		zhmm/cli/commands.py \
-		--paths zhmm/
+		--paths .
 	@echo "所有应用程序构建完成！"
 
 # 清理构建缓存
