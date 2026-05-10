@@ -55,8 +55,8 @@ def _format_tags(value) -> str:
 class PasswordTableModel(QAbstractTableModel):
     """密码表格数据模型"""
 
-    def __init__(self, data=None):
-        super().__init__()
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
         self.headers = [
             "ID",
             "类别",
@@ -297,10 +297,6 @@ class CustomProxyModel(QSortFilterProxyModel):
         """设置侧边栏选中的标签（AND 语义）并刷新筛选。"""
         self.selected_tags = list(tags or [])
         self.invalidateFilter()
-
-    def setFilterRegularExpression(self, pattern):  # type: ignore
-        # 退化为 fixed string 行为，避免正则副作用（并保持搜索字段精准）
-        self.setFilterFixedString(str(pattern) if pattern is not None else "")
 
     def setFilterFixedString(self, text):  # type: ignore
         raw = (text or "").strip()

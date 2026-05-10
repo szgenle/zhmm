@@ -39,6 +39,18 @@ from zhmm.utils.log import logger
 from zhmm.widgets.combo_box import WideComboBox
 
 
+def _clear_clipboard() -> None:
+    """清空系统剪贴板。作为 QTimer.singleShot(msec, receiver, slot) 的 slot，
+    不持有任何 widget 引用，避免 lambda 闭包意外延长对象生命周期。"""
+    try:
+        clipboard = QApplication.clipboard()
+        if clipboard is not None:
+            clipboard.clear()
+    except RuntimeError:
+        # QApplication 已退出（后台定时器在应用关闭后偶发触发），忽略
+        pass
+
+
 class PasswordWindow(QWidget):
     """密码管理界面"""
 
@@ -126,14 +138,21 @@ class PasswordWindow(QWidget):
 
         # 创建表格视图
         self.table_view = QTableView()
-        self.table_model = PasswordTableModel(self.gl_data.mm["data"])
+        # 明确把 model / proxy 的 Qt parent 绑到 table_view：
+        # PyQt6 下无 parent 的 QObject 生命周期完全由 sip wrapper 依赖 Python 引用
+        # 决定，长时间运行后容易出现底层 C++ 对象先被 delete、view 仍持裸指针的情况，
+        # 导致双击等事件访问 model 时段错误。显式指定 parent 可避免该问题。
+        self.table_model = PasswordTableModel(self.gl_data.mm["data"], parent=self.table_view)
 
         # 设置选择模式（新增这两行）
         self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+        # 业务用 doubleClicked signal 打开自定义编辑对话框，不需要 Qt 原生的
+        # 双击进入单元格编辑流程；关闭原生触发可减少 view 对 model 指针的多余解引用。
+        self.table_view.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
 
         # 创建代理模型用于过滤（替换为自定义代理模型）
-        self.proxy_model = CustomProxyModel()
+        self.proxy_model = CustomProxyModel(self.table_view)
         self.proxy_model.setSourceModel(self.table_model)
         self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.proxy_model.setFilterKeyColumn(-1)  # -1 表示搜索所有列
@@ -315,6 +334,8 @@ class PasswordWindow(QWidget):
         success, message = self.operations.add_password(password_data)
 
         if success:
+            # 数据重置前先清理 reveal 定时器，避免残留 QTimer 指向旧行 id
+            self._clear_reveal_timers()
             # 更新表格模型
             self.table_model.setZhData(self.gl_data.mm["data"])
             self._refresh_tag_sidebar()
@@ -334,6 +355,7 @@ class PasswordWindow(QWidget):
 
     def refresh_data(self):
         """刷新数据"""
+        self._clear_reveal_timers()
         self.table_model.setZhData(self.gl_data.mm["data"])
         self._refresh_tag_sidebar()
 
@@ -383,10 +405,13 @@ class PasswordWindow(QWidget):
         self.table_view.selectRow(index.row())
 
         source_index = self.proxy_model.mapToSource(index)
-        source_row = source_index.row()
-        if source_row < 0 or source_row >= len(self.table_model._data):
+        if not source_index.isValid():
             return
-        item = self.table_model._data[source_row]
+        source_row = source_index.row()
+        data_list = self.gl_data.mm.get("data") or []
+        if source_row < 0 or source_row >= len(data_list):
+            return
+        item = data_list[source_row]
 
         menu = QMenu(self.table_view)
 
@@ -476,6 +501,7 @@ class PasswordWindow(QWidget):
         """调用 operations 执行回滚并刷新表格。"""
         success, message = self.operations.rollback_password(source_row, history_index)
         if success:
+            self._clear_reveal_timers()
             self.table_model.setZhData(self.gl_data.mm["data"])
             self._show_status(message, highlight=True)
         else:
@@ -490,8 +516,15 @@ class PasswordWindow(QWidget):
 
         # 获取代理模型索引并转换为源模型索引
         proxy_index = selected[0]
+        if not proxy_index.isValid():
+            return
         source_index = self.proxy_model.mapToSource(proxy_index)
+        if not source_index.isValid():
+            return
         row = source_index.row()
+        data_list = self.gl_data.mm.get("data") or []
+        if row < 0 or row >= len(data_list):
+            return
 
         # 确认删除
         reply = QMessageBox.question(
@@ -503,6 +536,8 @@ class PasswordWindow(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             success, message = self.operations.delete_password(row)
             if success:
+                # 数据重置前先清理 reveal 定时器，避免残留 QTimer 指向旧行 id
+                self._clear_reveal_timers()
                 # 更新表格
                 self.table_model.setZhData(self.gl_data.mm["data"])
                 self._refresh_tag_sidebar()
@@ -518,9 +553,16 @@ class PasswordWindow(QWidget):
 
         # 获取源模型数据
         proxy_index = selected[0]
+        if not proxy_index.isValid():
+            return
         source_index = self.proxy_model.mapToSource(proxy_index)
+        if not source_index.isValid():
+            return
         row = source_index.row()
-        edit_data = self.gl_data.mm["data"][row]
+        data_list = self.gl_data.mm.get("data") or []
+        if row < 0 or row >= len(data_list):
+            return
+        edit_data = data_list[row]
 
         # 创建编辑对话框并传入数据
         roles = self.gl_data.mm.get("roles") or []
@@ -539,6 +581,7 @@ class PasswordWindow(QWidget):
         success, message = self.operations.update_password(original_row, new_data)
 
         if success:
+            self._clear_reveal_timers()
             self.table_model.setZhData(self.gl_data.mm["data"])
             self._refresh_tag_sidebar()
             QMessageBox.information(dialog, "成功", message)
@@ -591,7 +634,8 @@ class PasswordWindow(QWidget):
         self.status_changed.emit(Status.PWD_COPIED_WITH_HINT, "success")
 
         # 定时清空剪贴板，避免残留敏感信息
-        QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
+        # 绑定 receiver=self：窗口销毁时定时器自动失效，避免后台 lambda 里引用已释放对象
+        QTimer.singleShot(10000, self, _clear_clipboard)
         # 2.5s 后清空状态栏（但如期间文案已被别的操作替换，则不覆盖）
         self._schedule_status_reset(Status.PWD_COPIED_WITH_HINT)
 
@@ -612,7 +656,11 @@ class PasswordWindow(QWidget):
 
     def _toggle_reveal_at(self, proxy_index) -> None:
         """切换点击行的密码明文显示，并安排/重置自动隐藏定时器。"""
+        if not proxy_index.isValid():
+            return
         source_index = self.proxy_model.mapToSource(proxy_index)
+        if not source_index.isValid():
+            return
         source_row = source_index.row()
         rid = self.table_model.row_id(source_row)
         if rid is None:
@@ -643,6 +691,34 @@ class PasswordWindow(QWidget):
         if self.table_model.is_revealed(source_row):
             self.table_model.set_revealed(source_row, False)
             self._show_status(Status.PWD_REVEAL_AUTO_HIDDEN, highlight=False)
+
+    def _clear_reveal_timers(self) -> None:
+        """停掉所有 reveal 自动隐藏定时器，数据重置前调用。
+
+        反复添加/编辑/删除后，_reveal_timers 里指向旧 row id 的 QTimer 可能积累；
+        结合 setZhData() 会清空 _revealed_ids 的行为，这里一起停停定时器
+        并释放，避免积累与早波触发 _auto_hide_reveal 访问已经不存在的行。
+        """
+        for t in list(self._reveal_timers.values()):
+            try:
+                t.stop()
+                t.deleteLater()
+            except RuntimeError:
+                # QObject 已被 Qt 层销毁（sip wrapper 挂空），忽略即可
+                pass
+        self._reveal_timers.clear()
+
+    def closeEvent(self, event):  # type: ignore[override]
+        """窗口关闭时停掉所有定时器，避免后台 QTimer 触发 已释放的 widget。"""
+        try:
+            if hasattr(self, "_totp_refresh_timer") and self._totp_refresh_timer is not None:
+                self._totp_refresh_timer.stop()
+            if hasattr(self, "_search_debounce") and self._search_debounce is not None:
+                self._search_debounce.stop()
+            self._clear_reveal_timers()
+        except RuntimeError:
+            pass
+        super().closeEvent(event)
 
     # 底部状态栏由 MainWindow 接收 status_changed 信号后渲染，这里只负责 emit 和自动清空。
 
@@ -676,7 +752,18 @@ class PasswordWindow(QWidget):
     # 动态码列刷新 & 复制
     # ------------------------------------------------------------------
     def _refresh_totp_column(self) -> None:
-        n = self.table_model.rowCount()
+        # 防御性前置检查：表格不可见 / model 已释放时不发 dataChanged，
+        # 避免后台定时器持续触发 view 对 model 指针的无谓解引用。
+        if not hasattr(self, "table_view") or not hasattr(self, "table_model"):
+            return
+        if self.table_view is None or self.table_model is None:
+            return
+        try:
+            if not self.table_view.isVisible():
+                return
+            n = self.table_model.rowCount()
+        except RuntimeError:
+            return
         if n <= 0:
             return
         col = PasswordTableModel.totp_column()
@@ -686,11 +773,16 @@ class PasswordWindow(QWidget):
 
     def _copy_totp_at(self, proxy_index) -> None:
         """复制所选行的当前动态码到剪贴板。"""
-        source_index = self.proxy_model.mapToSource(proxy_index)
-        source_row = source_index.row()
-        if source_row < 0 or source_row >= len(self.table_model._data):
+        if not proxy_index.isValid():
             return
-        item = self.table_model._data[source_row]
+        source_index = self.proxy_model.mapToSource(proxy_index)
+        if not source_index.isValid():
+            return
+        source_row = source_index.row()
+        data_list = self.gl_data.mm.get("data") or []
+        if source_row < 0 or source_row >= len(data_list):
+            return
+        item = data_list[source_row]
         try:
             code = PasswordTableModel.compute_totp_code(item)
         except ValidationError as ex:
@@ -703,4 +795,4 @@ class PasswordWindow(QWidget):
         QApplication.clipboard().setText(code)  # type: ignore
         QToolTip.showText(QCursor.pos(), Tooltip.totp_copied(code), self.table_view)
         self._show_status(Status.totp_copied_with_hint(code), highlight=True)
-        QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore
+        QTimer.singleShot(10000, self, _clear_clipboard)
