@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **加密栈升级到 SM4-GCM（v6 格式）**：`zhmm/core/crypto.py` 由原先的 **SM4-CBC + HMAC-SM3 Encrypt-then-MAC**（v5）迁移到 **SM4-GCM 原生 AEAD**（NIST SP 800-38D）。
+  - **实现**：`gmssl 3.2.2` 未提供 SM4-GCM，基于 `CryptSM4.one_round` 的单块 SM4 无填充原语手工实现 CTR 流加密 + GHASH 认证（`_gf128_mul` / `_ghash` / `_sm4_ctr_xor` / `_sm4_gcm_seal` / `_sm4_gcm_open`）；仅支持 NIST 推荐的 96-bit IV 标准形态，认证标签 128-bit。
+  - **AAD 保护**：整个文件头（magic + version + m_cost + t_cost + p_cost + salt + iv）作为 GCM 的附加认证数据，header 任意字段被篡改（含 Argon2 参数）都会触发认证失败，防止降级攻击，无需额外 MAC 子密钥。
+  - **文件格式变化**：header 从 49B 缩到 45B（iv 12B 替代 16B），tag 从 32B 缩到 16B，密文长度等于明文长度（CTR 无 PKCS7 填充），单字节明文开销从 81B 降到 62B。
+  - **向后兼容**：`Vault.open` 根据 version 字节分发，v6 走 GCM，**v5（CBC+HMAC-SM3）继续可读**；`Vault.seal` 只写 v6，因此老 `.zmb` 文件在下次保存时会自然升级到 v6，用户无感。v3 / v4 已废弃仍硬拒绝。
+  - **KDF**：Argon2id 派生长度仍为 32B 保持一致，v6 仅取前 16B 作 SM4 密钥（GHASH 子密钥由 `SM4_ENC(K, 0)` 内部导出，无需独立 MAC key）。
+  - **测试**：`tests/test_crypto.py` 扩展到 64 条用例，新增 GHASH / GF(2^128) 乘法代数性质、CTR 自逆性、任意长度明文（0~256B 边界）、v5 legacy blob 手工构造 + 读兼容、v5→v6 自然升级、AAD 篡改检测等覆盖。
+
 ## [0.5.0] - 2026-05-03
 
 ### Added

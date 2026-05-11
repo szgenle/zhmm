@@ -18,7 +18,7 @@
 
 ## ✨ 特性
 
-- 🔒 **国密加密**：Argon2id 密钥派生（memory-hard，默认 m=64 MiB/t=3/p=1，账号+密码双因子输入）+ SM4-CBC 数据加密 + HMAC-SM3 完整性校验，密钥永不落盘
+- 🔒 **国密加密**：Argon2id 密钥派生（memory-hard，默认 m=64 MiB/t=3/p=1，账号+密码双因子输入）+ **SM4-GCM 原生 AEAD**（CTR 流加密 + GHASH 认证，header 含 Argon2 参数整体受 AAD 保护），密钥永不落盘
 - 🖼 **防截屏**：窗口从系统录屏/截图工具中排除（macOS `NSWindowSharingNone` / Windows `WDA_EXCLUDE_FROM_CAPTURE`），默认开启，可在设置中关闭
 - ⏱ **自动锁定 + 剪贴板自动清除**：窗口失活达到设定分钟数自动回到登录页并释放内存中的明文条目；复制密码 / TOTP 动态码后 10 秒自动清空剪贴板
 - 💻 **双形态**：同一套核心，提供 **GUI（PyQt6）** 与 **CLI（argparse）** 两种使用方式
@@ -183,24 +183,23 @@ zhmm/
 
 ### 🔐 加密设计
 
-`zhmm` 的 `.zmb` 密库文件使用国密 + 标准哈希混合栈保护：
+`zhmm` 的 `.zmb` 密库文件使用国密原生 AEAD 栈保护：
 
 | 环节 | 算法 | 说明 |
 |------|------|------|
-| 密钥派生 | **Argon2id**（memory-hard） | 默认 `m=64 MiB, t=3, p=1`，16 字节随机盐，派生 32 字节密钥；KDF 口令材料为 `account.utf8 + 0x00 + password.utf8`；参数随密文头部内嵌存储 |
-| 数据加密 | **SM4-CBC** | 16 字节随机 IV，PKCS7 填充 |
-| 完整性校验 | **HMAC-SM3** | 覆盖文件头 + 密文，生成 32 字节认证标签 |
+| 密钥派生 | **Argon2id**（memory-hard） | 默认 `m=64 MiB, t=3, p=1`，16 字节随机盐，派生 16 字节 SM4 密钥；KDF 口令材料为 `account.utf8 + 0x00 + password.utf8`；参数随密文头部内嵌存储 |
+| 加密 + 认证 | **SM4-GCM**（NIST SP 800-38D） | 12 字节随机 IV，CTR 流加密 + GHASH 认证，header（含 Argon2 参数）作为 AAD 整体受保护，16 字节认证标签 |
 
-文件格式（v4）：
+文件格式（v6）：
 
 ```
-magic(4B="ZHMM") | ver(1B=4) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
+magic(4B="ZHMM") | ver(1B=6) | m_cost(4B) | t_cost(4B) | p_cost(4B) | salt(16B) | iv(12B) | ciphertext(NB) | tag(16B)
 ```
 
 - **magic**：让 `file` 命令可识别文件类型
-- **ver**：独立版本号，方便未来升级
-- **tag**：覆盖 header + ciphertext，防止降级攻击和篡改
-- **账号名**：参与 KDF 但不写入文件，解密时由调用方重新提供，账号错误与密码错误表现一致（HMAC 认证失败）
+- **ver**：独立版本号，方便未来升级（v5 的 SM4-CBC + HMAC-SM3 旧格式仍可读，下次保存自动升级到 v6）
+- **AAD**：整个 header（含 Argon2 参数与 iv/salt）参与 GCM 认证，防止降级攻击与头部字段被篡改
+- **账号名**：参与 KDF 但不写入文件，解密时由调用方重新提供，账号错误与密码错误表现一致（AEAD 认证失败）
 
 ---
 
@@ -209,7 +208,7 @@ magic(4B="ZHMM") | ver(1B=4) | salt(16B) | iv(16B) | ciphertext(NB) | tag(32B)
 > 本项目处理用户密码数据，请在使用前仔细阅读。
 
 - **密钥派生**：账号名 + 主密码以 `\x00` 拼接后经 **Argon2id**（默认 m=64 MiB, t=3, p=1）派生加密密钥，Argon2 参数随密文头部内嵌存储（便于未来调强度时兼容老文件），**主密码与账号永不持久化**
-- **数据加密**：所有密码条目以 SM4-CBC 加密写入 `.zmb` 文件，附带 HMAC-SM3 完整性标签
+- **数据加密**：所有密码条目以 **SM4-GCM** 加密写入 `.zmb` 文件（v6 格式），16 字节 GCM 认证标签覆盖 header + 密文整体
 - **配置加密**：本地应用配置经 `Fernet (PBKDF2-HMAC-SHA256 + 随机盐)` 加密落盘
 - **防截屏**：GUI 窗口默认从系统截图/录屏中排除（macOS / Windows 10 2004+），可在「设置 → 常规」中关闭；无法防御摄像头翻拍、采集卡、虚拟机抓屏等物理层攻击
 - **自动锁定**：可在「设置 → 常规 → 自动锁定时间」配置分钟数；窗口失去焦点并超过该时长时自动回到登录页、释放内存中的明文条目。判定基于窗口活动状态，不监听鼠标/键盘
