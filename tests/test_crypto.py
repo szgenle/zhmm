@@ -452,3 +452,54 @@ class TestGcmInternals:
         bad_tag = bytes(b ^ 0xFF for b in tag)
         with pytest.raises(CryptoError, match="authentication failed"):
             _sm4_gcm_open(key, iv, b"", ct, bad_tag)
+
+
+class TestArgon2Calibration:
+    """calibrate_argon2 + Vault.seal(argon2_params=...) 联合验证。"""
+
+    def test_calibrate_returns_in_valid_range(self):
+        # 用最小允许的 m_cost 采样以加速，t_cost=1 加快测试
+        m, t, p = _crypto_module.calibrate_argon2(
+            target_ms=50,
+            t_cost=1,
+            p_cost=1,
+            probe_m_cost=_crypto_module._ARGON2_M_MIN,
+        )
+        assert _crypto_module._ARGON2_M_MIN <= m <= _crypto_module._ARGON2_M_MAX
+        assert t == 1
+        assert p == 1
+
+    def test_calibrate_rejects_nonpositive_target(self):
+        with pytest.raises(ValidationError):
+            _crypto_module.calibrate_argon2(target_ms=0)
+        with pytest.raises(ValidationError):
+            _crypto_module.calibrate_argon2(target_ms=-1)
+
+    def test_calibrate_validates_probe_params(self):
+        from zhmm.core.errors import CorruptedVault
+
+        with pytest.raises(CorruptedVault):
+            _crypto_module.calibrate_argon2(
+                target_ms=100,
+                t_cost=1,
+                p_cost=1,
+                probe_m_cost=1,  # < _ARGON2_M_MIN
+            )
+
+    def test_seal_accepts_custom_argon2_params(self):
+        params = (_crypto_module._ARGON2_M_MIN, 1, 1)
+        pt = b"calibrated params roundtrip"
+        blob = Vault.seal("alice", "pw", pt, argon2_params=params)
+        # header 中的参数应与传入一致
+        m, t, p = struct.unpack(">III", blob[_OFF_M_COST : _OFF_M_COST + 12])
+        assert (m, t, p) == params
+        # 解密无需额外参数，自 header 重算
+        assert Vault.open("alice", "pw", blob) == pt
+
+    def test_seal_rejects_out_of_range_params(self):
+        from zhmm.core.errors import CorruptedVault
+
+        with pytest.raises(CorruptedVault):
+            Vault.seal("alice", "pw", b"x", argon2_params=(1, 3, 1))
+        with pytest.raises(CorruptedVault):
+            Vault.seal("alice", "pw", b"x", argon2_params=(65536, 0, 1))

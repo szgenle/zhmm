@@ -59,6 +59,9 @@ jobs:
   audit:
     name: Security audit (pip-audit)
     runs-on: ubuntu-latest
+    # 软门禁：发现漏洞只警告不阻断。配合 dependabot 自动开升级 PR，
+    # 由维护者根据 CVSS/影响面决定修复优先级。
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -68,20 +71,24 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Install Poetry
-        run: pipx install poetry
+      - name: Install Poetry with export plugin
+        run: |
+          pipx install poetry
+          pipx inject poetry poetry-plugin-export
 
-      - name: Install deps (runtime only)
-        run: poetry install --no-interaction --without dev
+      - name: Export production requirements
+        # 只导出 production 依赖，排除 dev group 与项目本身（zhmm）。
+        # 结果是一份纯净的运行时依赖列表，避免 pip-audit 扫到
+        # setup-python 带的 pip / virtualenv / pytest 等无关包。
+        run: poetry export --only=main --without-hashes --format=requirements.txt --output requirements-prod.txt
 
       - name: Install pip-audit
         run: pipx install pip-audit
 
-      - name: Run pip-audit against locked deps
-        # --strict: any valid CVE fails the job
-        # --desc off: compact CVE list, skip lengthy descriptions
-        # only production deps are audited (dev group excluded)
-        run: poetry run pip-audit --strict --desc off
+      - name: Run pip-audit against locked production deps
+        # --desc off: compact CVE list, skip lengthy descriptions.
+        # 依赖上方 continue-on-error 实现软门禁。
+        run: pip-audit --requirement requirements-prod.txt --desc off
 
   test:
     name: Test (Python ${{ matrix.python-version }} on ${{ matrix.os }})

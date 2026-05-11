@@ -25,6 +25,29 @@ from zhmm.utils import date_util, dict_util
 
 DEFAULT_ROLES = ["个人", "工作", "其它"]
 
+# #J 搜索增强：默认搜索的结构化字段（除 tags、除 pwd）
+_SEARCH_FIELDS: tuple[str, ...] = ("url", "desc", "userID", "phone", "email", "role")
+
+
+def _normalize_search_text(text: str) -> str:
+    """全/半角统一 + 小写化，用于搜索符串匹配。
+
+    全角空格（U+3000）→ 普通空格；全角 ASCII（U+FF01~U+FF5E）→
+    对应半角；其他字符保持原样，最后统一转小写。
+    """
+    if not text:
+        return ""
+    out: list[str] = []
+    for ch in text:
+        code = ord(ch)
+        if code == 0x3000:
+            out.append(" ")
+        elif 0xFF01 <= code <= 0xFF5E:
+            out.append(chr(code - 0xFEE0))
+        else:
+            out.append(ch)
+    return "".join(out).lower()
+
 
 class SmData:
     """密码数据管理器。"""
@@ -61,6 +84,23 @@ class SmData:
             raise ValueError("密码不能为空")
         self._account = account
         self._password = password
+
+    def close(self) -> None:
+        """清理会话中的明文数据与账号/密码引用。
+
+        用于自动锁定 / 返回首页 / 应用退出等场景。Python
+        ``str`` / ``dict`` 不可原地擦除，本方法仅通过清空容器与赋空引
+        用缩短已解密条目 / 主密码在内存中的驻留时间，依靠 GC 释放内存。
+        """
+        data = self.mm.get("data")
+        if isinstance(data, list):
+            data.clear()
+        roles = self.mm.get("roles")
+        if isinstance(roles, list):
+            roles.clear()
+        self.mm = {"data": [], "roles": list(DEFAULT_ROLES), "utime": 0}
+        self._account = ""
+        self._password = ""
 
     def set_mm(self, user_mm_data: ZhmmDataDict) -> None:
         """设置密码数据（补齐 roles / role / tags 默认值）。"""
@@ -101,32 +141,56 @@ class SmData:
                 all_fixed = False
         return all_fixed
 
-    def search(self, words: str) -> list[ZhmmDict] | None:
-        """多关键字搜索（OR，忽略大小写，按 id 去重）。
+    def search(self, words: str, *, mode: str = "any") -> list[ZhmmDict] | None:
+        """多关键字搜索（默认任一命中，按 id 去重）。
 
-        除 ``SEARCHABLE_FIELDS`` 外，也包含标签（tags 拼接文本）。
+        增强（#J）：
+
+        - **全/半角统一**：对查询词与字段值均做 :func:`_normalize_search_text`
+          规范化，避免中英文混输 / 全角数字导致的失配。
+        - **``role`` 纳入默认搜索范围**：之前漏了“类别”字段。
+        - **``mode`` 语义开关**：
+
+          * ``"any"``（默认，向后兼容）：任一关键字命中即匹配（OR）。
+          * ``"all"``：所有关键字都需命中（AND），适合精确筛选。
+
+        搜索字段：``url`` / ``desc`` / ``userID`` / ``phone`` / ``email`` /
+        ``role`` 以及 ``tags`` 里任一元素。``pwd`` 永不参与搜索。
+        无匹配时返回 ``None``。
         """
         if not self.mm or not self.mm["data"]:
             return None
+        if mode not in ("any", "all"):
+            raise ValueError(f"未知的 search mode: {mode}")
+
+        tokens = [_normalize_search_text(w) for w in words.split() if w.strip()]
+        if not tokens:
+            return None
+
+        def item_matches(item: ZhmmDict, token: str) -> bool:
+            for field in _SEARCH_FIELDS:
+                value = item.get(field)
+                if value and token in _normalize_search_text(str(value)):
+                    return True
+            tags = item.get("tags") or []
+            return isinstance(tags, list) and any(token in _normalize_search_text(str(t)) for t in tags)
 
         hits: dict[int, ZhmmDict] = {}
-        for word in words.split():
-            w = word.lower()
+        if mode == "all":
             for item in self.mm["data"]:
-                if not item.get("id") or item["id"] in hits:
+                iid = item.get("id")
+                if not iid or iid in hits:
                     continue
-                matched = False
-                for field in self.SEARCHABLE_FIELDS:
-                    value = item.get(field)
-                    if value and w in str(value).lower():
-                        matched = True
-                        break
-                if not matched:
-                    tags = item.get("tags") or []
-                    if isinstance(tags, list) and any(w in str(t).lower() for t in tags):
-                        matched = True
-                if matched:
-                    hits[item["id"]] = item
+                if all(item_matches(item, t) for t in tokens):
+                    hits[iid] = item
+        else:  # "any"
+            for token in tokens:
+                for item in self.mm["data"]:
+                    iid = item.get("id")
+                    if not iid or iid in hits:
+                        continue
+                    if item_matches(item, token):
+                        hits[iid] = item
         return list(hits.values()) if hits else None
 
     def delete(self, id: int) -> bool:

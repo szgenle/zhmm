@@ -68,6 +68,7 @@ from __future__ import annotations
 import hmac
 import os
 import struct
+import time
 from typing import Final
 
 from argon2.exceptions import Argon2Error
@@ -202,6 +203,71 @@ def _validate_argon2_params(m_cost: int, t_cost: int, p_cost: int) -> None:
         raise CorruptedVault(f"argon2 t_cost out of range: {t_cost}")
     if not (_ARGON2_P_MIN <= p_cost <= _ARGON2_P_MAX):
         raise CorruptedVault(f"argon2 p_cost out of range: {p_cost}")
+
+
+# ----------------------------------------------------------------------
+# Argon2 自适应校准（新建密库时按本机性能动态选参数）
+# ----------------------------------------------------------------------
+
+
+def calibrate_argon2(
+    target_ms: int = 500,
+    *,
+    t_cost: int = ARGON2_T_COST,
+    p_cost: int = ARGON2_P_COST,
+    probe_m_cost: int = ARGON2_M_COST,
+) -> tuple[int, int, int]:
+    """根据本机实测耐时，返回使 Argon2id 派生接近 ``target_ms`` 的参数。
+
+    策略：在固定 ``t_cost`` / ``p_cost`` 下线性近似 m_cost 与耗时的
+    正比关系（Argon2 的内存-时间 trade-off），按 ``probe_m_cost``
+    做一次采样后线性缩放至 ``target_ms``，最后 clamp 到
+    ``[_ARGON2_M_MIN, _ARGON2_M_MAX]`` 以防弱机实测偏软 / 强机越界。
+
+    设计目标：
+
+    - **弱机不卡**：实测 > target_ms 时返回更小 m_cost；
+    - **强机更安全**：实测 < target_ms 时返回更大 m_cost；
+    - **范围可控**：结果始终在解密将接受的 ``[_ARGON2_M_MIN, _ARGON2_M_MAX]`` 内。
+
+    .. note::
+       本函数同步执行一次完整的 Argon2id 派生（~probe_m_cost KiB），
+       耗时估计与 ``target_ms`` 同数量级（典型 100~1000 ms），不宜放在
+       UI 主线程；建议在后台线程 / QThreadPool 中调用。
+
+    Args:
+        target_ms: 期望的单次 Argon2id 派生耗时（毫秒）。
+        t_cost: 迭代次数，默认 ``ARGON2_T_COST``（=3）。
+        p_cost: 并行度，默认 ``ARGON2_P_COST``（=1）。
+        probe_m_cost: 采样时使用的 m_cost。默认用 ``ARGON2_M_COST``。
+
+    Returns:
+        ``(m_cost, t_cost, p_cost)``，可直接传给 :func:`Vault.seal` 的
+        ``argon2_params`` 参数。
+    """
+    if target_ms <= 0:
+        raise ValidationError("target_ms must be positive")
+    _validate_argon2_params(probe_m_cost, t_cost, p_cost)
+
+    # 用一组任意固定值采样，不涉及密码学强度（仅用于测时）
+    probe_salt = b"calibrate-zhmm\x00\x00"  # 16B
+    assert len(probe_salt) == SALT_LEN
+    t0 = time.perf_counter()
+    hash_secret_raw(
+        secret=b"calibration-probe",
+        salt=probe_salt,
+        time_cost=t_cost,
+        memory_cost=probe_m_cost,
+        parallelism=p_cost,
+        hash_len=DERIVED_KEY_LEN,
+        type=Argon2Type.ID,
+    )
+    elapsed_ms = max(1.0, (time.perf_counter() - t0) * 1000.0)
+
+    # 线性缩放：时间 ∝ m_cost
+    scaled = int(round(probe_m_cost * (target_ms / elapsed_ms)))
+    scaled = max(_ARGON2_M_MIN, min(_ARGON2_M_MAX, scaled))
+    return scaled, t_cost, p_cost
 
 
 # ----------------------------------------------------------------------
@@ -390,11 +456,23 @@ class Vault:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def seal(account: str, password: str, plaintext: bytes) -> bytes:
+    def seal(
+        account: str,
+        password: str,
+        plaintext: bytes,
+        *,
+        argon2_params: tuple[int, int, int] | None = None,
+    ) -> bytes:
         """用 ``(account, password)`` 加密 ``plaintext``，返回 v6 blob。
 
-        - 使用当前默认 Argon2id 参数派生密钥；参数写入 header 并纳入 AAD 保护。
+        - 默认使用内置 Argon2id 参数派生密钥；也可通过 ``argon2_params``
+          传入 :func:`calibrate_argon2` 的返回值以适配本机性能。
+        - 选用的参数写入 header 并纳入 AAD 保护，解密方据 header 重算。
         - 每次调用生成新的随机 salt (16B) 与 iv (12B)。
+
+        Args:
+            argon2_params: 可选 ``(m_cost, t_cost, p_cost)``。为 ``None``
+                时使用默认值。超出允许范围会抛 :class:`CorruptedVault`。
         """
         if not isinstance(account, str):
             raise ValidationError("account must be a str")
@@ -405,9 +483,13 @@ class Vault:
 
         salt = os.urandom(SALT_LEN)
         iv = os.urandom(IV_LEN)
-        m_cost = ARGON2_M_COST
-        t_cost = ARGON2_T_COST
-        p_cost = ARGON2_P_COST
+        if argon2_params is None:
+            m_cost = ARGON2_M_COST
+            t_cost = ARGON2_T_COST
+            p_cost = ARGON2_P_COST
+        else:
+            m_cost, t_cost, p_cost = argon2_params
+            _validate_argon2_params(m_cost, t_cost, p_cost)
 
         header = MAGIC + bytes([VERSION]) + struct.pack(">III", m_cost, t_cost, p_cost) + salt + iv
         derived: bytearray | None = None

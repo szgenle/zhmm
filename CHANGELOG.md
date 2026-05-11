@@ -8,10 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **供应链安全护栏**：新增 `.github/dependabot.yml` （pip + github-actions 每周一 09:00 Asia/Shanghai 巡检，以 `chore(deps):` / `chore(ci):` 分别提 PR）与 `.github/workflows/ci.yml` 的 `audit` job（`poetry export --only=main` 生成 production 依赖清单 → `pip-audit` 扫描 CVE）。
+  - **软门禁**：`continue-on-error: true`，不阻断主流程，由维护者根据结果决定修复优先级；只扫运行时依赖，不纳入 pip / pytest / virtualenv 等 tooling。
+- **Argon2id 自适应参数**：`zhmm/core/crypto.py` 新增 `calibrate_argon2(target_ms=500, ...) → (m, t, p)`，基于本机实测耗时线性缩放 m_cost 到目标毫秒区间，并 clamp 在 `[_ARGON2_M_MIN, _ARGON2_M_MAX]` 以防弱机过软 / 强机越界。`Vault.seal(..., *, argon2_params=None)` 接受 calibrate 的返回值；`None` 时维持默认参数，向后兼容。选用的参数写入 v6 header 并纳入 AAD，解密方无需额外调用。
+- **自动锁定协议加固**（#M）：
+  - `zhmm/app/gui_app.py` 安装 `QApplication` 级事件过滤器，监听鼠标按键 / 移动 / 滚轮 / 键盘 / 触摸事件更新 `last_active_time`，不再仅靠窗口 `isActiveWindow()` 判定（修复原来“前台无人操作也不会锁”的盲区）；定时器 tick 由 `lock_time*60s` 缩短至 30s，准时触发。
+  - `zhmm/data/sm_data_manager.py` `SmData` 新增 `close()` 清理会话：清空已解密的 `mm["data"]` / `mm["roles"]` 容器，并将 `_account` / `_password` 赋空字符串；`AppWindow.hide_data_ui()` 在 `deleteLater()` 前调用，缩短明文条目 / 主密码在内存中的驻留时间。Python `str` / `dict` 不可原地擦除，依靠 GC 回收。
+- **搜索增强**（#J）：`SmData.search` 不再仅做 `str.lower()`，而是调用 `_normalize_search_text`（全角 U+3000 / U+FF01~U+FF5E → 半角，再小写化），避免中英文混输 / 全角数字导致的失配；`role`（类别）字段纳入默认搜索范围（之前漏掉）；新增 `mode="all"` AND 语义，默认 `"any"` OR 保持向后兼容。`pwd` 永不参与搜索。
 - **敏感字节即时擦除（best-effort）**：`zhmm/core/crypto.py` 新增 `_zeroize(*buffers: bytearray | None)` 工具，对 Argon2id 派生出的 32B 中间密钥、SM4 子密钥 (v6 16B / v5 key_enc 16B + key_mac 16B) 改用 `bytearray` 持有，在 `Vault.seal` / `_open_v6` / `_open_v5` 的 `try/finally` 中无条件原地写零，缩短它们在进程内存中的驻留窗口。
   - **设计范围**：Python 中 `bytes` / `str` 不可变、argon2-cffi / gmssl 内部的 C 缓冲区也无法控制，本次改动 **只认真关心** 我们自己在 Python 层持有的派生密钥副本；无意声称达到内存取证意义上的“经典零化”。
   - **平滑兼容**：`_sm4_encrypt_block` / `_sm4_ctr_xor` / `_sm4_gcm_seal` / `_sm4_gcm_open` / `_sm4_cbc_decrypt` 的 `key` 参数类型扩展为 `bytes | bytearray`，内部统一 `bytes(key)` 转换交给 gmssl；公开 API (`Vault.seal` / `Vault.open`) 签名与行为未变。
-  - **测试**：64 条 `test_crypto.py` 保持全绿，285 条全量测试未回归。
+  - **测试**：290 条全量测试全绿（新增 `tests/test_sm_data.py` 覆盖 #J/#M，`tests/test_crypto.py` 新增 `TestArgon2Calibration` 五条用例覆盖 #A）。
 - **剪贴板竞态保护**：新增 `zhmm/gui/clipboard_util.py` 提供统一的 `copy_sensitive(text)` 入口，在 10 秒自动清空剪贴板前先比对当前剪贴板内容的 SHA-256 指纹，若用户在这 10 秒内已复制了其他内容则放弃清空，避免原设计下「该清空时误清掉用户刚复制的内容」的体验问题。
   - 指纹而非明文保存在闭包里，避免敏感字符串多驻留 10 秒；
   - 适配密码/历史密码/TOTP 动态码/登录账号四处复制点（`password/window.py`、`password/history_dialog.py`、`settings/window.py`），操作路径和提示文案保持不变。

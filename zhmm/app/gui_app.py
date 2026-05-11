@@ -5,7 +5,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QEvent, QObject, QTimer
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
@@ -36,10 +36,15 @@ class AppWindow(BaseWindow):
         # 记录最后活动时间
         self.last_active_time = datetime.now()
 
-        # 创建定时器，使用配置的锁屏时间检查非活动时间
+        # 安装 QApplication 级事件过滤器跟踪用户键鼠活动（#M）
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
+
+        # 创建定时器，每 30s tick 一次，让锁定触发精度接近分钟级
         self.inactivity_timer = QTimer(self)
         self.inactivity_timer.timeout.connect(self.check_inactivity)
-        self.inactivity_timer.start(zhmm.config.get_lock_time() * 60000)
+        self.inactivity_timer.start(30_000)
 
         # 可选：浏览器填充桥
         self._bridge = None
@@ -107,8 +112,15 @@ class AppWindow(BaseWindow):
             self.welcome_widget = None
 
     def hide_data_ui(self):
-        """隐藏数据管理界面"""
+        """隐藏数据管理界面并清理会话中的明文数据（#M）。"""
         if self.main_widget:
+            info = getattr(self.main_widget, "info", None)
+            sm_data = info.get("sm_data") if isinstance(info, dict) else None
+            if sm_data is not None and hasattr(sm_data, "close"):
+                try:
+                    sm_data.close()
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(f"会话清理异常：{exc}")
             self.main_widget.deleteLater()
             del self.main_widget
             self.main_widget = None
@@ -133,23 +145,37 @@ class AppWindow(BaseWindow):
         self.show_data_ui(info)
 
     def check_inactivity(self):
-        """检查非活动时间"""
-        if self.isActiveWindow():
-            logger.info("isActiveWindow")
-            self.last_active_time = datetime.now()
+        """检查非活动时间。
+
+        活动判定依赖 :meth:`eventFilter` 记录的 ``last_active_time``，
+        包含鼠标 / 键盘 / 轮 等输入事件。
+        """
+        if isinstance(self.centralWidget(), WelcomeWidget):
+            # 已在登录页，无需锁定
             return
-
-        current_time = datetime.now()
-        inactive_duration = current_time - self.last_active_time
-
-        # 使用配置的锁屏时间检查非活动时间
-        if inactive_duration > timedelta(minutes=zhmm.config.get_lock_time()) and not isinstance(
-            self.centralWidget(), WelcomeWidget
-        ):
-            logger.info(f"检测到非活动时间: {inactive_duration}，显示登录窗口")
+        inactive_duration = datetime.now() - self.last_active_time
+        if inactive_duration > timedelta(minutes=zhmm.config.get_lock_time()):
+            logger.info(f"检测到非活动时间: {inactive_duration}，触发自动锁定")
             self.show_welcome_ui()
-        else:
-            logger.info("check_inactivity .. ")
+
+    # ------------------------------------------------------------------
+    # 全局输入活动检测（#M）
+    # ------------------------------------------------------------------
+    _ACTIVITY_EVENT_TYPES = frozenset(
+        {
+            QEvent.Type.MouseButtonPress,
+            QEvent.Type.MouseMove,
+            QEvent.Type.KeyPress,
+            QEvent.Type.Wheel,
+            QEvent.Type.TouchBegin,
+            QEvent.Type.TouchUpdate,
+        }
+    )
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # type: ignore[override]
+        if event.type() in self._ACTIVITY_EVENT_TYPES:
+            self.last_active_time = datetime.now()
+        return super().eventFilter(obj, event)
 
     # def changeEvent(self, event):  # type: ignore
     #     """窗口状态改变事件"""
