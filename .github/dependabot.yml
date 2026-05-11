@@ -1,0 +1,49 @@
+# Dependabot configuration
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# 作用：
+# - 每周自动扫描 pip / GitHub Actions 依赖的新版本与已知 CVE
+# - 有更新时提 PR（带 changelog 链接、升级路径），不直接合并，由维护者 review
+# - 与 CI 的 pip-audit 形成双重保险：pip-audit 阻断漏洞，dependabot 驱动修复
+
+version: 2
+updates:
+  # Python 依赖（Poetry 管理的 pyproject.toml / poetry.lock）
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # 安全更新实时推（不受 weekly 节流限制）
+    # 功能更新打包成 PR 避免噪声
+    groups:
+      python-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions workflow 依赖（actions/checkout@v4 等）
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"

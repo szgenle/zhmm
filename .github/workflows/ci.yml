@@ -56,6 +56,33 @@ jobs:
       - name: mypy
         run: poetry run mypy zhmm tests
 
+  audit:
+    name: Security audit (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install deps (runtime only)
+        run: poetry install --no-interaction --without dev
+
+      - name: Install pip-audit
+        run: pipx install pip-audit
+
+      - name: Run pip-audit against locked deps
+        # --strict: any valid CVE fails the job
+        # --desc off: compact CVE list, skip lengthy descriptions
+        # only production deps are audited (dev group excluded)
+        run: poetry run pip-audit --strict --desc off
+
   test:
     name: Test (Python ${{ matrix.python-version }} on ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
