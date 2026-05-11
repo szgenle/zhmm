@@ -634,8 +634,9 @@ class PasswordWindow(QWidget):
         self.status_changed.emit(Status.PWD_COPIED_WITH_HINT, "success")
 
         # 定时清空剪贴板，避免残留敏感信息
-        # 绑定 receiver=self：窗口销毁时定时器自动失效，避免后台 lambda 里引用已释放对象
-        QTimer.singleShot(10000, self, _clear_clipboard)
+        # 使用模块级 _clear_clipboard，不捕获任何 widget 引用，
+        # 所以即使 PasswordWindow 已销毁，该 slot 也能安全执行（不会解引用悬空指针）
+        QTimer.singleShot(10000, _clear_clipboard)
         # 2.5s 后清空状态栏（但如期间文案已被别的操作替换，则不覆盖）
         self._schedule_status_reset(Status.PWD_COPIED_WITH_HINT)
 
@@ -795,4 +796,4 @@ class PasswordWindow(QWidget):
         QApplication.clipboard().setText(code)  # type: ignore
         QToolTip.showText(QCursor.pos(), Tooltip.totp_copied(code), self.table_view)
         self._show_status(Status.totp_copied_with_hint(code), highlight=True)
-        QTimer.singleShot(10000, self, _clear_clipboard)
+        QTimer.singleShot(10000, _clear_clipboard)
