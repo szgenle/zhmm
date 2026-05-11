@@ -10,6 +10,8 @@ from zhmm.core.errors import ValidationError
 
 # 密码掩码占位符（固定 8 个圆点，不暴露真实长度）
 _PWD_MASK = "•" * 8
+# 账号列索引
+_ACCOUNT_COL = 2
 # 密码列索引
 _PWD_COL = 3
 # “显示”按钮列索引（紧跟在密码列后面）
@@ -211,6 +213,10 @@ class PasswordTableModel(QAbstractTableModel):
             if item.get("id") == rid:
                 return i
         return -1
+
+    @staticmethod
+    def account_column() -> int:
+        return _ACCOUNT_COL
 
     @staticmethod
     def password_column() -> int:

@@ -644,16 +644,34 @@ class PasswordWindow(QWidget):
     # 密码明文显示切换
     # ------------------------------------------------------------------
     def on_table_cell_clicked(self, index) -> None:
-        """统一处理密码列 / “显示”列 / “动态码”列的点击行为。"""
+        """统一处理账号列 / 密码列 / “显示”列 / “动态码”列的点击行为。"""
         if not index.isValid():
             return
         col = index.column()
         if col == PasswordTableModel.reveal_column():
             self._toggle_reveal_at(index)
+        elif col == PasswordTableModel.account_column():
+            self._copy_account_at(index)
         elif col == PasswordTableModel.password_column():
             self.copy_cell_to_clipboard(index)
         elif col == PasswordTableModel.totp_column():
             self._copy_totp_at(index)
+
+    def _copy_account_at(self, proxy_index) -> None:
+        """将点击行的账号复制到剪贴板（账号为非敏感字段，不安排自动清空）。"""
+        if not proxy_index.isValid():
+            return
+        source_index = self.proxy_model.mapToSource(proxy_index)
+        if not source_index.isValid():
+            return
+        source_row = source_index.row()
+        data_list = self.gl_data.mm.get("data") or []
+        if source_row < 0 or source_row >= len(data_list):
+            return
+        user_text = str(data_list[source_row].get("userID") or "")
+        if not user_text:
+            return
+        self._copy_plain(user_text, "账号")
 
     def _toggle_reveal_at(self, proxy_index) -> None:
         """切换点击行的密码明文显示，并安排/重置自动隐藏定时器。"""
