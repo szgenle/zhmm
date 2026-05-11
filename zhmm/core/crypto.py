@@ -205,20 +205,47 @@ def _validate_argon2_params(m_cost: int, t_cost: int, p_cost: int) -> None:
 
 
 # ----------------------------------------------------------------------
+# 敏感字节擦除（best-effort）
+# ----------------------------------------------------------------------
+
+
+def _zeroize(*buffers: bytearray | None) -> None:
+    """对传入的 :class:`bytearray` 缓冲区原地写零。
+
+    Python 中 ``bytes`` / ``str`` 为不可变对象，无法真正擦除内存；
+    ``bytearray`` 是我们可直接控制的唯一方式。C 扩展（argon2-cffi /
+    gmssl）内部的临时缓冲区不在此函数作用域内，无法保证完全清除；
+    本函数的目标是 **缩短我们自己持有的派生密钥 / 子密钥 在
+    内存中的驻留时间**，尽量在占用、解密、换密完毕后立即调用。
+
+    ``None`` 参数静默忽略，方便将本函数置于 ``finally:`` 中无条件调用。
+    """
+    for buf in buffers:
+        if buf is None:
+            continue
+        n = len(buf)
+        if n:
+            buf[:] = b"\x00" * n
+
+
+# ----------------------------------------------------------------------
 # SM4 原语（单块 ECB，无填充；基于 gmssl.CryptSM4.one_round）
 # ----------------------------------------------------------------------
 
 
-def _sm4_encrypt_block(key: bytes, block: bytes) -> bytes:
+def _sm4_encrypt_block(key: bytes | bytearray, block: bytes) -> bytes:
     """SM4 单块加密（16B → 16B，无填充）。
 
     gmssl 的 ``crypt_ecb`` 会自动做 PKCS7 padding，不适合 CTR 用途。
     直接调用内部 ``one_round`` 方法跑 32 轮 Feistel 即可拿到纯 ECB 单块结果。
+
+    ``key`` 接受 ``bytes`` 或 ``bytearray``（便于调用方用 bytearray 持有密钥
+    以便后续 zeroize）；内部统一按 bytes 语义传给 ``gmssl``。
     """
     if len(block) != 16:
         raise ValidationError("sm4 block must be exactly 16 bytes")
     cipher = sm4.CryptSM4()
-    cipher.set_key(key, sm4.SM4_ENCRYPT)
+    cipher.set_key(bytes(key), sm4.SM4_ENCRYPT)
     out = cipher.one_round(cipher.sk, list(block))
     return bytes(out)
 
@@ -269,7 +296,7 @@ def _inc32(counter: bytes) -> bytes:
     return prefix + ctr.to_bytes(4, "big")
 
 
-def _sm4_ctr_xor(key: bytes, icb: bytes, data: bytes) -> bytes:
+def _sm4_ctr_xor(key: bytes | bytearray, icb: bytes, data: bytes) -> bytes:
     """SM4-CTR：用从 ``icb`` 开始递增的 keystream 对 ``data`` 做 XOR。"""
     out = bytearray(len(data))
     counter = icb
@@ -289,7 +316,7 @@ def _ghash_pad(b: bytes) -> bytes:
     return b + b"\x00" * (16 - r) if r else b
 
 
-def _sm4_gcm_seal(key: bytes, iv: bytes, aad: bytes, plaintext: bytes) -> tuple[bytes, bytes]:
+def _sm4_gcm_seal(key: bytes | bytearray, iv: bytes, aad: bytes, plaintext: bytes) -> tuple[bytes, bytes]:
     """SM4-GCM 加密（仅支持 96-bit IV）。返回 ``(ciphertext, tag)``。"""
     if len(key) != KEY_LEN:
         raise ValidationError("gcm key must be 16 bytes")
@@ -315,7 +342,7 @@ def _sm4_gcm_seal(key: bytes, iv: bytes, aad: bytes, plaintext: bytes) -> tuple[
     return ciphertext, tag
 
 
-def _sm4_gcm_open(key: bytes, iv: bytes, aad: bytes, ciphertext: bytes, tag: bytes) -> bytes:
+def _sm4_gcm_open(key: bytes | bytearray, iv: bytes, aad: bytes, ciphertext: bytes, tag: bytes) -> bytes:
     """SM4-GCM 解密。认证失败抛 :class:`CryptoError`。"""
     if len(key) != KEY_LEN:
         raise ValidationError("gcm key must be 16 bytes")
@@ -383,14 +410,19 @@ class Vault:
         p_cost = ARGON2_P_COST
 
         header = MAGIC + bytes([VERSION]) + struct.pack(">III", m_cost, t_cost, p_cost) + salt + iv
+        derived: bytearray | None = None
+        key: bytearray | None = None
         try:
-            derived = _derive_key(account, password, salt, m_cost, t_cost, p_cost)
-            key = derived[:KEY_LEN]
+            derived = bytearray(_derive_key(account, password, salt, m_cost, t_cost, p_cost))
+            key = bytearray(derived[:KEY_LEN])
             ciphertext, tag = _sm4_gcm_seal(key, iv, header, bytes(plaintext))
         except (ValidationError, CryptoError):
             raise
         except Exception:
             raise CryptoError("encryption failed") from None
+        finally:
+            # 无论成败都立即擦除派生密钥 / SM4 子密钥，缩短内存驻留时间。
+            _zeroize(derived, key)
         return header + ciphertext + tag
 
     # ------------------------------------------------------------------
@@ -445,14 +477,19 @@ def _open_v6(account: str, password: str, blob: bytes) -> bytes:
     tag = blob[-TAG_LEN:]
     ciphertext = blob[_HEADER_LEN:-TAG_LEN]
 
-    derived = _derive_key(account, password, salt, m_cost, t_cost, p_cost)
-    key = derived[:KEY_LEN]
+    derived: bytearray | None = None
+    key: bytearray | None = None
     try:
-        return _sm4_gcm_open(key, iv, header, ciphertext, tag)
-    except CryptoError:
-        raise
-    except Exception:
-        raise CorruptedVault("decryption failed") from None
+        derived = bytearray(_derive_key(account, password, salt, m_cost, t_cost, p_cost))
+        key = bytearray(derived[:KEY_LEN])
+        try:
+            return _sm4_gcm_open(key, iv, header, ciphertext, tag)
+        except CryptoError:
+            raise
+        except Exception:
+            raise CorruptedVault("decryption failed") from None
+    finally:
+        _zeroize(derived, key)
 
 
 # ----------------------------------------------------------------------
@@ -460,10 +497,10 @@ def _open_v6(account: str, password: str, blob: bytes) -> bytes:
 # ----------------------------------------------------------------------
 
 
-def _sm4_cbc_decrypt(key: bytes, iv: bytes, ciphertext: bytes) -> bytes:
+def _sm4_cbc_decrypt(key: bytes | bytearray, iv: bytes, ciphertext: bytes) -> bytes:
     """SM4-CBC 解密（gmssl 会自动去除 PKCS7 padding）。"""
     cipher = sm4.CryptSM4()
-    cipher.set_key(key, sm4.SM4_DECRYPT)
+    cipher.set_key(bytes(key), sm4.SM4_DECRYPT)
     pt: bytes = cipher.crypt_cbc(iv, ciphertext)
     return pt
 
@@ -488,18 +525,26 @@ def _open_v5(account: str, password: str, blob: bytes) -> bytes:
     if len(ciphertext) == 0 or len(ciphertext) % 16 != 0:
         raise CorruptedVault("ciphertext length invalid")
 
-    derived = _derive_key(account, password, salt, m_cost, t_cost, p_cost)
-    key_enc = derived[:_V5_KEY_ENC_LEN]
-    key_mac = derived[_V5_KEY_ENC_LEN : _V5_KEY_ENC_LEN + _V5_KEY_MAC_LEN]
-
-    expected = _hmac_sm3(key_mac, blob[:-_V5_TAG_LEN])
-    if not hmac.compare_digest(tag, expected):
-        raise BadPassword("authentication failed (wrong account/password or tampered data)")
-
+    derived: bytearray | None = None
+    key_enc: bytearray | None = None
+    key_mac: bytearray | None = None
     try:
-        return _sm4_cbc_decrypt(key_enc, iv, ciphertext)
-    except Exception:
-        raise CorruptedVault("decryption failed") from None
+        derived = bytearray(_derive_key(account, password, salt, m_cost, t_cost, p_cost))
+        key_enc = bytearray(derived[:_V5_KEY_ENC_LEN])
+        key_mac = bytearray(derived[_V5_KEY_ENC_LEN : _V5_KEY_ENC_LEN + _V5_KEY_MAC_LEN])
+
+        expected = _hmac_sm3(bytes(key_mac), blob[:-_V5_TAG_LEN])
+        if not hmac.compare_digest(tag, expected):
+            raise BadPassword("authentication failed (wrong account/password or tampered data)")
+
+        try:
+            return _sm4_cbc_decrypt(key_enc, iv, ciphertext)
+        except CryptoError:
+            raise
+        except Exception:
+            raise CorruptedVault("decryption failed") from None
+    finally:
+        _zeroize(derived, key_enc, key_mac)
 
 
 __all__ = [

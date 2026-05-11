@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **敏感字节即时擦除（best-effort）**：`zhmm/core/crypto.py` 新增 `_zeroize(*buffers: bytearray | None)` 工具，对 Argon2id 派生出的 32B 中间密钥、SM4 子密钥 (v6 16B / v5 key_enc 16B + key_mac 16B) 改用 `bytearray` 持有，在 `Vault.seal` / `_open_v6` / `_open_v5` 的 `try/finally` 中无条件原地写零，缩短它们在进程内存中的驻留窗口。
+  - **设计范围**：Python 中 `bytes` / `str` 不可变、argon2-cffi / gmssl 内部的 C 缓冲区也无法控制，本次改动 **只认真关心** 我们自己在 Python 层持有的派生密钥副本；无意声称达到内存取证意义上的“经典零化”。
+  - **平滑兼容**：`_sm4_encrypt_block` / `_sm4_ctr_xor` / `_sm4_gcm_seal` / `_sm4_gcm_open` / `_sm4_cbc_decrypt` 的 `key` 参数类型扩展为 `bytes | bytearray`，内部统一 `bytes(key)` 转换交给 gmssl；公开 API (`Vault.seal` / `Vault.open`) 签名与行为未变。
+  - **测试**：64 条 `test_crypto.py` 保持全绿，285 条全量测试未回归。
 - **剪贴板竞态保护**：新增 `zhmm/gui/clipboard_util.py` 提供统一的 `copy_sensitive(text)` 入口，在 10 秒自动清空剪贴板前先比对当前剪贴板内容的 SHA-256 指纹，若用户在这 10 秒内已复制了其他内容则放弃清空，避免原设计下「该清空时误清掉用户刚复制的内容」的体验问题。
   - 指纹而非明文保存在闭包里，避免敏感字符串多驻留 10 秒；
   - 适配密码/历史密码/TOTP 动态码/登录账号四处复制点（`password/window.py`、`password/history_dialog.py`、`settings/window.py`），操作路径和提示文案保持不变。
