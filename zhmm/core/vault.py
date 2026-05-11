@@ -19,7 +19,7 @@ import tempfile
 from pathlib import Path
 
 from zhmm.core.crypto import Vault as CryptoVault
-from zhmm.core.errors import CryptoError, StorageError
+from zhmm.core.errors import CorruptedVault, StorageError
 from zhmm.core.models import Vault
 
 
@@ -48,10 +48,10 @@ class VaultFile:
             data = json.loads(plaintext.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as e:
             # 解密成功但 JSON 解析失败 = 被篡改后恰好通过认证的概率极低，
-            # 但仍视为 CryptoError 比较合理
-            raise CryptoError("vault payload is not valid JSON") from e
+            # 但仍视为 CorruptedVault 比较合理
+            raise CorruptedVault("vault payload is not valid JSON") from e
         if not isinstance(data, dict):
-            raise CryptoError("vault payload is not a JSON object")
+            raise CorruptedVault("vault payload is not a JSON object")
         return Vault.from_dict(data)
 
     @staticmethod

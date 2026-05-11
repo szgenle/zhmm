@@ -75,14 +75,14 @@ from argon2.low_level import Type as Argon2Type
 from argon2.low_level import hash_secret_raw
 from gmssl import sm3, sm4
 
-from zhmm.core.errors import CryptoError, ValidationError
+from zhmm.core.errors import BadPassword, CorruptedVault, CryptoError, UnsupportedVersion, ValidationError
 
 # ----------------------------------------------------------------------
 # 协议常量（一旦发布请勿随意修改；修改必须 bump VERSION）
 # ----------------------------------------------------------------------
 
 MAGIC: Final[bytes] = b"ZHMM"
-VERSION: Final[int] = 6  # SM4-GCM
+VERSION: Final[int] = 6  # SM4-GCM (v6)
 
 SALT_LEN: Final[int] = 16
 IV_LEN: Final[int] = 12  # GCM 标准 96-bit IV
@@ -197,11 +197,11 @@ def _derive_key(
 def _validate_argon2_params(m_cost: int, t_cost: int, p_cost: int) -> None:
     """检查 Argon2 参数在安全范围内，防止恶意 blob 构造 OOM。"""
     if not (_ARGON2_M_MIN <= m_cost <= _ARGON2_M_MAX):
-        raise CryptoError(f"argon2 m_cost out of range: {m_cost}")
+        raise CorruptedVault(f"argon2 m_cost out of range: {m_cost}")
     if not (_ARGON2_T_MIN <= t_cost <= _ARGON2_T_MAX):
-        raise CryptoError(f"argon2 t_cost out of range: {t_cost}")
+        raise CorruptedVault(f"argon2 t_cost out of range: {t_cost}")
     if not (_ARGON2_P_MIN <= p_cost <= _ARGON2_P_MAX):
-        raise CryptoError(f"argon2 p_cost out of range: {p_cost}")
+        raise CorruptedVault(f"argon2 p_cost out of range: {p_cost}")
 
 
 # ----------------------------------------------------------------------
@@ -333,7 +333,7 @@ def _sm4_gcm_open(key: bytes, iv: bytes, aad: bytes, ciphertext: bytes, tag: byt
     ek_j0 = _sm4_encrypt_block(key, j0)
     expected = bytes(a ^ b for a, b in zip(s, ek_j0, strict=True))
     if not hmac.compare_digest(expected, tag):
-        raise CryptoError("authentication failed (wrong account/password or tampered data)")
+        raise BadPassword("authentication failed (wrong account/password or tampered data)")
 
     icb = _inc32(j0)
     return _sm4_ctr_xor(key, icb, ciphertext)
@@ -412,14 +412,14 @@ class Vault:
             raise ValidationError(f"blob too short: {len(blob)}")
 
         if blob[: len(MAGIC)] != MAGIC:
-            raise CryptoError("not a zhmm vault (magic mismatch)")
+            raise CorruptedVault("not a zhmm vault (magic mismatch)")
 
         version = blob[len(MAGIC)]
         if version == VERSION:
             return _open_v6(account, password, blob)
         if version == _V5_VERSION:
             return _open_v5(account, password, blob)
-        raise CryptoError(f"unsupported vault version: {version}")
+        raise UnsupportedVersion(f"unsupported vault version: {version}")
 
 
 # ----------------------------------------------------------------------
@@ -452,7 +452,7 @@ def _open_v6(account: str, password: str, blob: bytes) -> bytes:
     except CryptoError:
         raise
     except Exception:
-        raise CryptoError("decryption failed") from None
+        raise CorruptedVault("decryption failed") from None
 
 
 # ----------------------------------------------------------------------
@@ -486,7 +486,7 @@ def _open_v5(account: str, password: str, blob: bytes) -> bytes:
     tag = blob[-_V5_TAG_LEN:]
     ciphertext = blob[_V5_HEADER_LEN:-_V5_TAG_LEN]
     if len(ciphertext) == 0 or len(ciphertext) % 16 != 0:
-        raise CryptoError("ciphertext length invalid")
+        raise CorruptedVault("ciphertext length invalid")
 
     derived = _derive_key(account, password, salt, m_cost, t_cost, p_cost)
     key_enc = derived[:_V5_KEY_ENC_LEN]
@@ -494,12 +494,12 @@ def _open_v5(account: str, password: str, blob: bytes) -> bytes:
 
     expected = _hmac_sm3(key_mac, blob[:-_V5_TAG_LEN])
     if not hmac.compare_digest(tag, expected):
-        raise CryptoError("authentication failed (wrong account/password or tampered data)")
+        raise BadPassword("authentication failed (wrong account/password or tampered data)")
 
     try:
         return _sm4_cbc_decrypt(key_enc, iv, ciphertext)
     except Exception:
-        raise CryptoError("decryption failed") from None
+        raise CorruptedVault("decryption failed") from None
 
 
 __all__ = [

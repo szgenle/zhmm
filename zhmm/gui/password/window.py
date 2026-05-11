@@ -28,6 +28,7 @@ import zhmm
 from zhmm.config.constants import ZhmmFileInfo
 from zhmm.core.errors import ValidationError
 from zhmm.data.sm_data_manager import SmData
+from zhmm.gui.clipboard_util import copy_sensitive
 from zhmm.gui.password.add_dialog import AddPasswordDialog
 from zhmm.gui.password.history_dialog import PasswordHistoryDialog
 from zhmm.gui.password.operations import PasswordOperations
@@ -40,8 +41,7 @@ from zhmm.widgets.combo_box import WideComboBox
 
 
 def _clear_clipboard() -> None:
-    """清空系统剪贴板。作为 QTimer.singleShot(msec, receiver, slot) 的 slot，
-    不持有任何 widget 引用，避免 lambda 闭包意外延长对象生命周期。"""
+    """已废弃：保留占位避免外部引用打断。建议使用 :mod:`zhmm.gui.clipboard_util`。"""
     try:
         clipboard = QApplication.clipboard()
         if clipboard is not None:
@@ -625,7 +625,8 @@ class PasswordWindow(QWidget):
         text = self.proxy_model.data(index, Qt.ItemDataRole.EditRole)
         if not text:
             return
-        QApplication.clipboard().setText(str(text))  # type: ignore
+        # 写入剪贴板 + 10s 带竞态保护的自动清空
+        copy_sensitive(str(text))
 
         # 1) 鼠标位置气泡提示（最显眼）
         QToolTip.showText(QCursor.pos(), Tooltip.PWD_COPIED, self.table_view)
@@ -633,10 +634,6 @@ class PasswordWindow(QWidget):
         # 2) 底部状态栏高亮提示（绿色加粗， success 级别）
         self.status_changed.emit(Status.PWD_COPIED_WITH_HINT, "success")
 
-        # 定时清空剪贴板，避免残留敏感信息
-        # 使用模块级 _clear_clipboard，不捕获任何 widget 引用，
-        # 所以即使 PasswordWindow 已销毁，该 slot 也能安全执行（不会解引用悬空指针）
-        QTimer.singleShot(10000, _clear_clipboard)
         # 2.5s 后清空状态栏（但如期间文案已被别的操作替换，则不覆盖）
         self._schedule_status_reset(Status.PWD_COPIED_WITH_HINT)
 
@@ -811,7 +808,6 @@ class PasswordWindow(QWidget):
         if not code:
             QToolTip.showText(QCursor.pos(), Tooltip.TOTP_NOT_ENABLED, self.table_view)
             return
-        QApplication.clipboard().setText(code)  # type: ignore
         QToolTip.showText(QCursor.pos(), Tooltip.totp_copied(code), self.table_view)
         self._show_status(Status.totp_copied_with_hint(code), highlight=True)
-        QTimer.singleShot(10000, _clear_clipboard)
+        copy_sensitive(code)

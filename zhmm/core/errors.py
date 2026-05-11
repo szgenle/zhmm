@@ -20,6 +20,34 @@ class CryptoError(ZhmmError):
 
     故意不在异常信息中暴露敏感细节（salt、iv、key 等），也不链式保留底层异常，
     以免侧信道泄露。
+
+    该基类下派生的更细粒度子类（:class:`BadPassword` / :class:`CorruptedVault` /
+    :class:`UnsupportedVersion`）供 UI 层给出有针对性的用户提示；仍支持
+    ``except CryptoError`` 统一兜底，保持向后兼容。
+    """
+
+
+class BadPassword(CryptoError):
+    """AEAD/HMAC 认证失败：账号/密码错误或密文被篡改。
+
+    AEAD 构造无法从密码学上区分「密码错」与「数据被篡改」，UI 层提示文案
+    应同时覆盖两种可能（例如：\"账号或密码错误，或文件已损坏\"），避免暗示
+    攻击者更多信息。
+    """
+
+
+class CorruptedVault(CryptoError):
+    """密库文件结构损坏：magic 不匹配、长度非法、JSON 解析失败、KDF 参数越界等。
+
+    与 :class:`BadPassword` 的区别：本类异常不依赖密钥即可判定，属于
+    \"一眼可见的坏文件\"，UI 层可提示用户换一份备份打开。
+    """
+
+
+class UnsupportedVersion(CryptoError):
+    """密库文件版本号不在当前程序支持范围内。
+
+    通常发生在用户用旧版 zhmm 打开了新版程序写出的密库，UI 层应提示升级。
     """
 
 

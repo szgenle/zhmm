@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **剪贴板竞态保护**：新增 `zhmm/gui/clipboard_util.py` 提供统一的 `copy_sensitive(text)` 入口，在 10 秒自动清空剪贴板前先比对当前剪贴板内容的 SHA-256 指纹，若用户在这 10 秒内已复制了其他内容则放弃清空，避免原设计下「该清空时误清掉用户刚复制的内容」的体验问题。
+  - 指纹而非明文保存在闭包里，避免敏感字符串多驻留 10 秒；
+  - 适配密码/历史密码/TOTP 动态码/登录账号四处复制点（`password/window.py`、`password/history_dialog.py`、`settings/window.py`），操作路径和提示文案保持不变。
+
 ### Changed
+- **加密错误类型细化**：`zhmm/core/errors.py` 在 `CryptoError` 下新增三个子类，便于 UI 层针对性提示：
+  - `BadPassword`：AEAD / HMAC 认证失败（账号/密码错或密文被篡改；密码学上不可区分，UI 应同时覆盖两种可能）；
+  - `CorruptedVault`：文件结构损坏（magic 不匹配、长度非法、JSON 解析失败、Argon2 参数越界、CBC 解密出错等）；
+  - `UnsupportedVersion`：版本字节不在当前程序支持范围（v3 / v4 / 未来版）。
+  - `crypto.py` / `vault.py` 中原先统一抛 `CryptoError` 的 raise 点全部替换为以上子类；因三者均继承自 `CryptoError`，`except CryptoError` 的用户代码/测试完全向后兼容。
 - **加密栈升级到 SM4-GCM（v6 格式）**：`zhmm/core/crypto.py` 由原先的 **SM4-CBC + HMAC-SM3 Encrypt-then-MAC**（v5）迁移到 **SM4-GCM 原生 AEAD**（NIST SP 800-38D）。
   - **实现**：`gmssl 3.2.2` 未提供 SM4-GCM，基于 `CryptSM4.one_round` 的单块 SM4 无填充原语手工实现 CTR 流加密 + GHASH 认证（`_gf128_mul` / `_ghash` / `_sm4_ctr_xor` / `_sm4_gcm_seal` / `_sm4_gcm_open`）；仅支持 NIST 推荐的 96-bit IV 标准形态，认证标签 128-bit。
   - **AAD 保护**：整个文件头（magic + version + m_cost + t_cost + p_cost + salt + iv）作为 GCM 的附加认证数据，header 任意字段被篡改（含 Argon2 参数）都会触发认证失败，防止降级攻击，无需额外 MAC 子密钥。

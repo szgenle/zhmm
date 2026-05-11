@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import (
-    QApplication,
     QButtonGroup,
     QCheckBox,
     QFormLayout,
@@ -23,6 +22,7 @@ from PyQt6.QtWidgets import (
 import zhmm
 from zhmm.config import saved_files as saved_files_store
 from zhmm.config.constants import ZhmmFileInfo
+from zhmm.gui.clipboard_util import copy_sensitive
 from zhmm.gui.settings.rekey_dialog import RekeyDialog
 from zhmm.gui.texts import Account as AccountText
 from zhmm.gui.texts import Rekey as RekeyText
@@ -129,16 +129,13 @@ class SettingWindow(QWidget):
         return group
 
     def _copy_account(self) -> None:
-        """复制登录账号到剪贴板，10 秒后自动清空。"""
+        """复制登录账号到剪贴板，10 秒后自动清空（带竞态保护）。"""
         account = self.info.get("account", "")
         if not account:
             return
-        clipboard = QApplication.clipboard()
-        if clipboard is None:
+        if not copy_sensitive(str(account)):
             return
-        clipboard.setText(str(account))
         QToolTip.showText(QCursor.pos(), Tooltip.ACCOUNT_COPIED, self)
-        QTimer.singleShot(10000, lambda: QApplication.clipboard().clear() if QApplication.clipboard() else None)
 
     def _build_general_group(self) -> QGroupBox:
         """常规设置：自动锁定时间 + 主题"""

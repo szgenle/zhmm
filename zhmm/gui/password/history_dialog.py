@@ -15,10 +15,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCursor
 from PyQt6.QtWidgets import (
-    QApplication,
     QDialog,
     QHBoxLayout,
     QHeaderView,
@@ -30,6 +29,8 @@ from PyQt6.QtWidgets import (
     QToolTip,
     QVBoxLayout,
 )
+
+from zhmm.gui.clipboard_util import copy_sensitive
 
 # 掩码占位：与表格 reveal 列保持一致的视觉风格
 _MASK = "••••••••••••"
@@ -164,10 +165,9 @@ class PasswordHistoryDialog(QDialog):
         pwd = str(self._history[row].get("pwd") or "")
         if not pwd:
             return
-        QApplication.clipboard().setText(pwd)  # type: ignore[union-attr]
+        # 写入剪贴板 + 10s 带竞态保护的自动清空（与主窗口密码复制一致）
+        copy_sensitive(pwd)
         QToolTip.showText(QCursor.pos(), "✅ 已复制历史密码到剪贴板（10 秒后自动清空）", self)
-        # 与主窗口密码复制一致：10 秒后清空剪贴板
-        QTimer.singleShot(10000, lambda: QApplication.clipboard().clear())  # type: ignore[union-attr]
 
     def _request_rollback(self, row: int) -> None:
         if not (0 <= row < len(self._history)):
