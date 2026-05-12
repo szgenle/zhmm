@@ -219,8 +219,34 @@ class AppWindow(BaseWindow):
         QMessageBox.about(self, "关于", about_text)
 
 
+def _install_global_excepthook() -> None:
+    """拦截所有 slot 未捕获的 Python 异常，避免 PyQt6 默认行为 abort 进程。
+
+    PyQt6 从 6.0 起，signal/slot 里抛出的 Python 异常默认会调 ``qFatal``让进程
+    直接崩溃（用户视角“闪退”）。比如曾经的 ``QTimer.singleShot(msec, receiver, slot)``
+    三参误用、lambda 参数不匹配等，都会例就独立触发闪退，极难定位。
+
+    改成统一走 logger 记下完整栈，业务上的未捕获异常后续仍可通过日志定位，但不
+    再让用户在无提示下丢失进程与会话（包括未落盘的数据修改）。
+    """
+
+    def _hook(exc_type, exc_value, exc_tb):
+        # KeyboardInterrupt 仍按默认行为处理，方便终端 Ctrl-C 退出。
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_tb)
+            return
+        logger.error(
+            "GUI 中出现未捕获异常（已拦截以避免进程崩溃）",
+            exc_info=(exc_type, exc_value, exc_tb),
+        )
+
+    sys.excepthook = _hook
+
+
 def main() -> None:
     """主函数"""
+
+    _install_global_excepthook()
 
     app = QApplication(sys.argv)
 

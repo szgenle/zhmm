@@ -641,18 +641,26 @@ class PasswordWindow(QWidget):
     # 密码明文显示切换
     # ------------------------------------------------------------------
     def on_table_cell_clicked(self, index) -> None:
-        """统一处理账号列 / 密码列 / “显示”列 / “动态码”列的点击行为。"""
-        if not index.isValid():
-            return
-        col = index.column()
-        if col == PasswordTableModel.reveal_column():
-            self._toggle_reveal_at(index)
-        elif col == PasswordTableModel.account_column():
-            self._copy_account_at(index)
-        elif col == PasswordTableModel.password_column():
-            self.copy_cell_to_clipboard(index)
-        elif col == PasswordTableModel.totp_column():
-            self._copy_totp_at(index)
+        """统一处理账号列 / 密码列 / “显示”列 / “动态码”列的点击行为。
+
+        PyQt6 中 signal slot 抛出的 Python 异常默认会让进程直接 abort（闪退）。
+        这里做顶层兜底：把点击分发里的任何异常转成日志，让用户不至于无感闪退，
+        同时也能在 zhmm 日志里留下栈帮助定位问题。
+        """
+        try:
+            if not index.isValid():
+                return
+            col = index.column()
+            if col == PasswordTableModel.reveal_column():
+                self._toggle_reveal_at(index)
+            elif col == PasswordTableModel.account_column():
+                self._copy_account_at(index)
+            elif col == PasswordTableModel.password_column():
+                self.copy_cell_to_clipboard(index)
+            elif col == PasswordTableModel.totp_column():
+                self._copy_totp_at(index)
+        except Exception:  # noqa: BLE001
+            logger.exception("处理表格单元格点击时发生异常，已拦截以避免进程崩溃")
 
     def _copy_account_at(self, proxy_index) -> None:
         """将点击行的账号复制到剪贴板（账号为非敏感字段，不安排自动清空）。"""
