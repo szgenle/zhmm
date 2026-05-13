@@ -5,30 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+# [Unreleased]
+
+## [0.6.0] - 2026-05-13
 
 ### Added
-- **供应链安全护栏**：新增 `.github/dependabot.yml` （pip + github-actions 每周一 09:00 Asia/Shanghai 巡检，以 `chore(deps):` / `chore(ci):` 分别提 PR）与 `.github/workflows/ci.yml` 的 `audit` job（`poetry export --only=main` 生成 production 依赖清单 → `pip-audit` 扫描 CVE）。
-  - **软门禁**：`continue-on-error: true`，不阻断主流程，由维护者根据结果决定修复优先级；只扫运行时依赖，不纳入 pip / pytest / virtualenv 等 tooling。
-- **Argon2id 自适应参数**：`zhmm/core/crypto.py` 新增 `calibrate_argon2(target_ms=500, ...) → (m, t, p)`，基于本机实测耗时线性缩放 m_cost 到目标毫秒区间，并 clamp 在 `[_ARGON2_M_MIN, _ARGON2_M_MAX]` 以防弱机过软 / 强机越界。`Vault.seal(..., *, argon2_params=None)` 接受 calibrate 的返回值；`None` 时维持默认参数，向后兼容。选用的参数写入 v6 header 并纳入 AAD，解密方无需额外调用。
-- **自动锁定协议加固**（#M）：
-  - `zhmm/app/gui_app.py` 安装 `QApplication` 级事件过滤器，监听鼠标按键 / 移动 / 滚轮 / 键盘 / 触摸事件更新 `last_active_time`，不再仅靠窗口 `isActiveWindow()` 判定（修复原来“前台无人操作也不会锁”的盲区）；定时器 tick 由 `lock_time*60s` 缩短至 30s，准时触发。
-  - `zhmm/data/sm_data_manager.py` `SmData` 新增 `close()` 清理会话：清空已解密的 `mm["data"]` / `mm["roles"]` 容器，并将 `_account` / `_password` 赋空字符串；`AppWindow.hide_data_ui()` 在 `deleteLater()` 前调用，缩短明文条目 / 主密码在内存中的驻留时间。Python `str` / `dict` 不可原地擦除，依靠 GC 回收。
-- **搜索增强**（#J）：`SmData.search` 不再仅做 `str.lower()`，而是调用 `_normalize_search_text`（全角 U+3000 / U+FF01~U+FF5E → 半角，再小写化），避免中英文混输 / 全角数字导致的失配；`role`（类别）字段纳入默认搜索范围（之前漏掉）；新增 `mode="all"` AND 语义，默认 `"any"` OR 保持向后兼容。`pwd` 永不参与搜索。
-- **敏感字节即时擦除（best-effort）**：`zhmm/core/crypto.py` 新增 `_zeroize(*buffers: bytearray | None)` 工具，对 Argon2id 派生出的 32B 中间密钥、SM4 子密钥 (v6 16B / v5 key_enc 16B + key_mac 16B) 改用 `bytearray` 持有，在 `Vault.seal` / `_open_v6` / `_open_v5` 的 `try/finally` 中无条件原地写零，缩短它们在进程内存中的驻留窗口。
-  - **设计范围**：Python 中 `bytes` / `str` 不可变、argon2-cffi / gmssl 内部的 C 缓冲区也无法控制，本次改动 **只认真关心** 我们自己在 Python 层持有的派生密钥副本；无意声称达到内存取证意义上的“经典零化”。
-  - **平滑兼容**：`_sm4_encrypt_block` / `_sm4_ctr_xor` / `_sm4_gcm_seal` / `_sm4_gcm_open` / `_sm4_cbc_decrypt` 的 `key` 参数类型扩展为 `bytes | bytearray`，内部统一 `bytes(key)` 转换交给 gmssl；公开 API (`Vault.seal` / `Vault.open`) 签名与行为未变。
-  - **测试**：290 条全量测试全绿（新增 `tests/test_sm_data.py` 覆盖 #J/#M，`tests/test_crypto.py` 新增 `TestArgon2Calibration` 五条用例覆盖 #A）。
-- **剪贴板竞态保护**：新增 `zhmm/gui/clipboard_util.py` 提供统一的 `copy_sensitive(text)` 入口，在 10 秒自动清空剪贴板前先比对当前剪贴板内容的 SHA-256 指纹，若用户在这 10 秒内已复制了其他内容则放弃清空，避免原设计下「该清空时误清掉用户刚复制的内容」的体验问题。
-  - 指纹而非明文保存在闭包里，避免敏感字符串多驻留 10 秒；
-  - 适配密码/历史密码/TOTP 动态码/登录账号四处复制点（`password/window.py`、`password/history_dialog.py`、`settings/window.py`），操作路径和提示文案保持不变。
-
-### Changed
-- **加密错误类型细化**：`zhmm/core/errors.py` 在 `CryptoError` 下新增三个子类，便于 UI 层针对性提示：
-  - `BadPassword`：AEAD / HMAC 认证失败（账号/密码错或密文被篡改；密码学上不可区分，UI 应同时覆盖两种可能）；
-  - `CorruptedVault`：文件结构损坏（magic 不匹配、长度非法、JSON 解析失败、Argon2 参数越界、CBC 解密出错等）；
-  - `UnsupportedVersion`：版本字节不在当前程序支持范围（v3 / v4 / 未来版）。
-  - `crypto.py` / `vault.py` 中原先统一抛 `CryptoError` 的 raise 点全部替换为以上子类；因三者均继承自 `CryptoError`，`except CryptoError` 的用户代码/测试完全向后兼容。
 - **加密栈升级到 SM4-GCM（v6 格式）**：`zhmm/core/crypto.py` 由原先的 **SM4-CBC + HMAC-SM3 Encrypt-then-MAC**（v5）迁移到 **SM4-GCM 原生 AEAD**（NIST SP 800-38D）。
   - **实现**：`gmssl 3.2.2` 未提供 SM4-GCM，基于 `CryptSM4.one_round` 的单块 SM4 无填充原语手工实现 CTR 流加密 + GHASH 认证（`_gf128_mul` / `_ghash` / `_sm4_ctr_xor` / `_sm4_gcm_seal` / `_sm4_gcm_open`）；仅支持 NIST 推荐的 96-bit IV 标准形态，认证标签 128-bit。
   - **AAD 保护**：整个文件头（magic + version + m_cost + t_cost + p_cost + salt + iv）作为 GCM 的附加认证数据，header 任意字段被篡改（含 Argon2 参数）都会触发认证失败，防止降级攻击，无需额外 MAC 子密钥。
@@ -36,6 +17,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **向后兼容**：`Vault.open` 根据 version 字节分发，v6 走 GCM，**v5（CBC+HMAC-SM3）继续可读**；`Vault.seal` 只写 v6，因此老 `.zmb` 文件在下次保存时会自然升级到 v6，用户无感。v3 / v4 已废弃仍硬拒绝。
   - **KDF**：Argon2id 派生长度仍为 32B 保持一致，v6 仅取前 16B 作 SM4 密钥（GHASH 子密钥由 `SM4_ENC(K, 0)` 内部导出，无需独立 MAC key）。
   - **测试**：`tests/test_crypto.py` 扩展到 64 条用例，新增 GHASH / GF(2^128) 乘法代数性质、CTR 自逆性、任意长度明文（0~256B 边界）、v5 legacy blob 手工构造 + 读兼容、v5→v6 自然升级、AAD 篡改检测等覆盖。
+- **Argon2id 自适应参数**：`zhmm/core/crypto.py` 新增 `calibrate_argon2(target_ms=500, ...) → (m, t, p)`，基于本机实测耗时线性缩放 m_cost 到目标毫秒区间，并 clamp 在 `[_ARGON2_M_MIN, _ARGON2_M_MAX]` 以防弱机过软 / 强机越界。`Vault.seal(..., *, argon2_params=None)` 接受 calibrate 的返回值；`None` 时维持默认参数，向后兼容。选用的参数写入 v6 header 并纳入 AAD，解密方无需额外调用。
+- **敏感字节即时擦除（best-effort）**：`zhmm/core/crypto.py` 新增 `_zeroize(*buffers: bytearray | None)` 工具，对 Argon2id 派生出的 32B 中间密钥、SM4 子密钥 (v6 16B / v5 key_enc 16B + key_mac 16B) 改用 `bytearray` 持有，在 `Vault.seal` / `_open_v6` / `_open_v5` 的 `try/finally` 中无条件原地写零，缩短它们在进程内存中的驻留窗口。
+  - **设计范围**：Python 中 `bytes` / `str` 不可变、argon2-cffi / gmssl 内部的 C 缓冲区也无法控制，本次改动 **只认真关心** 我们自己在 Python 层持有的派生密钥副本；无意声称达到内存取证意义上的"经典零化"。
+  - **平滑兼容**：`_sm4_encrypt_block` / `_sm4_ctr_xor` / `_sm4_gcm_seal` / `_sm4_gcm_open` / `_sm4_cbc_decrypt` 的 `key` 参数类型扩展为 `bytes | bytearray`，内部统一 `bytes(key)` 转换交给 gmssl；公开 API (`Vault.seal` / `Vault.open`) 签名与行为未变。
+- **剪贴板竞态保护**：新增 `zhmm/gui/clipboard_util.py` 提供统一的 `copy_sensitive(text)` 入口，在 10 秒自动清空剪贴板前先比对当前剪贴板内容的 SHA-256 指纹，若用户在这 10 秒内已复制了其他内容则放弃清空，避免原设计下「该清空时误清掉用户刚复制的内容」的体验问题。
+  - 指纹而非明文保存在闭包里，避免敏感字符串多驻留 10 秒；
+  - 适配密码/历史密码/TOTP 动态码/登录账号四处复制点（`password/window.py`、`password/history_dialog.py`、`settings/window.py`），操作路径和提示文案保持不变。
+- **账号列复制**：密码管理窗口支持右键/快捷键复制账号字段到剪贴板。
+- **供应链安全护栏**：新增 `.github/dependabot.yml` （pip + github-actions 每周一 09:00 Asia/Shanghai 巡检，以 `chore(deps):` / `chore(ci):` 分别提 PR）与 `.github/workflows/ci.yml` 的 `audit` job（`poetry export --only=main` 生成 production 依赖清单 → `pip-audit` 扫描 CVE）。
+  - **软门禁**：`continue-on-error: true`，不阻断主流程，由维护者根据结果决定修复优先级；只扫运行时依赖，不纳入 pip / pytest / virtualenv 等 tooling。
+- **自动锁定协议加固**：
+  - `zhmm/app/gui_app.py` 安装 `QApplication` 级事件过滤器，监听鼠标按键 / 移动 / 滚轮 / 键盘 / 触摸事件更新 `last_active_time`，不再仅靠窗口 `isActiveWindow()` 判定（修复原来"前台无人操作也不会锁"的盲区）；定时器 tick 由 `lock_time*60s` 缩短至 30s，准时触发。
+  - `zhmm/data/sm_data_manager.py` `SmData` 新增 `close()` 清理会话：清空已解密的 `mm["data"]` / `mm["roles"]` 容器，并将 `_account` / `_password` 赋空字符串；`AppWindow.hide_data_ui()` 在 `deleteLater()` 前调用，缩短明文条目 / 主密码在内存中的驻留时间。
+- **搜索增强**：`SmData.search` 不再仅做 `str.lower()`，而是调用 `_normalize_search_text`（全角 U+3000 / U+FF01~U+FF5E → 半角，再小写化），避免中英文混输 / 全角数字导致的失配；`role`（类别）字段纳入默认搜索范围；新增 `mode="all"` AND 语义，默认 `"any"` OR 保持向后兼容。
+
+### Changed
+- **加密错误类型细化**：`zhmm/core/errors.py` 在 `CryptoError` 下新增三个子类，便于 UI 层针对性提示：
+  - `BadPassword`：AEAD / HMAC 认证失败（账号/密码错或密文被篡改）；
+  - `CorruptedVault`：文件结构损坏（magic 不匹配、长度非法、JSON 解析失败、Argon2 参数越界等）；
+  - `UnsupportedVersion`：版本字节不在当前程序支持范围（v3 / v4 / 未来版）。
+  - 因三者均继承自 `CryptoError`，`except CryptoError` 的用户代码/测试完全向后兼容。
+- **CLI 搜索词处理规范化**：统一搜索词的全角→半角转换与空格归一化逻辑。
+- **PyInstaller 构建优化**：Makefile 确保虚拟环境依赖加载正确。
+
+### Fixed
+- **PyQt6 未处理异常闪退**：安装 `sys.excepthook` + `QApplication` 级未处理异常捕获，防止 PyQt6 slot 中未捕获的异常导致程序直接退出。
+- **定时器清空剪贴板引用错误**：修复 `QTimer.singleShot` 回调中对已释放对象的引用。
+- **密码管理窗口模型父对象问题**：修复 `QSortFilterProxyModel` / `QStandardItemModel` 父对象设置及定时器生命周期管理。
+- **维护者邮箱和相关链接**：更新 `pyproject.toml` 中的联系方式。
 
 ## [0.5.0] - 2026-05-03
 
