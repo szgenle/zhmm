@@ -58,14 +58,18 @@ update-version:
 	poetry run python scripts/update_version.py
 
 # 构建GUI应用程序
-# 说明：必须使用 `poetry run python -m PyInstaller`，否则 `poetry run pyinstaller`
-# 在 venv 里没装 pyinstaller 时会回落到 PATH 上的系统 pyinstaller（如 Homebrew 版），
-# 其使用的 Python 解释器看不到 venv 里的 PyQt6，导致打出来的 .app 启动时
-# `ModuleNotFoundError: No module named 'PyQt6'`。
+# 说明 1：必须使用 `poetry run python -m PyInstaller`，否则 `poetry run pyinstaller`
+#   在 venv 里没装 pyinstaller 时会回落到 PATH 上的系统 pyinstaller（如 Homebrew 版），
+#   其使用的 Python 解释器看不到 venv 里的 PyQt6，导致打出来的 .app 启动时
+#   `ModuleNotFoundError: No module named 'PyQt6'`。
+# 说明 2：使用 --onedir 而不是 --onefile。原因：
+#   (a) PyInstaller 已弃用 `--onefile + --windowed (.app)` 的组合，v7 将报错；
+#   (b) onefile 每次启动都要把内嵌资源自解压到 /tmp，冷启动多耗 500~2000ms；
+#   (c) .app 本身就是目录形式，onedir 产物可直接装进 Contents/MacOS/，体积/签名都更友好。
 build-app: clean-build
 	@echo "构建GUI应用程序..."
 	poetry run pip install pyinstaller certifi $(PIP_INDEX_ARG)
-	poetry run python -m PyInstaller --onefile --windowed --name "zhmm" \
+	poetry run python -m PyInstaller --onedir --windowed --name "zhmm" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
@@ -73,7 +77,7 @@ build-app: clean-build
 		--add-data "zhmm/resources:resources" \
 		zhmm/__main__.py \
 		--paths .
-	@echo "GUI应用程序构建完成！"
+	@echo "GUI应用程序构建完成！产物：dist/zhmm.app（onedir 模式，启动更快）"
 
 # 构建命令行应用程序（--onedir：避免 --onefile 每次启动的自解压耗时，启动更快）
 build-cmd: clean-build
@@ -99,7 +103,7 @@ build-all: clean-build
 	@echo "构建所有应用程序..."
 	poetry run pip install pyinstaller certifi $(PIP_INDEX_ARG)
 	@echo "构建GUI应用程序..."
-	poetry run python -m PyInstaller --onefile --windowed --name "zhmm" \
+	poetry run python -m PyInstaller --onedir --windowed --name "zhmm" \
 		--osx-bundle-identifier "com.szgenle.zhmm" \
 		--icon=myicon.icns \
 		--collect-all certifi \
