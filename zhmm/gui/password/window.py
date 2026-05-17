@@ -168,8 +168,14 @@ class PasswordWindow(QWidget):
         # 新增单元格点击事件处理
         self.table_view.clicked.connect(self.on_table_cell_clicked)
 
-        # 新增双击事件处理
-        self.table_view.doubleClicked.connect(self.edit_selected_password)
+        # 新增双击事件处理：延迟到下一轮事件循环再打开编辑对话框。
+        # 直接在 doubleClicked 槽里 dialog.exec() 会形成嵌套事件循环，
+        # 用户点击“确认修改”会触发 setZhData() 重置 model；此时
+        # QAbstractItemView::mouseDoubleClickEvent 仍在原生栈上，
+        # 返回时会访问被释放的 model/index 指针造成 EXC_BAD_ACCESS 闪退。
+        # 通过 QTimer.singleShot(0, ...) 把对话框开启推到 mouseDoubleClickEvent
+        # 完整退栈后再执行，彻底规避该 use-after-free 路径。
+        self.table_view.doubleClicked.connect(self._on_row_double_clicked)
 
         # 右键上下文菜单
         self.table_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -543,6 +549,10 @@ class PasswordWindow(QWidget):
                 self._refresh_tag_sidebar()
             else:
                 QMessageBox.critical(self, "错误", message)
+
+    def _on_row_double_clicked(self, _index) -> None:
+        """双击行的入口：异步打开编辑对话框，避免在 mouseDoubleClickEvent 栈上重入。"""
+        QTimer.singleShot(0, self.edit_selected_password)
 
     def edit_selected_password(self):
         """编辑选中的密码项"""
