@@ -69,14 +69,52 @@ import hmac
 import os
 import struct
 import time
-from typing import Final
-
-from argon2.exceptions import Argon2Error
-from argon2.low_level import Type as Argon2Type
-from argon2.low_level import hash_secret_raw
-from gmssl import sm3, sm4
+from typing import Any, Final
 
 from zhmm.core.errors import BadPassword, CorruptedVault, CryptoError, UnsupportedVersion, ValidationError
+
+# ----------------------------------------------------------------------
+# 重量级密码学依赖延迟加载（启动加速）
+# ----------------------------------------------------------------------
+#
+# argon2-cffi 与 gmssl 是相对沉重的本地扩展，其 import 在冷启动时可累计 200~400ms。
+# 本模块的所有公共入口（Vault.seal/open、calibrate_argon2、_Sm3Hash 实例化）
+# 都会先调用 ``_ensure_lazy_imports()``，首次进入时一次性把符号绑定到模块全局，
+# 后续重入仅做布尔标志检查、零开销。模块未被使用前（如 GUI 仅停留在欢迎页时），
+# 这些扩展不会被加载到内存。
+
+sm3: Any = None  # gmssl.sm3 模块（懒加载）
+sm4: Any = None  # gmssl.sm4 模块（懒加载）
+Argon2Error: Any = None  # argon2.exceptions.Argon2Error
+Argon2Type: Any = None  # argon2.low_level.Type
+hash_secret_raw: Any = None  # argon2.low_level.hash_secret_raw
+
+_lazy_imports_loaded: bool = False
+
+
+def _ensure_lazy_imports() -> None:
+    """幂等触发 argon2 / gmssl 的懒加载。
+
+    所有真正用到这些扩展的入口（Vault.seal/open、calibrate_argon2、
+    _Sm3Hash.__init__）都会调用本函数。首次进入时把符号绑定到模块全局，
+    后续调用仅是一次布尔检查。
+    """
+    global sm3, sm4, Argon2Error, Argon2Type, hash_secret_raw, _lazy_imports_loaded
+    if _lazy_imports_loaded:
+        return
+    from argon2.exceptions import Argon2Error as _Argon2Error  # noqa: PLC0415
+    from argon2.low_level import Type as _Argon2Type  # noqa: PLC0415
+    from argon2.low_level import hash_secret_raw as _hash_secret_raw  # noqa: PLC0415
+    from gmssl import sm3 as _sm3  # noqa: PLC0415
+    from gmssl import sm4 as _sm4  # noqa: PLC0415
+
+    sm3 = _sm3
+    sm4 = _sm4
+    Argon2Error = _Argon2Error
+    Argon2Type = _Argon2Type
+    hash_secret_raw = _hash_secret_raw
+    _lazy_imports_loaded = True
+
 
 # ----------------------------------------------------------------------
 # 协议常量（一旦发布请勿随意修改；修改必须 bump VERSION）
@@ -138,6 +176,8 @@ class _Sm3Hash:
     name: Final[str] = "sm3"
 
     def __init__(self, data: bytes = b"") -> None:
+        # 懒加载入口：HMAC-SM3 / TOTP 真正使用 SM3 时再触发 gmssl import
+        _ensure_lazy_imports()
         self._buf = bytearray(data)
 
     def update(self, data: bytes) -> None:
@@ -179,6 +219,7 @@ def _derive_key(
         raise ValidationError("account must be a str")
     if not isinstance(password, str) or not password:
         raise ValidationError("password must be a non-empty str")
+    _ensure_lazy_imports()
     material = account.encode("utf-8") + b"\x00" + password.encode("utf-8")
     try:
         key: bytes = hash_secret_raw(
@@ -248,6 +289,7 @@ def calibrate_argon2(
     if target_ms <= 0:
         raise ValidationError("target_ms must be positive")
     _validate_argon2_params(probe_m_cost, t_cost, p_cost)
+    _ensure_lazy_imports()
 
     # 用一组任意固定值采样，不涉及密码学强度（仅用于测时）
     probe_salt = b"calibrate-zhmm\x00\x00"  # 16B
@@ -481,6 +523,7 @@ class Vault:
         if not isinstance(plaintext, bytes | bytearray):
             raise ValidationError("plaintext must be bytes")
 
+        _ensure_lazy_imports()
         salt = os.urandom(SALT_LEN)
         iv = os.urandom(IV_LEN)
         if argon2_params is None:
@@ -521,6 +564,7 @@ class Vault:
         if not isinstance(blob, bytes | bytearray):
             raise ValidationError("blob must be bytes")
 
+        _ensure_lazy_imports()
         blob = bytes(blob)
         if len(blob) < 1 + len(MAGIC):
             raise ValidationError(f"blob too short: {len(blob)}")

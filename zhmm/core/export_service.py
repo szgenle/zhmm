@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from openpyxl import Workbook, load_workbook
-
 from zhmm.core.errors import StorageError, ValidationError
 from zhmm.core.models import PasswordEntry, normalize_tags
 
@@ -78,6 +76,9 @@ class ExportService:
         Raises:
             StorageError: 文件写入失败
         """
+        # 懒加载：openpyxl 启动期 import 耗时 150~300ms，仅在真正导出时加载
+        from openpyxl import Workbook  # noqa: PLC0415
+
         wb = Workbook()
         ws = wb.active
         if ws is None:  # pragma: no cover - openpyxl 保证
@@ -115,6 +116,9 @@ class ExportService:
             StorageError: 文件不存在 / 读取失败
             ValidationError: 表头不匹配
         """
+        # 懒加载：仅在真正导入时加载 openpyxl
+        from openpyxl import load_workbook  # noqa: PLC0415
+
         p = Path(file_path)
         if not p.exists():
             raise StorageError(f"file not found: {p}")

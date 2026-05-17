@@ -3,6 +3,51 @@
 
 import platform
 import subprocess
+import time
+
+# auto 主题检测结果缓存的 QSettings key 与 TTL。
+# 背景：``ThemeManager.get_system_theme()`` 在 macOS 需 ``subprocess defaults read``，
+# 在 Windows 需打开注册表；两者都是同步阻塞调用，在冷启动路径上能走 100~300ms。
+# 用户并不会频繁切换系统主题，以 24 小时为 TTL 缓存上一次检测结果。
+_SYSTEM_THEME_CACHE_KEY = "theme/system_cache_value"
+_SYSTEM_THEME_CACHE_AT_KEY = "theme/system_cache_at"
+_SYSTEM_THEME_CACHE_TTL_SEC = 24 * 60 * 60
+
+
+def _read_cached_system_theme() -> str | None:
+    """读 QSettings 中 TTL 内的 system theme 缓存值；未命中返回 None。"""
+    try:
+        from PyQt6.QtCore import QSettings  # noqa: PLC0415
+
+        settings = QSettings()
+        value = settings.value(_SYSTEM_THEME_CACHE_KEY)
+        ts_raw = settings.value(_SYSTEM_THEME_CACHE_AT_KEY)
+        if not value or ts_raw is None:
+            return None
+        try:
+            ts = float(ts_raw)
+        except (TypeError, ValueError):
+            return None
+        if time.time() - ts > _SYSTEM_THEME_CACHE_TTL_SEC:
+            return None
+        if value in ("light", "dark"):
+            return str(value)
+        return None
+    except Exception:
+        return None
+
+
+def _write_cached_system_theme(value: str) -> None:
+    """把本次检测结果写回 QSettings，供下次启动复用。"""
+    try:
+        from PyQt6.QtCore import QSettings  # noqa: PLC0415
+
+        settings = QSettings()
+        settings.setValue(_SYSTEM_THEME_CACHE_KEY, value)
+        settings.setValue(_SYSTEM_THEME_CACHE_AT_KEY, time.time())
+    except Exception:
+        # 缓存写入失败不应影响主题设置
+        pass
 
 
 class ThemeManager:
@@ -336,8 +381,18 @@ class ThemeManager:
     def get_system_theme():
         """检测系统主题（仅支持 macOS 和 Windows）
         返回: 'light' 或 'dark'
+
+        优先返回 QSettings 中 24 小时内的缓存值；未命中时会同步调用系统接口
+        （``defaults read`` / 注册表）获取实时结果，同时写回缓存。
+        该缓存仅为减少冷启动上的 100~300ms 同步 IO；用户手动切换系统
+        主题后最多 24 小时后下次启动生效。
         """
+        cached = _read_cached_system_theme()
+        if cached is not None:
+            return cached
+
         system = platform.system()
+        detected = "light"
 
         if system == "Darwin":  # macOS
             try:
@@ -346,10 +401,9 @@ class ThemeManager:
                 )
                 # 如果命令成功且返回 'Dark'，则为深色模式
                 if result.returncode == 0 and "Dark" in result.stdout:
-                    return "dark"
-                return "light"
+                    detected = "dark"
             except Exception:
-                return "light"
+                detected = "light"
 
         elif system == "Windows":  # Windows
             try:
@@ -360,12 +414,13 @@ class ThemeManager:
                 value, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
                 winreg.CloseKey(key)
                 # 0 = 深色, 1 = 浅色
-                return "dark" if value == 0 else "light"
+                detected = "dark" if value == 0 else "light"
             except Exception:
-                return "light"
+                detected = "light"
 
-        # 其他系统默认返回浅色
-        return "light"
+        # 其他系统默认返回浅色（detected 保持 "light"）
+        _write_cached_system_theme(detected)
+        return detected
 
     @staticmethod
     def get_theme_stylesheet(theme_mode):

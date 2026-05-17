@@ -51,8 +51,9 @@ class AppWindow(BaseWindow):
         if _BROWSER_BRIDGE_ENABLED:
             self._start_browser_bridge()
 
-        # 首次启动时显示欢迎窗口
-        QTimer.singleShot(500, self.show_welcome_ui)
+        # 首次启动直接显示欢迎窗口；历史上这里用 QTimer.singleShot(500, ...) 引入了 500ms
+        # 启动可见延迟，但后续代码路径已不需事件循环先跑一轮，可以同步调起。
+        self.show_welcome_ui()
 
     # ------------------------------------------------------------------
     # 浏览器填充桥（POC）
